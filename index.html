@@ -437,6 +437,32 @@ button.local-image-btn:hover {
     min-width: 140px;
 }
 
+.time-set-group #time-setter {
+    flex: 1 1 100%;
+}
+
+.time-set-group {    
+    flex-wrap: nowrap !important;
+}
+
+.time-zone-control {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--md-sys-color-on-surface-variant);
+    margin: 0;
+    min-width: 230px;
+}
+
+.time-zone-control input[type="number"] {
+    width: 56px;
+    min-height: 40px;
+    margin: 0;
+    text-align: center;
+}
+
 /* Form fields — outlined Material style */
 input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
 select,
@@ -1192,6 +1218,7 @@ input[type="checkbox"] {
             reconnect: 'Reconnect',
             clearLogs: 'Clear Logs',
             setTime: 'Set Time: ',
+            timeZone: 'Time Zone Offset:',
             switchClockMode: 'Switch to Clock Mode',
             switchCalendarMode: 'Switch to Calendar Mode',
             toggleClockColor: 'Toggle Clock Color',
@@ -1338,6 +1365,7 @@ input[type="checkbox"] {
             reconnect: 'Kết nối lại',
             clearLogs: 'Xóa nhật ký',
             setTime: 'Đặt giờ: ',
+            timeZone: 'Chênh lệch múi giờ:',
             switchClockMode: 'Chuyển chế độ đồng hồ',
             switchCalendarMode: 'Chuyển chế độ lịch',
             toggleClockColor: 'Đổi màu đồng hồ',
@@ -1629,9 +1657,12 @@ input[type="checkbox"] {
         </div>
 
         
-        <div class="button-group">
-            <button id="time-setter" data-i18n="setTime" onclick="setTime()">Set Time: </button> <br>
-            <input type="number" max="24" min="0" id="hour-offset" value="0" style="width: 40px;">
+        <div class="button-group time-set-group">
+            <button id="time-setter" data-i18n="setTime" onclick="setTime()">Set Time: </button>
+            <label class="time-zone-control" for="hour-offset">
+                <span id="time-zone-label" data-i18n="timeZone">Time Zone Offset:</span>
+                <input type="number" max="24" min="0" id="hour-offset" value="0" title="Time zone offset (hour)">
+            </label>
         </div>
 
         <div class="button-group">
@@ -3173,9 +3204,18 @@ document.querySelectorAll('.tab-button').forEach(function(btn) {
             else { await sendCommand(hexToBytes("01")) }
             addLog(`Upload complete, time:${(new Date().getTime() - startTime) / 1000}s`);
         }
+        function formatSetTimeButtonText(year, month, day, localeTimeString, week, hourOffset) {
+            const stLabel = (typeof t === 'function' ? t('setTime') : 'Set Time:');
+            return `${stLabel}: ${year}-${month}-${day} ${localeTimeString}`;
+        }
         async function setTime() {
-            const { unixNow, localeTimeString, year, month, day, week } = getUnixTime();
-            addLog("Time set to: " + localeTimeString + " : dd" + intToHex(unixNow, 4));
+            let { unixNow, localeTimeString, year, month, day, week, hourOffset } = getUnixTime();
+            unixNow += 10;
+            const timeSetter = document.getElementById('time-setter');
+            if (timeSetter) {
+                timeSetter.innerText = formatSetTimeButtonText(year, month, day, localeTimeString, week, hourOffset);
+            }
+            addLog("Time set to: " + localeTimeString + " (" + (typeof t === 'function' ? t('timeZone') : 'Time Zone Offset:') + " " + hourOffset + ") : dd" + intToHex(unixNow, 4));
             await rxTxSendCommand(hexToBytes('dd' +
                 [intToHex(unixNow, 4), intToHex(year, 2), intToHex(month, 1), intToHex(day, 1), intToHex(week, 1)].join('')));
             await rxTxSendCommand(hexToBytes('e2'))
@@ -3258,7 +3298,7 @@ document.querySelectorAll('.tab-button').forEach(function(btn) {
                 try {
                     setConnectButtonState('scanning');
                     bleDevice = await navigator.bluetooth.requestDevice({
-                        acceptAllDevices: true,
+                        filters: [{ namePrefix: 'DLG-CLOCK-' }],
                         optionalServices: ['0000221f-0000-1000-8000-00805f9b34fb', '00001f10-0000-1000-8000-00805f9b34fb', '13187b10-eba9-a3ba-044e-83d3217d9a38']
                     });
                     bleDevice.addEventListener('gattserverdisconnected', disconnect);
@@ -3330,14 +3370,22 @@ document.querySelectorAll('.tab-button').forEach(function(btn) {
         }
         function getUnixTime() {
             const hourOffset = document.getElementById('hour-offset').value;
-            let unixNow = Math.round(Date.now() / 1000) + (60 * 60 * hourOffset) - new Date().getTimezoneOffset() * 60;
+            let unixNow = Math.round(Date.now() / 1000) + (60 * 60 * (hourOffset)) - new Date().getTimezoneOffset() * 60;
             const date = new Date((unixNow + new Date().getTimezoneOffset() * 60) * 1000);
             const localeTimeString = date.toLocaleTimeString();
             
             // Firmware tÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â»ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â± ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¾ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¹Ãƒâ€¦Ã¢â‚¬Å“ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â»ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¾ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ng trÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â»ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â« 1 tiÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂºÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¿ng (giÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂºÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â£ ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¾ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¹Ãƒâ€¦Ã¢â‚¬Å“ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â»ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¹nh web UTC+8, mÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂºÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ch UTC+7). CÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â»ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¾ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ng bÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¹ 3600 giÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢y ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¾ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¹Ãƒâ€¦Ã¢â‚¬Å“ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â»ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ mÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂºÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ch chÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂºÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡y ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¾ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¹Ãƒâ€¦Ã¢â‚¬Å“ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Âºng giÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â»ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â.
             unixNow += 3600;
             
-            return { unixNow, localeTimeString, year: date.getFullYear(), month: date.getMonth() + 1, day: date.getDate(), week: date.getDay() || 7 }
+            return {
+                unixNow,
+                localeTimeString,
+                year: date.getFullYear(),
+                month: date.getMonth() + 1,
+                day: date.getDate(),
+                week: date.getDay() || 7,
+                hourOffset
+            }
         }
         let currentRotation = 0;
         let currentImage = null;
@@ -3494,8 +3542,11 @@ document.querySelectorAll('.tab-button').forEach(function(btn) {
         }
         document.body.onload = () => {
             setInterval(() => {
-                const { localeTimeString, year, month, day, week } = getUnixTime();
-                document.getElementById('time-setter').innerText = `Set Time:${year}-${month}-${day} ${localeTimeString} Week${week}`;
+                const { localeTimeString, year, month, day, week, hourOffset } = getUnixTime();
+                const timeSetter = document.getElementById('time-setter');
+                if (timeSetter) {
+                    timeSetter.innerText = formatSetTimeButtonText(year, month, day, localeTimeString, week, hourOffset);
+                }
             }, 1000);
             const canvas = document.getElementById('canvas');
             const ctx = canvas.getContext("2d");
@@ -5291,7 +5342,6 @@ function saveCanvasYSAndUpdateImage() {
                 addLog(`Imported image from template!`);
        const switched = switchToTab('tab-image');
        delay(100);
-      // stretchToCanvas();
 }
         initCanvas();
         preloadBuiltInBackgrounds();
