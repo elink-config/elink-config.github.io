@@ -1323,7 +1323,176 @@ input[type="checkbox"] {
     margin: 0;
 }
 
+.browser-gate-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(15, 23, 42, 0.72);
+    backdrop-filter: blur(4px);
+    pointer-events: auto;
+}
+
+html.browser-gate-active .browser-gate-overlay {
+    display: flex;
+}
+
+html.browser-gate-active body {
+    overflow: hidden;
+    pointer-events: none;
+    user-select: none;
+}
+
+.browser-gate-dialog {
+    width: min(100%, 480px);
+    background: var(--md-sys-color-surface-container, #ffffff);
+    color: var(--md-sys-color-on-surface, #1a1c1e);
+    border-radius: var(--md-shape-corner-large, 16px);
+    box-shadow: var(--md-elevation-3, 0 8px 24px rgba(0, 0, 0, 0.2));
+    overflow: hidden;
+}
+
+.browser-gate-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--md-sys-color-outline-variant, #dde4ec);
+    background: var(--md-sys-color-error, #ba1a1a);
+    color: #ffffff;
+}
+
+.browser-gate-header h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.browser-gate-body {
+    padding: 24px;
+    font-size: 0.975rem;
+    line-height: 1.65;
+    color: var(--md-sys-color-on-surface-variant, #43474e);
+}
+
+.browser-gate-body strong {
+    color: var(--md-sys-color-on-surface, #1a1c1e);
+}
+
     </style>
+    <script>
+        (function () {
+            function detectDevice() {
+                var ua = navigator.userAgent || '';
+                var isIPad = /iPad/.test(ua) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(ua));
+                var isIPhone = /iPhone/.test(ua) && !isIPad;
+                var isAndroid = /Android/.test(ua);
+                var isWindows = /Windows/.test(ua);
+                var isMac = (/Macintosh|Mac OS X/.test(ua) || /MacIntel/.test(navigator.platform || '')) && !isIPad && !isIPhone;
+
+                if (isIPhone) return 'iphone';
+                if (isIPad) return 'ipad';
+                if (isMac) return 'mac';
+                if (isAndroid) return 'android';
+                if (isWindows) return 'windows';
+                return 'other';
+            }
+
+            function isChromeBrowser() {
+                var ua = navigator.userAgent || '';
+                var isChromium = /Chrome|CriOS/.test(ua);
+                var isEdge = /Edg\//.test(ua);
+                var isOpera = /OPR\//.test(ua);
+                var isSamsung = /SamsungBrowser/.test(ua);
+                return isChromium && !isEdge && !isOpera && !isSamsung;
+            }
+
+            function isBluefyBrowser() {
+                return /Bluefy/i.test(navigator.userAgent || '');
+            }
+
+            function getRequiredBrowser(device) {
+                if (device === 'android' || device === 'windows') return 'chrome';
+                if (device === 'iphone' || device === 'ipad' || device === 'mac') return 'bluefy';
+                return null;
+            }
+
+            function isAllowedBrowser(device) {
+                var required = getRequiredBrowser(device);
+                if (required === 'chrome') return isChromeBrowser();
+                if (required === 'bluefy') return isBluefyBrowser();
+                return false;
+            }
+
+            function getMessages(device) {
+                var lang = localStorage.getItem('epaper-lang');
+                var isVi = lang === 'vi';
+                var required = getRequiredBrowser(device);
+                var browserName = required === 'chrome'
+                    ? (isVi ? 'Google Chrome' : 'Google Chrome')
+                    : 'Bluefy';
+
+                if (isVi) {
+                    return {
+                        title: 'Trình duyệt không được hỗ trợ',
+                        message: 'Thiết bị của bạn cần sử dụng <strong>' + browserName + '</strong> để truy cập trang này. Vui lòng chuyển sang trình duyệt đúng và tải lại trang.',
+                        note: 'Trang sẽ không hoạt động cho đến khi bạn dùng đúng trình duyệt.'
+                    };
+                }
+
+                return {
+                    title: 'Unsupported Browser',
+                    message: 'Your device must use <strong>' + browserName + '</strong> to access this page. Please switch to the correct browser and reload.',
+                    note: 'This page will remain blocked until you use the required browser.'
+                };
+            }
+
+            function showBrowserGate(device) {
+                var messages = getMessages(device);
+                document.documentElement.classList.add('browser-gate-active');
+
+                var overlay = document.createElement('div');
+                overlay.className = 'browser-gate-overlay';
+                overlay.setAttribute('role', 'alertdialog');
+                overlay.setAttribute('aria-modal', 'true');
+                overlay.setAttribute('aria-labelledby', 'browser-gate-title');
+                overlay.innerHTML =
+                    '<div class="browser-gate-dialog">' +
+                        '<div class="browser-gate-header">' +
+                            '<h2 id="browser-gate-title">' + messages.title + '</h2>' +
+                        '</div>' +
+                        '<div class="browser-gate-body">' +
+                            '<p>' + messages.message + '</p>' +
+                            '<p style="margin-top:16px;">' + messages.note + '</p>' +
+                        '</div>' +
+                    '</div>';
+
+                function mountOverlay() {
+                    if (!document.body) {
+                        document.addEventListener('DOMContentLoaded', mountOverlay, { once: true });
+                        return;
+                    }
+                    document.body.appendChild(overlay);
+                }
+
+                mountOverlay();
+
+                document.addEventListener('keydown', function (e) {
+                    if (e.key === 'Escape') e.preventDefault();
+                }, true);
+
+                window.addEventListener('beforeunload', function () {}, true);
+            }
+
+            var device = detectDevice();
+            if (!isAllowedBrowser(device)) {
+                showBrowserGate(device);
+            }
+        })();
+    </script>
     <script>
         (function () {
             var saved = localStorage.getItem('epaper-theme');
@@ -1491,7 +1660,7 @@ input[type="checkbox"] {
             titleDisableSleep: 'Click to disable no-refresh during time interval',
             degUnit: ' deg',
             infoPopupTitle: 'Information',
-            infoPopupBody: 'If you are using Android Phone, or PC, please use Chrome. If you are using Iphone, please use Bluefy to access this page. E-Ink config website by Shop Vật Liệu DIY. Please click to the following link to buy the product:',
+            infoPopupBody: 'E-Ink config website by Shop Vật Liệu DIY. Please click to the following link to buy the product:',
             infoPopupClose: 'Close',
             infoPopupBuy: 'Go to buy',
             infoPopupCloseAria: 'Close dialog'
@@ -1645,7 +1814,7 @@ input[type="checkbox"] {
             titleDisableSleep: 'Bấm để tắt không làm mới trong khoảng thời gian',
             degUnit: '°',
             infoPopupTitle: 'Thông tin',
-            infoPopupBody: 'Nếu bạn đang sử dụng điện thoại Android hoặc PC, hãy dùng trình duyệt Chrome. Nếu bạn đang dùng Iphone, hãy dùng trình duyệt Bluefy. Trang web cấu hình E-Ink bởi Shop Vật Liệu DIY. Vui lòng bấm vào liên kết sau để mua sản phẩm:',
+            infoPopupBody: 'Trang web cấu hình E-Ink bởi Shop Vật Liệu DIY. Vui lòng bấm vào liên kết sau để mua sản phẩm:',
             infoPopupClose: 'Đóng',
             infoPopupBuy: 'Mua ngay',
             infoPopupCloseAria: 'Đóng hộp thoại'
