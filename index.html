@@ -1438,14 +1438,14 @@ html.browser-gate-active body {
                 if (isVi) {
                     return {
                         title: 'Trình duyệt không được hỗ trợ',
-                        message: 'Thiết bị của bạn cần sử dụng <strong>' + browserName + '</strong> để truy cập trang này. Vui lòng chuyển sang trình duyệt đúng và tải lại trang.',
+                        message: 'Thiết bị của bạn cần sử dụng trình duyệt <strong>' + browserName + '</strong> để truy cập trang này. Vui lòng cài đặt trình duyệt <strong>' + browserName + '</strong> trên chợ ứng dụng sau đó truy cập lại trang này bằng trình duyệt vừa cài đặt.',
                         note: 'Trang sẽ không hoạt động cho đến khi bạn dùng đúng trình duyệt.'
                     };
                 }
 
                 return {
                     title: 'Unsupported Browser',
-                    message: 'Your device must use <strong>' + browserName + '</strong> to access this page. Please switch to the correct browser and reload.',
+                    message: 'Your device must use browser <strong>' + browserName + '</strong> to access this page. Please switch to the correct browser and reload. <br>Thiết bị của bạn cần sử dụng trình duyệt <strong>' + browserName + '</strong> để truy cập trang này. Vui lòng cài đặt trình duyệt <strong>' + browserName + '</strong> trên chợ ứng dụng sau đó truy cập lại trang này bằng trình duyệt vừa cài đặt.',
                     note: 'This page will remain blocked until you use the required browser.'
                 };
             }
