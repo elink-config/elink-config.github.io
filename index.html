@@ -1415,8 +1415,8 @@ html.browser-gate-active body {
             }
 
             function getRequiredBrowser(device) {
-                if (device === 'android' || device === 'windows') return 'chrome';
-                if (device === 'iphone' || device === 'ipad' || device === 'mac') return 'bluefy';
+                if (device === 'android' || device === 'windows' || device === 'mac') return 'chrome';
+                if (device === 'iphone' || device === 'ipad') return 'bluefy';
                 return null;
             }
 
