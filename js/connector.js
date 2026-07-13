@@ -1,11 +1,11 @@
-// Hub for the combined 4.2" / 2.13" / DLG-CLOCK webtool.
+// Hub for the combined 4.2" / 2.13" / 2.9" / DLG-CLOCK webtool.
 //
 // The page starts with only the [Kết nối Bluetooth] fieldset. This script
 // owns the connect button: it scans with the 'DIY-' and 'DLG-CLOCK-' name
 // prefixes, detects the device type from the advertised name, then
 // instantiates the matching app (HTML from its <template>, scripts from
-// js/4_2, js/2_13 or js/dlg) and hands the already-selected device over to
-// the app's own connect().
+// js/4_2, js/2_13, js/2_9 or js/dlg) and hands the already-selected device
+// over to the app's own connect().
 //
 // Each app's scripts are the unmodified per-device tools, so they are only
 // loaded once and only one type can be active per page load — connecting a
@@ -13,7 +13,7 @@
 (function () {
   'use strict';
 
-  const VER = '20260713b'; // cache-buster, keep in sync with index.html
+  const VER = '20260714a'; // cache-buster, keep in sync with index.html
 
   const EPD42_SERVICE = '62750001-d828-918d-fb46-b6c11c675aec';
   const HM213_SERVICE = '0000ff00-0000-1000-8000-00805f9b34fb';
@@ -39,6 +39,13 @@
       scripts: ['js/dithering.js', 'js/paint.js', 'js/crop.js',
         'js/2_13/designer.js', 'js/2_13/mode_preview.js', 'js/2_13/main.js'],
     },
+    '2_9': {
+      label: '2.9" (296×128)',
+      sub: 'DA14585 — 2.9" (296×128 BWR): kết nối, cấu hình và truyền hình ảnh',
+      template: 'tpl-2_9',
+      scripts: ['js/dithering.js', 'js/paint.js', 'js/crop.js',
+        'js/2_9/mode_preview.js', 'js/2_9/main.js'],
+    },
     'dlg': {
       label: 'Đồng hồ DLG-CLOCK',
       sub: 'Đồng hồ E-Ink DLG-CLOCK: đặt giờ, đếm ngược, truyền hình ảnh và thiết kế mẫu',
@@ -56,12 +63,14 @@
     return new URLSearchParams(window.location.search).get('debug') === 'true';
   }
 
-  // DIY-2_13-xxxx → 2.13", DIY-4_2-xxxx → 4.2", DLG-CLOCK-xxxx → đồng hồ DLG.
+  // DIY-2_13-xxxx → 2.13", DIY-2_9-xxxx → 2.9", DIY-4_2-xxxx → 4.2",
+  // DLG-CLOCK-xxxx → đồng hồ DLG.
   // Plain DIY-xxxx = 4.2" board on older firmware without the size tag.
   function detectType(name) {
     name = name || '';
     if (name.startsWith('DLG-CLOCK-')) return 'dlg';
     if (name.startsWith('DIY-2_13-')) return '2_13';
+    if (name.startsWith('DIY-2_9-')) return '2_9';
     if (name.startsWith('DIY-4_2-')) return '4_2';
     if (name.startsWith('DIY-')) return '4_2';
     return null;
@@ -175,7 +184,7 @@
     } catch (e) {
       console.error(e);
       if (e.name === 'NotFoundError') {
-        addLog('Không tìm thấy thiết bị E-Ink (DIY-4_2-xxxx / DIY-2_13-xxxx / DLG-CLOCK-xxxx)');
+        addLog('Không tìm thấy thiết bị E-Ink (DIY-4_2-xxxx / DIY-2_13-xxxx / DIY-2_9-xxxx / DLG-CLOCK-xxxx)');
       } else if (e.message) {
         addLog('requestDevice: ' + e.message);
       }
@@ -211,7 +220,7 @@
       }
     }
     if (!type) {
-      addLog('Thiết bị "' + (device.name || '?') + '" không phải DIY-4_2-xxxx / DIY-2_13-xxxx / DLG-CLOCK-xxxx.');
+      addLog('Thiết bị "' + (device.name || '?') + '" không phải DIY-4_2-xxxx / DIY-2_13-xxxx / DIY-2_9-xxxx / DLG-CLOCK-xxxx.');
       return;
     }
 
@@ -304,8 +313,8 @@
       link.setAttribute('href', window.location.pathname + '?debug=true');
     }
 
-    // dev helper: ?debug=true&app=4_2|2_13|dlg preloads an app's UI without a
-    // device, so the layout can be checked without hardware
+    // dev helper: ?debug=true&app=4_2|2_13|2_9|dlg preloads an app's UI
+    // without a device, so the layout can be checked without hardware
     const appParam = new URLSearchParams(window.location.search).get('app');
     if (isDebugMode() && appParam && APPS[appParam] && !hubApp) {
       loading = true;

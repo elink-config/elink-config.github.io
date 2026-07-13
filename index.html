@@ -6,7 +6,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>E-Ink DA14585</title>
 	<link rel="shortcut icon" type="image/png" href="favicon.png">
-	<link rel="stylesheet" href="css/main.css?v=20260713b">
+	<link rel="stylesheet" href="css/main.css?v=20260714a">
 	<script>
 		// apply the saved theme before first paint to avoid a flash
 		(function () {
@@ -22,7 +22,7 @@
 			<div class="app-header-icon"><span class="material-symbols-outlined">calendar_month</span></div>
 			<div class="app-header-text">
 				<h1>E-Ink DA14585</h1>
-				<p id="app-header-sub">Kết nối thiết bị 4.2", 2.13" hoặc đồng hồ DLG — giao diện hiện theo loại thiết bị</p>
+				<p id="app-header-sub">Kết nối thiết bị 4.2", 2.13", 2.9" hoặc đồng hồ DLG — giao diện hiện theo loại thiết bị</p>
 			</div>
 			<button type="button" class="theme-toggle-btn" id="theme-toggle" title="Đổi giao diện sáng/tối"
 				onclick="(function(){const h=document.documentElement;const dark=h.getAttribute('data-theme')==='dark';if(dark){h.removeAttribute('data-theme');localStorage.setItem('theme','light');}else{h.setAttribute('data-theme','dark');localStorage.setItem('theme','dark');}document.getElementById('theme-toggle-icon').textContent=dark?'dark_mode':'light_mode';})()">
@@ -36,7 +36,8 @@
 		<fieldset>
 			<legend>Kết nối Bluetooth</legend>
 			<p class="mode-gallery-hint">Bấm «Kết nối» và chọn thiết bị <b>DIY-4_2-xxxx</b> (màn 4.2"),
-				<b>DIY-2_13-xxxx</b> (màn 2.13") hoặc <b>DLG-CLOCK-xxxx</b> (đồng hồ E-Ink) — các mục điều khiển
+				<b>DIY-2_13-xxxx</b> (màn 2.13"), <b>DIY-2_9-xxxx</b> (màn 2.9")
+				hoặc <b>DLG-CLOCK-xxxx</b> (đồng hồ E-Ink) — các mục điều khiển
 				sẽ hiện ra sau khi kết nối thành công.</p>
 			<div class="flex-container">
 				<div class="flex-group">
@@ -671,6 +672,231 @@
 		</fieldset>
 		</template>
 
+		<template id="tpl-2_9">
+		<fieldset>
+			<legend>Thời gian</legend>
+			<div class="time-sync-row">
+				<label for="synctimebutton">Giờ hệ thống:</label>
+				<span id="systemTime" class="system-time">--</span>
+				<button id="synctimebutton" type="button" class="primary" onclick="manualSyncTime()">Sync time</button>
+				<button id="calibratebutton" type="button" class="secondary" onclick="calibrateClock()">Hiệu chỉnh giờ</button>
+				<span class="mode-gallery-hint" style="margin:0">«Sync time» đặt giờ và hiển thị đồng hồ. «Hiệu chỉnh giờ» bù sai số nhanh/chậm (đo sau ≥ 2 ngày kể từ lần đặt giờ).</span>
+			</div>
+		</fieldset>
+		<fieldset>
+			<legend>Màn hình</legend>
+			<div class="flex-container">
+				<div class="flex-group">
+					<label>Màn hình:</label>
+					<span class="system-time">2.9" — 296×128 (đen trắng đỏ)</span>
+				</div>
+				<div class="flex-group">
+					<label>Nhiệt độ màn hình:</label>
+					<span id="panelTemp" class="system-time">--</span>
+					<button id="temprefreshbutton" type="button" class="secondary" onclick="readPanelTemp()">Đọc nhiệt độ</button>
+				</div>
+				<div class="flex-group">
+					<label>Pin:</label>
+					<span id="battVolt" class="system-time">--</span>
+				</div>
+			</div>
+			<p class="mode-gallery-hint">Panel <b>HINK-E029A10-A3</b> 296×128, cố định — không cần đổi phân giải. Nhiệt độ do firmware đọc từ cảm biến tích hợp <b>trong màn hình</b>, tự cập nhật sau mỗi lần làm mới. Bản firmware hiện tại vẽ đen trắng (màu đỏ sẽ có khi thêm các chế độ màn hình).</p>
+		</fieldset>
+		<fieldset>
+			<legend>Điều khiển thiết bị</legend>
+			<p class="mode-gallery-hint">Firmware 2.9" hiện có <b>một chế độ màn hình</b> (đồng hồ) và chế độ ảnh — các chế độ khác sẽ thêm dần. Chưa đồng bộ giờ thì webtool tự gửi «Sync time» trước. Giao diện đã chọn được lưu trong flash thiết bị — mất nguồn vẫn nhớ.</p>
+			<div class="mode-gallery" id="modeGallery"></div>
+			<div class="flex-container">
+				<div class="flex-group" style="flex:1 1 100%">
+					<label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+						<input type="checkbox" id="hourlyFullCHK" checked onchange="setHourlyFull()">
+						Làm mới toàn màn hình mỗi giờ — nếu tắt, chỉ làm mới toàn màn lúc 00:00 (ít chớp hơn nhưng bóng mờ tích tụ nhiều hơn)
+					</label>
+				</div>
+			</div>
+			<div class="flex-container">
+				<div class="flex-group">
+					<button id="resetdevicebutton" type="button" class="secondary" onclick="resetDevice()">Khởi động lại thiết bị</button>
+				</div>
+			</div>
+		</fieldset>
+		<fieldset>
+			<legend>Truyền hình ảnh</legend>
+			<div class="flex-container">
+				<input type="file" id="imageFile" accept=".png,.jpg,.bmp,.webp,.jpeg" onchange="updateImage()">
+			</div>
+			<div class="flex-container options">
+				<div class="flex-group debug">
+					<label>Kích thước canvas:</label>
+					<label id="canvasSizeLabel">2.9" (296×128)</label>
+				</div>
+				<div class="flex-group debug">
+					<label for="ditherMode">Chế độ màu:</label>
+					<select id="ditherMode" onchange="applyDither()">
+						<option value="blackWhiteColor" selected>2 màu (đen trắng)</option>
+					</select>
+				</div>
+				<div class="flex-group">
+					<label for="ditherAlg">Thuật toán dithering:</label>
+					<select id="ditherAlg" onchange="applyDither()">
+						<option value="floydSteinberg">Floyd-Steinberg</option>
+						<option value="atkinson">Atkinson</option>
+						<option value="bayer">Bayer</option>
+						<option value="stucki">Stucki</option>
+						<option value="jarvis">Jarvis-Judice-Ninke</option>
+						<option value="none">Không dithering</option>
+					</select>
+				</div>
+				<div class="flex-group">
+					<label for="ditherStrength">Cường độ dithering:</label>
+					<input type="range" min="0" max="5" step="0.1" value="1.0" id="ditherStrength">
+					<label id="ditherStrengthValue">1.0</label>
+				</div>
+				<div class="flex-group">
+					<label for="ditherContrast">Tương phản:</label>
+					<input type="range" min="0.5" max="2" step="0.1" value="1.2" id="ditherContrast">
+					<label id="ditherContrastValue">1.2</label>
+				</div>
+			</div>
+			<div class="flex-container options">
+				<div class="flex-group debug">
+					<label for="mtusize">MTU:</label>
+					<input type="number" id="mtusize" value="244" min="20" max="255">
+				</div>
+			</div>
+			<div class="status-bar"><b>Trạng thái: </b><span id="status"></span></div>
+			<div class="flex-container">
+				<div class="flex-group">
+					<button type="button" class="secondary debug" onclick="rotateCanvas()">Xoay canvas</button>
+					<button type="button" class="secondary" onclick="clearCanvas()">Xóa canvas</button>
+					<button type="button" class="secondary debug" onclick="downloadDataArray()">Tải mảng dữ liệu</button>
+					<button id="sendimgbutton" type="button" class="primary" onclick="sendimg()">Gửi hình ảnh</button>
+					<button id="saveflashbutton" type="button" class="secondary" onclick="saveImageFlash()">Lưu ảnh vào flash</button>
+				</div>
+			</div>
+			<div class="flex-container">
+				<div class="flex-group">
+					<button type="button" class="secondary" onclick="reloadImage()">Tải lại</button>
+					<button type="button" class="secondary" onclick="stretchToScreen()">Kéo giãn đầy màn</button>
+					<button type="button" class="secondary" onclick="fitToScreen()">Vừa màn hình</button>
+					<button type="button" class="secondary" onclick="rotateImage(90)">Xoay 90°</button>
+					<button type="button" class="secondary" onclick="rotateImage(-90)">Xoay -90°</button>
+					<button type="button" class="secondary" onclick="rotateImage(0)">Đặt lại xoay</button>
+					<button type="button" class="secondary" onclick="cropImage()">Cắt ảnh</button>
+				</div>
+			</div>
+			<div class="flex-container options">
+				<div class="flex-group">
+					<label for="imgBrightness">Độ sáng:</label>
+					<input type="range" min="-100" max="100" step="1" value="0" id="imgBrightness">
+					<label id="imgBrightnessValue">0</label>
+				</div>
+				<div class="flex-group">
+					<label for="imgSaturation">Bão hòa:</label>
+					<input type="range" min="0" max="200" step="1" value="100" id="imgSaturation">
+					<label id="imgSaturationValue">100</label>
+				</div>
+			</div>
+			<div class="canvas-container">
+				<div class="canvas-title"></div>
+				<canvas id="canvas" width="296" height="128"></canvas>
+				<div class="flex-container canvas-tools">
+					<div class="flex-group tool-buttons">
+						<button id="brush-mode" title="Bút vẽ" class="tool-button">✏️</button>
+						<button id="eraser-mode" title="Tẩy" class="tool-button">🧽</button>
+						<button id="text-mode" title="Thêm chữ" class="tool-button">T</button>
+						<button id="undo-btn" title="Hoàn tác (Ctrl+Z)" class="tool-button hide">↶</button>
+						<button id="redo-btn" title="Làm lại (Ctrl+Y)" class="tool-button hide">↷</button>
+					</div>
+				</div>
+				<div class="flex-container canvas-tools">
+					<div class="flex-group brush-tools">
+						<label for="brush-color">Màu:</label>
+						<select id="brush-color">
+							<option value="#000000">Đen</option>
+							<option value="#FFFFFF">Trắng</option>
+						</select>
+						<label for="brush-size">Độ dày:</label>
+						<input type="number" id="brush-size" value="2" min="1" max="100">
+					</div>
+				</div>
+				<div class="flex-container canvas-tools">
+					<div class="flex-group text-tools">
+						<label for="font-family">Phông chữ:</label>
+						<select id="font-family">
+							<option value="Arial">Arial</option>
+							<option value="sans-serif">Sans-serif</option>
+							<option value="monospace">Monospace</option>
+							<option value="Times New Roman">Times New Roman</option>
+							<option value="Tahoma">Tahoma</option>
+							<option value="Verdana">Verdana</option>
+							<option value="Segoe UI">Segoe UI</option>
+							<option value="Georgia">Georgia</option>
+							<option value="Courier New">Courier New</option>
+						</select>
+						<label for="font-size">Cỡ chữ:</label>
+						<input type="number" id="font-size" value="16" min="1" max="100">
+					</div>
+					<div class="flex-group text-tools">
+						<input type="text" id="text-input" placeholder="Nhập văn bản" style="width:150px">
+						<button id="text-bold" title="Đậm">B</button>
+						<button id="text-italic" title="Nghiêng">I</button>
+						<button id="add-text-btn" class="primary">Thêm chữ</button>
+					</div>
+					<div class="flex-group crop-tools">
+						<button id="crop-zoom-in" title="Phóng to" class="secondary">+</button>
+						<button id="crop-zoom-out" title="Thu nhỏ" class="secondary">-</button>
+						<button id="crop-move-left" title="Sang trái">⇦</button>
+						<button id="crop-move-up" title="Lên trên">⇧</button>
+						<button id="crop-move-down" title="Xuống dưới">⇩</button>
+						<button id="crop-move-right" title="Sang phải">⇨</button>
+						<button class="primary" onclick="applyDither()">Xong</button>
+					</div>
+				</div>
+			</div>
+		</fieldset>
+		<fieldset>
+			<legend>Cập nhật firmware (OTA)</legend>
+			<div class="flex-container">
+				<div class="flex-group">
+					<input type="file" id="otaFile" accept=".bin">
+					<button id="otabutton" type="button" class="secondary" onclick="otaUpdate()">Cập nhật firmware</button>
+					<span id="otaProgress" class="system-time"></span>
+				</div>
+			</div>
+			<p class="mode-gallery-hint">Nạp file <b>.bin</b> được tải về từ trang web cấu hình thiết bị. Không tắt nguồn thiết bị khi đang cập nhật.</p>
+		</fieldset>
+		<fieldset>
+			<legend>Danh sách firmware</legend>
+			<div style="overflow-x:auto">
+				<table class="fw-table">
+					<thead>
+						<tr>
+							<th>No</th>
+							<th>Version</th>
+							<th>Description</th>
+							<th>Release Date</th>
+							<th>Download Link</th>
+						</tr>
+					</thead>
+					<tbody>
+						<!-- Thêm firmware mới: chép dòng mẫu dưới, sửa nội dung; file .bin
+						     đặt trong thư mục "OTA firmware/" của repo, ví dụ:
+						<tr>
+							<td>0</td>
+							<td>0.1</td>
+							<td>Bản đầu tiên: 1 chế độ đồng hồ + gửi ảnh</td>
+							<td>14/07/2026</td>
+							<td><a href="OTA firmware/fw_2_9inch_v0.1.bin" download>Tải về</a></td>
+						</tr>
+						-->
+					</tbody>
+				</table>
+			</div>
+			<p class="mode-gallery-hint">Firmware 2.9" bản đầu (1 chế độ đồng hồ + gửi ảnh) sẽ được đăng ở đây sau khi kiểm chứng trên thiết bị thật. <br> Nếu gặp bất kì vấn đề hoặc yêu cầu nào về cập nhật firmware mới, vui lòng nhắn tin cho tôi qua kênh bán hàng và tôi sẽ cập nhật bản update ở đây.</p>
+		</fieldset>
+		</template>
+
 		<template id="tpl-dlg">
 		<fieldset>
 			<legend>Thời gian</legend>
@@ -1118,7 +1344,7 @@
 			</span>
 		</div>
 	</div>
-	<script type="text/javascript" src="js/connector.js?v=20260713b"></script>
+	<script type="text/javascript" src="js/connector.js?v=20260714a"></script>
 	<script>
 		var _hmt = _hmt || [];
 		(function () {
