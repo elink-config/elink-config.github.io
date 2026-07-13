@@ -6,7 +6,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>E-Ink DA14585</title>
 	<link rel="shortcut icon" type="image/png" href="favicon.png">
-	<link rel="stylesheet" href="css/main.css?v=20260713a">
+	<link rel="stylesheet" href="css/main.css?v=20260713b">
 	<script>
 		// apply the saved theme before first paint to avoid a flash
 		(function () {
@@ -376,6 +376,26 @@
 				<button id="calibratebutton" type="button" class="secondary" onclick="calibrateClock()">Hiệu chỉnh giờ</button>
 				<span class="mode-gallery-hint" style="margin:0">«Sync time» đặt giờ và hiển thị đồng hồ. «Hiệu chỉnh giờ» bù sai số nhanh/chậm (đo sau ≥ 2 ngày kể từ lần đặt giờ).</span>
 			</div>
+		</fieldset>
+		<fieldset>
+			<legend>Màn hình</legend>
+			<div class="flex-container">
+				<div class="flex-group">
+					<label>Độ phân giải hiện tại:</label>
+					<span id="resLabel" class="system-time">212×104</span>
+					<button id="resswitchbutton" type="button" class="primary" onclick="switchResolution()">Chuyển sang 250×122</button>
+				</div>
+				<div class="flex-group">
+					<label>Nhiệt độ màn hình:</label>
+					<span id="panelTemp" class="system-time">--</span>
+					<button id="temprefreshbutton" type="button" class="secondary" onclick="readPanelTemp()">Đọc nhiệt độ</button>
+				</div>
+				<div class="flex-group">
+					<label>Pin:</label>
+					<span id="battVolt" class="system-time">--</span>
+				</div>
+			</div>
+			<p class="mode-gallery-hint">Một cú bấm để đổi giữa hai loại panel 2.13": <b>212×104</b> (HINK-E0213A41/A55) và <b>250×122</b> (OPM021B1). Lựa chọn được lưu trong flash của thiết bị. Nhiệt độ do firmware đọc từ cảm biến tích hợp <b>trong màn hình</b>, tự cập nhật sau mỗi lần làm mới.</p>
 		</fieldset>
 		<fieldset>
 			<legend>Điều khiển thiết bị</legend>
@@ -1092,13 +1112,13 @@
 		<div class="footer">
 			<span class="copy">&copy; 2026 doantruonglam</span>
 			<span class="links">
-				<a href="https://github.com/elink-config/da14585-webtool">Github</a>
+				<a href="https://github.com/elink-config/elink-config.github.io">Github</a>
 				<a href="https://vn.shp.ee/ZX4DY1pi" target="_blank" rel="noopener">Link mua hàng</a>
 				<a href="?debug=true" id="debug-toggle">Chế độ dev</a>
 			</span>
 		</div>
 	</div>
-	<script type="text/javascript" src="js/connector.js?v=20260713a"></script>
+	<script type="text/javascript" src="js/connector.js?v=20260713b"></script>
 	<script>
 		var _hmt = _hmt || [];
 		(function () {

@@ -1300,3 +1300,7 @@ button.local-image-btn:hover {
     font-family: monospace;
     color: var(--md-sys-color-on-surface-variant);
 }
+
+.fw-nolink {
+    color: var(--md-sys-color-on-surface-variant);
+}

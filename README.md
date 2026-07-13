@@ -4,9 +4,9 @@ Webtool hợp nhất cho các thiết bị E-Ink dùng chip DA14585, gộp ba to
 
 | Thiết bị (tên BLE) | Tool gốc | Giao diện |
 |---|---|---|
-| `DIY-4_2-xxxx` (màn 4.2", 400×300) | [4_2inch](https://github.com/elink-config/4_2inch) | Thời gian, điều khiển chế độ màn hình, thiết kế màn hình, truyền hình ảnh |
-| `DIY-2_13-xxxx` (màn 2.13", 212×104, 250×144) | [2_13inch](https://github.com/elink-config/2_13inch) | Thời gian, điều khiển, cấu hình giao diện, thiết kế màn hình, truyền hình ảnh, OTA firmware |
-| `DLG-CLOCK-xxxx` (màn 2.13", 212×104 phiên bản cũ) | [2_13inch](https://github.com/elink-config/da14585-webtool) | Đặt giờ, điều khiển thiết bị, đếm ngược, truyền hình ảnh, thiết kế mẫu |
+| `DIY-4_2-xxxx` (màn 4.2", 400×300) | [EPD-DA14585/webtools/4_2inch](https://github.com/elink-config/EPD-DA14585) | Thời gian, điều khiển chế độ màn hình, thiết kế màn hình, truyền hình ảnh, OTA firmware |
+| `DIY-2_13-xxxx` (màn 2.13", 212×104, 250×122) | [EPD-DA14585/webtools/2_13inch](https://github.com/elink-config/EPD-DA14585) | Thời gian, màn hình (đổi độ phân giải, nhiệt độ, pin), điều khiển, cấu hình giao diện, thiết kế màn hình, truyền hình ảnh, OTA firmware |
+| `DLG-CLOCK-xxxx` (màn 2.13", 212×104 phiên bản cũ) | tool 1 file gốc của trang này | Đặt giờ, điều khiển thiết bị, đếm ngược, truyền hình ảnh, thiết kế mẫu |
 
 Trang chạy tại: **https://elink-config.github.io/**
 
