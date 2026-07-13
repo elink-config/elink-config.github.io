@@ -8,17 +8,17 @@ let paintManager, cropManager;
 let deviceMode = null;      // chế độ thiết bị báo về (1 = đồng hồ, 28 = ảnh)
 let timeSynced = false;     // đã đồng bộ giờ — mở khóa chọn giao diện màn hình
 
-// Bản 2.9" (DIY-2_9-xxxx): panel HINK-E029A10-A3 296×128 BWR, firmware MỘT
-// chế độ (đồng hồ + ảnh). Giao thức = giao thức HMCLOCK như bản 2.13", nhưng
-// KHÔNG có lệnh đổi phân giải (0x96) và sự kiện/ghi chú/tự thiết kế
-// (0x99-0x9c). Tất cả trên service 0xff00:
+// Bản 2.9" (DIY-2_9-xxxx): panel HINK-E029A10-A3 296×128 BWR, firmware đủ
+// 29 chế độ như bản 2.13" (thêm màu ĐỎ cho phần tử tĩnh). Giao thức HMCLOCK,
+// KHÔNG có lệnh đổi phân giải 0x96 (panel cố định); có 0x99 sự kiện, 0x9a
+// ghi chú, 0x9b/0x9c tự thiết kế. Tất cả trên service 0xff00:
 // - 0xff01 (Long Value): GHI lệnh + ĐỌC trạng thái 15 byte
 //     0x91 yyyy(LE) MM dd hh mm ss ww lyear lmonth lday   đặt giờ (+ âm lịch)
 //     0x90 đổi 12/24h · 0x92 <int16 LE> hiệu chỉnh nhanh/chậm
 //     0x93 <offset u16 LE> <data…>  ghi khối ảnh
 //     0x94 [01]   hiển thị ảnh (01 = nạp ảnh đã lưu từ flash)
 //     0x95 lưu ảnh vào flash · 0x97 đọc nhiệt độ
-//     0x98 <mode> chọn giao diện (bản này: chỉ 1 = đồng hồ)
+//     0x98 <mode> chọn giao diện (1-27, 29 — ẢNH 28 đặt bằng 0x94)
 //     0x9d <en>   làm mới toàn màn mỗi giờ (1) / chỉ 00:00 (0)
 //     0x9F khởi động lại · 0xA0/A2/A3/A4 OTA firmware
 //   Trạng thái đọc về: [0-1] năm LE, [2] tháng 0-11, [3] ngày, [4-6] h/m/s,
@@ -326,6 +326,55 @@ async function setHourlyFull() {
   }
 }
 
+// [Cấu hình giao diện] Gửi sự kiện đếm ngược (0x99): năm LE + tháng + ngày + tên
+async function sendEvent() {
+  const name = (document.getElementById('eventName').value || '').trim();
+  const dv = document.getElementById('eventDate').value;
+  if (!name || !dv) {
+    addLog('Điền tên sự kiện và chọn ngày trước đã.');
+    return;
+  }
+  const d = new Date(dv + 'T00:00:00');
+  if (isNaN(d)) { addLog('Ngày không hợp lệ.'); return; }
+  const nb = utf8Trunc(name, 43);
+  const y = d.getFullYear();
+  const payload = new Uint8Array(5 + nb.length);
+  payload.set([0x99, y & 0xFF, (y >> 8) & 0xFF, d.getMonth() + 1, d.getDate()]);
+  payload.set(nb, 5);
+  if (await write(payload)) {
+    addLog('Đã gửi sự kiện «' + name + '» (' + dv + ').');
+    if (deviceMode === 25) addLog('Màn hình đếm ngược sẽ vẽ lại.');
+    else addLog('Bấm «Áp dụng» ở thẻ «Đếm ngược sự kiện» để hiển thị.');
+  }
+}
+
+// [Cấu hình giao diện] Gửi 3 dòng ghi chú (0x9a idx text; dòng cuối idx|0x80)
+async function sendNote() {
+  for (let i = 0; i < 3; i++) {
+    const t = (document.getElementById('noteLine' + i).value || '').trim();
+    const tb = utf8Trunc(t, 43);
+    const payload = new Uint8Array(2 + tb.length);
+    payload.set([0x9a, i === 2 ? (i | 0x80) : i]);
+    payload.set(tb, 2);
+    if (!await write(payload, i < 2)) return;
+    await sleep(100);
+  }
+  addLog('Đã gửi nội dung ghi chú / bảng tên.');
+  if (deviceMode === 26) addLog('Màn hình sẽ vẽ lại.');
+  else addLog('Bấm «Áp dụng» ở thẻ «Bảng tên / ghi chú» để hiển thị.');
+}
+
+// Cắt chuỗi theo giới hạn BYTE UTF-8 (không cắt giữa ký tự có dấu)
+function utf8Trunc(s, maxBytes) {
+  const enc = new TextEncoder();
+  let b = enc.encode(s);
+  while (b.length > maxBytes) {
+    s = s.slice(0, -1);
+    b = enc.encode(s);
+  }
+  return b;
+}
+
 async function resetDevice() {
   if (confirm('Khởi động lại thiết bị? Đồng hồ sẽ mất giờ và cần Sync time lại.')) {
     await write([0x9F]);
@@ -618,6 +667,9 @@ function updateButtonStatus(forceDisabled = false) {
   document.querySelectorAll('.mode-card button').forEach(btn => {
     btn.disabled = (btn.id === 'applybtn-img') ? modeStatus : status;
   });
+  setDis("sendeventbutton", status);
+  setDis("sendnotebutton", status);
+  setDis("dsuploadbutton", status);
   setDis("resetdevicebutton", status);
   setDis("sendimgbutton", status);
   setDis("saveflashbutton", status);
@@ -1083,6 +1135,14 @@ function initEventHandlers() {
   document.getElementById("imgSaturation").addEventListener("input", (e) => {
     document.getElementById("imgSaturationValue").innerText = e.target.value;
     applyDither();
+  });
+
+  // sửa ô sự kiện / ghi chú -> vẽ lại thẻ xem trước tương ứng
+  ['eventName', 'eventDate', 'noteLine0', 'noteLine1', 'noteLine2'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', () => {
+      if (typeof window.redrawModePreviews === 'function') window.redrawModePreviews();
+    });
   });
 
   initImagePanZoom();

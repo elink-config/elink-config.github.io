@@ -6,7 +6,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>E-Ink DA14585</title>
 	<link rel="shortcut icon" type="image/png" href="favicon.png">
-	<link rel="stylesheet" href="css/main.css?v=20260714a">
+	<link rel="stylesheet" href="css/main.css?v=20260714b">
 	<script>
 		// apply the saved theme before first paint to avoid a flash
 		(function () {
@@ -700,11 +700,11 @@
 					<span id="battVolt" class="system-time">--</span>
 				</div>
 			</div>
-			<p class="mode-gallery-hint">Panel <b>HINK-E029A10-A3</b> 296×128, cố định — không cần đổi phân giải. Nhiệt độ do firmware đọc từ cảm biến tích hợp <b>trong màn hình</b>, tự cập nhật sau mỗi lần làm mới. Bản firmware hiện tại vẽ đen trắng (màu đỏ sẽ có khi thêm các chế độ màn hình).</p>
+			<p class="mode-gallery-hint">Panel <b>HINK-E029A10-A3</b> 296×128, cố định — không cần đổi phân giải. Nhiệt độ do firmware đọc từ cảm biến tích hợp <b>trong màn hình</b>, tự cập nhật sau mỗi lần làm mới. Các phần tử tĩnh của giao diện (tiêu đề, ô «hôm nay», ngày lễ…) hiển thị bằng <b>mực đỏ</b>; nội dung đổi mỗi phút vẫn cập nhật không chớp màn.</p>
 		</fieldset>
 		<fieldset>
 			<legend>Điều khiển thiết bị</legend>
-			<p class="mode-gallery-hint">Firmware 2.9" hiện có <b>một chế độ màn hình</b> (đồng hồ) và chế độ ảnh — các chế độ khác sẽ thêm dần. Chưa đồng bộ giờ thì webtool tự gửi «Sync time» trước. Giao diện đã chọn được lưu trong flash thiết bị — mất nguồn vẫn nhớ.</p>
+			<p class="mode-gallery-hint">Chọn giao diện màn hình bên dưới rồi bấm «Áp dụng». Phần <b>màu đỏ</b> trên thẻ xem trước là phần firmware vẽ bằng mực đỏ của panel BWR. Chưa đồng bộ giờ thì webtool tự gửi «Sync time» trước. Giao diện đã chọn được lưu trong flash thiết bị — mất nguồn vẫn nhớ.</p>
 			<div class="mode-gallery" id="modeGallery"></div>
 			<div class="flex-container">
 				<div class="flex-group" style="flex:1 1 100%">
@@ -717,6 +717,71 @@
 			<div class="flex-container">
 				<div class="flex-group">
 					<button id="resetdevicebutton" type="button" class="secondary" onclick="resetDevice()">Khởi động lại thiết bị</button>
+				</div>
+			</div>
+		</fieldset>
+		<fieldset>
+			<legend>Cấu hình giao diện</legend>
+			<div class="flex-container">
+				<div class="flex-group">
+					<label for="eventName">Sự kiện đếm ngược:</label>
+					<input type="text" id="eventName" placeholder="Tên sự kiện (vd. Đếm ngược ngày)" maxlength="30" style="width:220px">
+					<input type="date" id="eventDate">
+					<button id="sendeventbutton" type="button" class="primary" onclick="sendEvent()">Gửi sự kiện</button>
+				</div>
+			</div>
+			<div class="flex-container">
+				<div class="flex-group">
+					<label for="noteLine0">Bảng tên / ghi chú:</label>
+					<input type="text" id="noteLine0" placeholder="Dòng 1 — chữ lớn (vd. họ tên)" maxlength="30" style="width:220px">
+					<input type="text" id="noteLine1" placeholder="Dòng 2 (vd. chức danh)" maxlength="30" style="width:200px">
+					<input type="text" id="noteLine2" placeholder="Dòng 3 (vd. điện thoại)" maxlength="30" style="width:200px">
+					<button id="sendnotebutton" type="button" class="primary" onclick="sendNote()">Gửi ghi chú</button>
+				</div>
+			</div>
+			<p class="mode-gallery-hint">Nội dung gửi xuống được lưu trong flash thiết bị (mất nguồn không mất). Tên sự kiện và dòng 1 bảng tên hiển thị bằng <b>mực đỏ</b>. Tối đa 43 byte UTF-8 mỗi dòng (khoảng 25-30 ký tự tiếng Việt).</p>
+		</fieldset>
+		<fieldset>
+			<legend>Thiết kế màn hình</legend>
+			<p class="mode-gallery-hint">Bấm để thêm thành phần, kéo thả để xếp chỗ trên canvas (đúng kích thước màn 296×128). Bấm chọn một thành phần rồi «Đổi cỡ» / «Xóa». Gửi xuống là thiết bị chuyển sang giao diện «Tự thiết kế» và nhớ bố cục trong flash.</p>
+			<div class="flex-container">
+				<div class="flex-group">
+					<button type="button" class="secondary" onclick="dsAdd(1)">+ Giờ số</button>
+					<button type="button" class="secondary" onclick="dsAdd(2)">+ Đồng hồ kim</button>
+					<button type="button" class="secondary" onclick="dsAdd(3)">+ Pin</button>
+					<button type="button" class="secondary" onclick="dsAdd(4)">+ Nhiệt độ</button>
+					<button type="button" class="secondary" onclick="dsAdd(5)">+ Ngày tháng</button>
+					<button type="button" class="secondary" onclick="dsAdd(6)">+ Âm lịch</button>
+					<button type="button" class="secondary" onclick="dsAdd(7)">+ Lịch tháng</button>
+					<button type="button" class="secondary" onclick="dsAdd(8)">+ Chữ 1</button>
+					<button type="button" class="secondary" onclick="dsAdd(9)">+ Chữ 2</button>
+					<button type="button" class="secondary" onclick="dsAdd(11)">+ Thứ</button>
+					<button type="button" class="secondary" onclick="dsAdd(12)">+ Ngày</button>
+					<input type="file" id="dsIconFile" accept="image/*" style="display:none" onchange="dsIconFile(this)">
+					<button type="button" class="secondary" onclick="document.getElementById('dsIconFile').click()">+ Ảnh…</button>
+				</div>
+			</div>
+			<div class="canvas-container">
+				<canvas id="designerCanvas" width="592" height="256" style="width:592px;max-width:100%;touch-action:none;"></canvas>
+			</div>
+			<div class="flex-container">
+				<div class="flex-group">
+					<button type="button" class="secondary" onclick="dsCycleSize()">Đổi cỡ</button>
+					<button type="button" class="secondary" onclick="dsDelete()">Xóa thành phần</button>
+					<button type="button" class="secondary" onclick="dsClear()">Xóa hết</button>
+					<label for="dsFrame">Viền:</label>
+					<select id="dsFrame" onchange="dsSetFrame(this.value)">
+						<option value="0">Không</option>
+						<option value="1">Viền đơn</option>
+						<option value="2">Viền đôi</option>
+					</select>
+				</div>
+			</div>
+			<div class="flex-container">
+				<div class="flex-group">
+					<input type="text" id="dsText1" placeholder="Chữ 1 (tự do)" maxlength="30" style="width:200px" oninput="dsTexts()">
+					<input type="text" id="dsText2" placeholder="Chữ 2 (tự do)" maxlength="30" style="width:200px" oninput="dsTexts()">
+					<button id="dsuploadbutton" type="button" class="primary" onclick="dsUpload()">Gửi giao diện</button>
 				</div>
 			</div>
 		</fieldset>
@@ -1344,7 +1409,7 @@
 			</span>
 		</div>
 	</div>
-	<script type="text/javascript" src="js/connector.js?v=20260714a"></script>
+	<script type="text/javascript" src="js/connector.js?v=20260714b"></script>
 	<script>
 		var _hmt = _hmt || [];
 		(function () {

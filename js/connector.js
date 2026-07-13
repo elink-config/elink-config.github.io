@@ -13,7 +13,7 @@
 (function () {
   'use strict';
 
-  const VER = '20260714a'; // cache-buster, keep in sync with index.html
+  const VER = '20260714b'; // cache-buster, keep in sync with index.html
 
   const EPD42_SERVICE = '62750001-d828-918d-fb46-b6c11c675aec';
   const HM213_SERVICE = '0000ff00-0000-1000-8000-00805f9b34fb';
@@ -44,7 +44,7 @@
       sub: 'DA14585 — 2.9" (296×128 BWR): kết nối, cấu hình và truyền hình ảnh',
       template: 'tpl-2_9',
       scripts: ['js/dithering.js', 'js/paint.js', 'js/crop.js',
-        'js/2_9/mode_preview.js', 'js/2_9/main.js'],
+        'js/2_9/designer.js', 'js/2_9/mode_preview.js', 'js/2_9/main.js'],
     },
     'dlg': {
       label: 'Đồng hồ DLG-CLOCK',
