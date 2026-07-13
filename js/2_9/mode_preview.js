@@ -115,8 +115,8 @@
     font(x, 10, 1); x.fillStyle = RD;
     x.fillText(dateLine(now), 4, 11);
     statusBatt(x, W);
-    // giờ font Hobo Std (khớp firmware F_HOBO — máy không có font thì cursive)
-    x.font = Math.round(H * 0.55) + 'px "Hobo Std","HoboStd",cursive';
+    // giờ Arial (firmware 2.9" dùng fflip 37px — font Hobo đã bỏ vì hết RAM)
+    x.font = Math.round(H * 0.45) + 'px Arial, sans-serif';
     center(x, pad2(now.getHours()) + ':' + pad2(now.getMinutes()), W / 2, H * 0.68, BK);
     font(x, 9, 1); x.fillStyle = BK;
     x.fillText(lunarStr(now), 6, H - 3);          // hàng dưới hạ sát mép (khớp fw y=86)
@@ -467,7 +467,7 @@
     x.fillText(WD_FULL[now.getDay()] + ' ' + pad2(now.getDate()) + '-' + pad2(now.getMonth() + 1) + '-' + now.getFullYear(), 6, 12);
     statusBatt(x, W);
     const s = pad2(now.getHours()) + ':' + pad2(now.getMinutes());
-    x.font = Math.round(H * 0.62) + 'px "Hobo Std","HoboStd",cursive';
+    x.font = Math.round(H * 0.62) + 'px Arial, sans-serif';
     x.textAlign = 'center';
     x.fillStyle = BK; x.fillText(s, W / 2 + 3, H * 0.72 + 3);
     for (const [ox, oy] of [[-1,-1],[0,-1],[1,-1],[-1,0],[1,0],[-1,1],[0,1],[1,1]])
@@ -528,7 +528,7 @@
     font(x, 9, 1);
     center(x, pad2(now.getMonth() + 1) + '-' + now.getFullYear(), mx, 10, BK);
     const ds = String(now.getDate());
-    x.font = Math.round(H * 0.52) + 'px "Hobo Std","HoboStd",cursive';
+    x.font = Math.round(H * 0.52) + 'px Arial, sans-serif';
     x.textAlign = 'center';
     x.fillStyle = BK; x.fillText(ds, mx + 3, H * 0.62 + 3);
     for (const [ox, oy] of [[-1,-1],[0,-1],[1,-1],[-1,0],[1,0],[-1,1],[0,1],[1,1]])
@@ -567,7 +567,7 @@
   function m17(x, now, W, H) {
     tempCorner(x);
     battery(x, W - 16, 3, BK, voltLabel());
-    x.font = '46px "Hobo Std","HoboStd",cursive'; x.fillStyle = BK; x.textAlign = 'center';
+    x.font = '46px Arial, sans-serif'; x.fillStyle = BK; x.textAlign = 'center';
     x.fillText(pad2(now.getHours()), W / 2, 58);
     x.fillText(pad2(now.getMinutes()), W / 2, 114);
     x.textAlign = 'left';
@@ -741,7 +741,7 @@
     tempCorner(x);
     battery(x, W - 16, 3, BK, voltLabel());
     x.textAlign = 'center';
-    x.font = '46px "Hobo Std","HoboStd",cursive';
+    x.font = '46px Arial, sans-serif';
     for (const [t, yy] of [[pad2(now.getHours()), 58], [pad2(now.getMinutes()), 116]]) {
       x.fillStyle = BK; x.fillText(t, W / 2 + 3, yy + 3);
       for (const [ox, oy] of [[-1,-1],[0,-1],[1,-1],[-1,0],[1,0],[-1,1],[0,1],[1,1]])
@@ -760,7 +760,7 @@
 
   // --- 4 giao diện DỌC chỉ GIỜ:PHÚT (25-28) ---
   function hobo2(x, t, cx, y, col) {
-    x.font = '46px "Hobo Std","HoboStd",cursive';
+    x.font = '46px Arial, sans-serif';
     x.textAlign = 'center'; x.fillStyle = col;
     x.fillText(t, cx, y);
     x.textAlign = 'left';
