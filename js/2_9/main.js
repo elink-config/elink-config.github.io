@@ -204,6 +204,54 @@ function canvas2bytesBW(cv) {
   return new Uint8Array(arr);
 }
 
+// Đóng gói canvas 3 MÀU thành HAI mặt (cùng thứ tự cột như canvas2bytesBW):
+//   bw : 1 = trắng (pixel đỏ để nền trắng ở mặt này), 0 = đen
+//   red: 1 = đỏ, 0 = không — khớp RAM 0x26 của SSD1680 trên firmware
+// Sau dithering threeColor, pixel canvas là thuần (0,0,0)/(255,255,255)/(255,0,0).
+function canvas2planes(cv) {
+  const c2d = cv.getContext('2d');
+  const d = c2d.getImageData(0, 0, cv.width, cv.height).data;
+  const padH = Math.ceil(cv.height / 8) * 8;
+  const bw = [], red = [];
+  let b1 = [], b2 = [];
+  for (let x = cv.width - 1; x >= 0; x--) {
+    for (let y = 0; y < padH; y++) {
+      let vbw = 1, vred = 0;
+      if (y < cv.height) {
+        const i = (cv.width * 4 * y) + x * 4;
+        const r = d[i], g = d[i + 1], bl = d[i + 2];
+        if (r > 127 && g < 128) { vred = 1; vbw = 1; }        // đỏ
+        else vbw = (r > 127 && g > 127 && bl > 127) ? 1 : 0;  // trắng / đen
+      }
+      b1.push(vbw); b2.push(vred);
+      if (b1.length === 8) {
+        bw.push(parseInt(b1.join(''), 2));
+        red.push(parseInt(b2.join(''), 2));
+        b1 = []; b2 = [];
+      }
+    }
+  }
+  return { bw: new Uint8Array(bw), red: new Uint8Array(red) };
+}
+
+// Gửi mặt ĐỎ theo khối: 0x9e <sub> + offset(2 LE) + dữ liệu
+//   sub 0x00 = vào thẳng RAM panel (đường hiển thị)
+//   sub 0x01 = vào flash (đường «Lưu ảnh vào flash»)
+async function writeRedPlane(data, sub, label) {
+  const mtu = parseInt(document.getElementById('mtusize').value) || 244;
+  const chunkSize = Math.max(16, mtu - 7);  // 4 byte header + dư an toàn ATT
+  const count = Math.ceil(data.length / chunkSize);
+  let idx = 0;
+  for (let i = 0; i < data.length; i += chunkSize) {
+    const t = (new Date().getTime() - startTime) / 1000.0;
+    setStatus(`${label}: ${idx + 1}/${count}, thời gian: ${t}s`);
+    const payload = [0x9e, sub, i & 0xFF, (i >> 8) & 0xFF, ...data.slice(i, i + chunkSize)];
+    if (!await write(payload, true)) return false;
+    idx++;
+  }
+  return true;
+}
+
 // Gửi ảnh theo khối: 0x93 + offset(2, little-endian) + dữ liệu
 async function writeImage(data) {
   const mtu = parseInt(document.getElementById('mtusize').value) || 244;
@@ -545,12 +593,24 @@ async function sendimg() {
 
   updateButtonStatus(true);
 
-  const data = canvas2bytesBW(canvas);
-  addLog(`Bắt đầu gửi ảnh ${canvas.width}x${canvas.height} (${data.length} byte)`);
+  const threeColor = document.getElementById('ditherMode').value === 'threeColor';
   let sent = false;
-  if (await writeImage(data)) {
-    await sleep(200);
-    sent = await write([0x94]);   // hiển thị ảnh vừa gửi (firmware xếp hàng nếu đang bận)
+  if (threeColor) {
+    // mặt đen trắng vào buffer thiết bị (0x93), mặt ĐỎ vào thẳng RAM panel
+    // (0x9e 00 — panel mở sẵn chờ 0x94), rồi hiển thị
+    const pl = canvas2planes(canvas);
+    addLog(`Bắt đầu gửi ảnh 3 màu ${canvas.width}x${canvas.height} (2 × ${pl.bw.length} byte)`);
+    if (await writeImage(pl.bw) && await writeRedPlane(pl.red, 0x00, 'Khối màu đỏ')) {
+      await sleep(200);
+      sent = await write([0x94]);
+    }
+  } else {
+    const data = canvas2bytesBW(canvas);
+    addLog(`Bắt đầu gửi ảnh ${canvas.width}x${canvas.height} (${data.length} byte)`);
+    if (await writeImage(data)) {
+      await sleep(200);
+      sent = await write([0x94]);   // hiển thị ảnh vừa gửi (firmware xếp hàng nếu đang bận)
+    }
   }
   updateButtonStatus();
 
@@ -587,12 +647,40 @@ async function sendimg() {
   }, 5000);
 }
 
-// Lưu ảnh đang có trong buffer thiết bị vào SPI flash (0x95): thiết bị sẽ nạp
-// lại ảnh này khi khởi động hoặc khi chọn màn hình «Ảnh đã lưu».
+// Lưu ảnh vào SPI flash: thiết bị nạp lại khi khởi động / chọn «Ảnh đã lưu».
+// 2 màu: chỉ cần 0x95 (mặt đen trắng đã nằm trong buffer thiết bị).
+// 3 màu: mặt đỏ không còn trong RAM MCU — gửi lại vào flash:
+//   0x9e 02 (xóa 3 sector) -> 0x9e 01 từng khối -> 0x9e 03 (chốt)
+//   -> 0x95 03 (ghi header 3 màu + mặt đen trắng, không xóa nữa)
 async function saveImageFlash() {
-  if (await write([0x95])) {
-    addLog("Đã gửi lệnh lưu ảnh vào flash!");
+  const threeColor = document.getElementById('ditherMode').value === 'threeColor';
+  if (!threeColor) {
+    if (await write([0x95])) {
+      addLog("Đã gửi lệnh lưu ảnh vào flash!");
+    }
+    return;
   }
+
+  startTime = new Date().getTime();
+  const status = document.getElementById("status");
+  status.parentElement.style.display = "block";
+  updateButtonStatus(true);
+
+  const pl = canvas2planes(canvas);
+  let ok = false;
+  setStatus('Đang xóa vùng ảnh trong flash…');
+  if (await write([0x9e, 0x02], true)) {
+    await sleep(400);                       // chờ thiết bị xóa 3 sector
+    if (await writeRedPlane(pl.red, 0x01, 'Lưu mặt đỏ') &&
+        await write([0x9e, 0x03], true)) {
+      await sleep(100);
+      ok = await write([0x95, 0x03]);
+    }
+  }
+  updateButtonStatus();
+  setStatus(ok ? 'Đã lưu ảnh 3 màu vào flash!' : 'Lưu ảnh 3 màu thất bại.');
+  addLog(ok ? 'Đã lưu ảnh 3 màu vào flash!' : 'Lưu ảnh 3 màu thất bại — thử lại.');
+  setTimeout(() => { status.parentElement.style.display = "none"; }, 4000);
 }
 
 // ------- nhiệt độ đọc từ cảm biến trong màn hình -------
