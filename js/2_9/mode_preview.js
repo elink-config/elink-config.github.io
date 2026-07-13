@@ -851,6 +851,103 @@
     center(x, 'Ảnh đã lưu trong flash', W / 2, H - 8, GY);
   }
 
+  // --- mode 30-33: 4 giao diện MỚI riêng bản 2.9" (không có trên 2.13") ---
+  const VN_DIG = ['không', 'một', 'hai', 'ba', 'bốn', 'năm', 'sáu', 'bảy', 'tám', 'chín'];
+  function vnNum(n) {
+    const u = n % 10;
+    if (n < 10) return VN_DIG[n];
+    if (n < 20) return 'mười' + (u === 5 ? ' lăm' : (u ? ' ' + VN_DIG[u] : ''));
+    return VN_DIG[(n / 10) | 0] + ' mươi' +
+      (u === 1 ? ' mốt' : u === 4 ? ' tư' : u === 5 ? ' lăm' : (u ? ' ' + VN_DIG[u] : ''));
+  }
+  // mode 30: Đồng hồ chữ — giờ đọc bằng chữ tiếng Việt
+  function m30(x, now, W, H) {
+    statusBatt(x, W);
+    font(x, 10, 1); x.fillStyle = RD;
+    x.fillText(dateLine(now), 4, 11);
+    let h12 = now.getHours() % 12; if (!h12) h12 = 12;
+    let hs = vnNum(h12); hs = hs.charAt(0).toUpperCase() + hs.slice(1) + ' giờ';
+    const mm = now.getMinutes();
+    const ms = mm ? vnNum(mm) + ' phút' : 'đúng';
+    font(x, 23, 1);
+    center(x, hs, W / 2, 52, BK);
+    center(x, ms, W / 2, 86, BK);
+    font(x, 9, 0);
+    const hh = now.getHours();
+    const buoi = hh < 11 ? 'sáng' : hh < 13 ? 'trưa' : hh < 18 ? 'chiều' : 'tối';
+    center(x, 'buổi ' + buoi + ' - ' + lunarStr(now) + ' - ' + panelTempVal() + '°C', W / 2, H - 5, BK);
+  }
+  // mode 31: Tiến trình — % ngày (đen, mỗi phút) / tháng / năm (đỏ, mỗi ngày)
+  function m31(x, now, W, H) {
+    statusBatt(x, W);
+    font(x, 21, 1); x.fillStyle = BK;
+    x.fillText(pad2(now.getHours()) + ':' + pad2(now.getMinutes()), 6, 26);
+    font(x, 10, 1);
+    right(x, WD_FULL[now.getDay()] + ' ' + pad2(now.getDate()) + '/' + pad2(now.getMonth() + 1), W - 6, 34, RD);
+    const mdays = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const pd = ((now.getHours() * 60 + now.getMinutes()) * 100 / 1440) | 0;
+    const pm = ((now.getDate() - 1) * 100 / mdays) | 0;
+    const jan1 = new Date(now.getFullYear(), 0, 1);
+    const py = ((((now - jan1) / 86400000) | 0) * 100 / 365) | 0;
+    [['Hôm nay', pd, BK], ['Tháng ' + (now.getMonth() + 1), pm, RD], ['Năm ' + now.getFullYear(), py, RD]]
+      .forEach((bb, i) => {
+        const y = 46 + i * 28;
+        font(x, 10, 1); x.fillStyle = BK; x.fillText(bb[0], 6, y + 11);
+        x.strokeStyle = BK; x.lineWidth = 1; x.strokeRect(100.5, y + 0.5, W - 148, 14);
+        x.fillStyle = bb[2]; x.fillRect(102, y + 2, Math.max(0, (W - 152) * bb[1] / 100), 11);
+        font(x, 9, 0); x.fillStyle = bb[2]; x.fillText(bb[1] + '%', W - 42, y + 11);
+      });
+  }
+  // mode 32: Lịch âm là chính + năm can chi
+  const CAN = ['Giáp', 'Ất', 'Bính', 'Đinh', 'Mậu', 'Kỷ', 'Canh', 'Tân', 'Nhâm', 'Quý'];
+  const CHI = ['Tý', 'Sửu', 'Dần', 'Mão', 'Thìn', 'Tỵ', 'Ngọ', 'Mùi', 'Thân', 'Dậu', 'Tuất', 'Hợi'];
+  const LMON = ['Giêng', 'Hai', 'Ba', 'Tư', 'Năm', 'Sáu', 'Bảy', 'Tám', 'Chín', 'Mười', 'M.Một', 'Chạp'];
+  function m32(x, now, W, H) {
+    let l = { year: 2026, month: 6, day: 28 };
+    try { l = lunarToday(now); } catch (e) { }
+    x.fillStyle = RD; x.fillRect(0, 0, W, 20);
+    font(x, 11, 1);
+    center(x, 'Âm lịch - Năm ' + CAN[(l.year + 6) % 10] + ' ' + CHI[(l.year + 8) % 12], W / 2, 14, WH);
+    serif(x, 46, 1);
+    center(x, l.day, 64, 74, BK);
+    font(x, 11, 1);
+    center(x, 'tháng ' + LMON[(((l.month & 0x7f) - 1) + 12) % 12] + ((l.month & 0x80) ? ' nhuận' : ''), 64, 102, RD);
+    line(x, 128, 26, 128, H - 8, BK);
+    font(x, 11, 1); x.fillStyle = BK; x.fillText(WD_FULL[now.getDay()], 140, 42);
+    font(x, 9, 0); x.fillStyle = BK;
+    x.fillText(pad2(now.getDate()) + '/' + pad2(now.getMonth() + 1) + '/' + now.getFullYear(), 140, 60);
+    x.fillStyle = RD; x.fillText('Đông chí', 140, 76);
+    font(x, 21, 1); x.fillStyle = BK;
+    x.fillText(pad2(now.getHours()) + ':' + pad2(now.getMinutes()), 140, H - 12);
+  }
+  // mode 33: Đồng hồ nhị phân BCD — chấm đặc = 1
+  function m33(x, now, W, H) {
+    statusBatt(x, W);
+    const xs = [30, 70, 124, 164], nb = [2, 4, 3, 4];
+    const dg = [(now.getHours() / 10) | 0, now.getHours() % 10,
+                (now.getMinutes() / 10) | 0, now.getMinutes() % 10];
+    font(x, 10, 1);
+    center(x, 'GIỜ', 50, 11, RD);
+    center(x, 'PHÚT', 144, 11, RD);
+    for (let c = 0; c < 4; c++) {
+      for (let b = 0; b < nb[c]; b++) {
+        const cy = H - 26 - b * 24;
+        x.beginPath(); x.arc(xs[c], cy, 8, 0, 7);
+        if (dg[c] & (1 << b)) { x.fillStyle = BK; x.fill(); }
+        else { x.strokeStyle = BK; x.lineWidth = 1.4; x.stroke(); }
+      }
+      font(x, 10, 1);
+      center(x, dg[c], xs[c], H - 2, BK);
+    }
+    x.fillStyle = RD;
+    x.beginPath(); x.arc(97, H / 2 - 12, 3, 0, 7); x.fill();
+    x.beginPath(); x.arc(97, H / 2 + 12, 3, 0, 7); x.fill();
+    font(x, 21, 1); x.fillStyle = BK;
+    x.fillText(pad2(now.getHours()) + ':' + pad2(now.getMinutes()), 206, 48);
+    font(x, 9, 0); x.fillStyle = RD; x.fillText('Nhị phân BCD', 206, 70);
+    x.fillStyle = BK; x.fillText('chấm đặc = 1', 206, 86);
+  }
+
   // «Ảnh đã lưu» LUÔN đứng cuối — chế độ mới thêm vào TRƯỚC nó.
   const MODE_LIST = [
     { mode: 1, name: 'Đồng hồ + lịch âm', tick: 'Làm mới mỗi phút', draw: m0 },
@@ -865,6 +962,11 @@
     { mode: 10, name: 'Nhiệt độ + đồng hồ', tick: 'Làm mới mỗi phút', draw: m4 },
     { mode: 11, name: 'Lịch tuần', tick: 'Làm mới mỗi phút', draw: m9 },
     { mode: 12, name: 'Lịch bloc', tick: 'Làm mới mỗi phút', draw: m8 },
+    // 4 giao diện MỚI riêng 2.9" (số mode 30-33 — từ đây số != vị trí thẻ)
+    { mode: 30, name: 'Đồng hồ chữ', tick: 'Giờ bằng chữ tiếng Việt — làm mới mỗi phút', draw: m30 },
+    { mode: 31, name: 'Tiến trình ngày', tick: 'Ngày (đen) / tháng / năm (đỏ) — làm mới mỗi phút', draw: m31 },
+    { mode: 32, name: 'Lịch âm', tick: 'Âm lịch là chính, năm can chi — làm mới mỗi phút', draw: m32 },
+    { mode: 33, name: 'Đồng hồ nhị phân', tick: 'BCD — chấm đặc = 1, làm mới mỗi phút', draw: m33 },
     // thu tu nhom DOC theo nguoi dung chon (13,20,15,14,16,19,17,18 theo vi tri cu)
     { mode: 13, name: 'Dọc: đồng hồ', tick: 'Dựng dọc — làm mới mỗi phút', draw: m17, vert: true },
     { mode: 14, name: 'Dọc: giờ nổi 3D', tick: 'Dựng dọc — làm mới mỗi phút', draw: m24, vert: true },
