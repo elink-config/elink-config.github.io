@@ -136,6 +136,8 @@ async function readStatus(quiet = false) {
       mode: v.byteLength >= 14 ? v.getUint8(13) : null,
       // [14] lịch làm mới toàn màn (0x9d): 1 = mỗi giờ, 0 = chỉ lúc 00:00
       hourlyFull: v.byteLength >= 15 ? v.getUint8(14) : null,
+      // [15] màn hình đang làm mới (firmware >= 0x0D) — chờ trước khi gửi ảnh
+      refreshing: v.byteLength >= 16 ? v.getUint8(15) : 0,
     };
     if (!quiet) {
       addLog('Giờ thiết bị: ' + st.year + '-' + String(st.month + 1).padStart(2, '0') +
@@ -581,6 +583,22 @@ async function sendcmd() {
   await write(cmdTXT);
 }
 
+// Màn BWR làm mới FULL mất 15-25s (vd vừa Sync time / đổi giao diện xong):
+// nếu bắt đầu truyền đúng lúc đó, khối màu đỏ (0x9e) bị thiết bị TỪ CHỐI
+// (RAM panel không nhận được khi đang làm mới) → ảnh chỉ còn đen trắng.
+// Gửi 0x97 để thiết bị cập nhật trạng thái rồi chờ đến khi màn rảnh.
+async function waitIdle(label) {
+  for (let i = 0; i < 45; i++) {
+    if (!await write([0x97], true)) return false;
+    await sleep(150);
+    const st = await readStatus(true);
+    if (!st || !st.refreshing) return true;
+    setStatus(`${label}: màn hình đang làm mới, chờ… ${i + 1}s`);
+    await sleep(1000);
+  }
+  return true; // quá 45s: cứ gửi, phần hiển thị sẽ được thiết bị xếp hàng
+}
+
 async function sendimg() {
   if (cropManager.isCropMode()) {
     alert("Vui lòng hoàn tất cắt ảnh trước! Đã hủy gửi.");
@@ -595,6 +613,10 @@ async function sendimg() {
 
   const threeColor = document.getElementById('ditherMode').value === 'threeColor';
   let sent = false;
+  if (threeColor && !await waitIdle('Gửi ảnh')) {
+    updateButtonStatus();
+    return;
+  }
   if (threeColor) {
     // mặt đen trắng vào buffer thiết bị (0x93), mặt ĐỎ vào thẳng RAM panel
     // (0x9e 00 — panel mở sẵn chờ 0x94), rồi hiển thị
@@ -665,6 +687,11 @@ async function saveImageFlash() {
   const status = document.getElementById("status");
   status.parentElement.style.display = "block";
   updateButtonStatus(true);
+
+  if (!await waitIdle('Lưu ảnh')) {
+    updateButtonStatus();
+    return;
+  }
 
   const pl = canvas2planes(canvas);
   let ok = false;

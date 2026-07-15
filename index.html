@@ -6,7 +6,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>E-Ink DA14585</title>
 	<link rel="shortcut icon" type="image/png" href="favicon.png">
-	<link rel="stylesheet" href="css/main.css?v=20260715a">
+	<link rel="stylesheet" href="css/main.css?v=20260715b">
 	<script>
 		// apply the saved theme before first paint to avoid a flash
 		(function () {
@@ -22,9 +22,9 @@
 			<div class="app-header-icon"><span class="material-symbols-outlined">calendar_month</span></div>
 			<div class="app-header-text">
 				<h1>E-Ink DA14585</h1>
-				<p id="app-header-sub">Kết nối thiết bị 4.2", 2.13", 2.9" hoặc đồng hồ DLG — giao diện hiện theo loại thiết bị</p>
+				<p id="app-header-sub">Káº¿t ná»‘i thiáº¿t bá»‹ 4.2", 2.13", 2.9" hoáº·c Ä‘á»“ng há»“ DLG â€” giao diá»‡n hiá»‡n theo loáº¡i thiáº¿t bá»‹</p>
 			</div>
-			<button type="button" class="theme-toggle-btn" id="theme-toggle" title="Đổi giao diện sáng/tối"
+			<button type="button" class="theme-toggle-btn" id="theme-toggle" title="Äá»•i giao diá»‡n sÃ¡ng/tá»‘i"
 				onclick="(function(){const h=document.documentElement;const dark=h.getAttribute('data-theme')==='dark';if(dark){h.removeAttribute('data-theme');localStorage.setItem('theme','light');}else{h.setAttribute('data-theme','dark');localStorage.setItem('theme','dark');}document.getElementById('theme-toggle-icon').textContent=dark?'dark_mode':'light_mode';})()">
 				<span class="material-symbols-outlined" id="theme-toggle-icon">dark_mode</span>
 			</button>
@@ -34,38 +34,38 @@
 				document.getElementById('theme-toggle-icon').textContent = 'light_mode';
 		</script>
 		<fieldset>
-			<legend>Kết nối Bluetooth</legend>
-			<p class="mode-gallery-hint">Bấm «Kết nối» và chọn thiết bị <b>DIY-4_2-xxxx</b> (màn 4.2"),
-				<b>DIY-2_13-xxxx</b> (màn 2.13"), <b>DIY-2_9-xxxx</b> (màn 2.9")
-				hoặc <b>DLG-CLOCK-xxxx</b> (đồng hồ E-Ink) — các mục điều khiển
-				sẽ hiện ra sau khi kết nối thành công.</p>
+			<legend>Káº¿t ná»‘i Bluetooth</legend>
+			<p class="mode-gallery-hint">Báº¥m Â«Káº¿t ná»‘iÂ» vÃ  chá»n thiáº¿t bá»‹ <b>DIY-4_2-xxxx</b> (mÃ n 4.2"),
+				<b>DIY-2_13-xxxx</b> (mÃ n 2.13"), <b>DIY-2_9-xxxx</b> (mÃ n 2.9")
+				hoáº·c <b>DLG-CLOCK-xxxx</b> (Ä‘á»“ng há»“ E-Ink) â€” cÃ¡c má»¥c Ä‘iá»u khiá»ƒn
+				sáº½ hiá»‡n ra sau khi káº¿t ná»‘i thÃ nh cÃ´ng.</p>
 			<div class="flex-container">
 				<div class="flex-group">
-					<button id="connectbutton" type="button" class="primary" onclick="preConnect()">Kết nối</button>
-					<button id="reconnectbutton" type="button" class="secondary" onclick="reConnect()">Kết nối lại</button>
-					<button type="button" class="secondary" onclick="clearLog()">Xóa nhật ký</button>
+					<button id="connectbutton" type="button" class="primary" onclick="preConnect()">Káº¿t ná»‘i</button>
+					<button id="reconnectbutton" type="button" class="secondary" onclick="reConnect()">Káº¿t ná»‘i láº¡i</button>
+					<button type="button" class="secondary" onclick="clearLog()">XÃ³a nháº­t kÃ½</button>
 				</div>
 				<div class="flex-group right debug only-4_2">
 					<label for="epddriver">Driver</label>
 					<select id="epddriver" onchange="updateDitcherOptions()">
 						<!-- DA14585 firmware supports the 4.2" 400x300 models only -->
-						<option value="01" data-color="blackWhiteColor" data-size="4.2_400_300">4.2" (Đen trắng, UC8176)</option>
-						<option value="03" data-color="threeColor" data-size="4.2_400_300">4.2" (Ba màu, UC8176)</option>
-						<option value="04" data-color="blackWhiteColor" data-size="4.2_400_300">4.2" (Đen trắng, SSD1619)</option>
-						<option value="02" data-color="threeColor" data-size="4.2_400_300" selected>4.2" (Ba màu, SSD1619)</option>
+						<option value="01" data-color="blackWhiteColor" data-size="4.2_400_300">4.2" (Äen tráº¯ng, UC8176)</option>
+						<option value="03" data-color="threeColor" data-size="4.2_400_300">4.2" (Ba mÃ u, UC8176)</option>
+						<option value="04" data-color="blackWhiteColor" data-size="4.2_400_300">4.2" (Äen tráº¯ng, SSD1619)</option>
+						<option value="02" data-color="threeColor" data-size="4.2_400_300" selected>4.2" (Ba mÃ u, SSD1619)</option>
 					</select>
 				</div>
 				<div class="flex-group debug only-4_2">
-					<label for="epdpins">Chân (pins)</label>
+					<label for="epdpins">ChÃ¢n (pins)</label>
 					<!-- DA14585: high nibble = port, low nibble = pin.
 					     MOSI P0_6, SCLK P0_0, CS P2_1, DC P0_5, RST P0_7, BUSY P2_0, BS n/c, EN P2_3 -->
 					<input id="epdpins" type="text" value="060021050720FF23">
-					<button id="setDriverbutton" type="button" class="primary" onclick="setDriver()">Áp dụng</button>
+					<button id="setDriverbutton" type="button" class="primary" onclick="setDriver()">Ãp dá»¥ng</button>
 				</div>
 				<div class="flex-group debug">
-					<label for="cmdTXT">Gửi lệnh</label>
+					<label for="cmdTXT">Gá»­i lá»‡nh</label>
 					<input type="text" id="cmdTXT" value="">
-					<button id="sendcmdbutton" type="button" class="primary" onclick="sendcmd()">Gửi lệnh</button>
+					<button id="sendcmdbutton" type="button" class="primary" onclick="sendcmd()">Gá»­i lá»‡nh</button>
 				</div>
 			</div>
 			<div class="log-container" id="log"></div>
@@ -77,85 +77,85 @@
 
 		<template id="tpl-4_2">
 		<fieldset>
-			<legend>Thời gian</legend>
+			<legend>Thá»i gian</legend>
 			<div class="time-sync-row">
-				<label for="synctimebutton">Giờ hệ thống:</label>
+				<label for="synctimebutton">Giá» há»‡ thá»‘ng:</label>
 				<span id="systemTime" class="system-time">--</span>
 				<button id="synctimebutton" type="button" class="primary" onclick="manualSyncTime()">Sync time</button>
-				<span class="mode-gallery-hint" style="margin:0">Đồng bộ thời gian cho thiết bị trước, sau đó mới chọn được giao diện màn hình bên dưới.</span>
+				<span class="mode-gallery-hint" style="margin:0">Äá»“ng bá»™ thá»i gian cho thiáº¿t bá»‹ trÆ°á»›c, sau Ä‘Ã³ má»›i chá»n Ä‘Æ°á»£c giao diá»‡n mÃ n hÃ¬nh bÃªn dÆ°á»›i.</span>
 			</div>
 		</fieldset>
 		<fieldset>
-			<legend>Điều khiển thiết bị</legend>
-			<p class="mode-gallery-hint">Chọn giao diện màn hình bên dưới rồi bấm «Áp dụng» — hình xem trước dùng ngày giờ hiện tại (phần âm lịch là minh họa, thiết bị sẽ tự tính chính xác).</p>
+			<legend>Äiá»u khiá»ƒn thiáº¿t bá»‹</legend>
+			<p class="mode-gallery-hint">Chá»n giao diá»‡n mÃ n hÃ¬nh bÃªn dÆ°á»›i rá»“i báº¥m Â«Ãp dá»¥ngÂ» â€” hÃ¬nh xem trÆ°á»›c dÃ¹ng ngÃ y giá» hiá»‡n táº¡i (pháº§n Ã¢m lá»‹ch lÃ  minh há»a, thiáº¿t bá»‹ sáº½ tá»± tÃ­nh chÃ­nh xÃ¡c).</p>
 			<div class="mode-gallery" id="modeGallery"></div>
 			<div class="flex-container">
 				<div class="flex-group" style="flex:1 1 100%">
-					<label for="noteTXT">Ghi chú:</label>
-					<input type="text" id="noteTXT" maxlength="190" style="flex:1" placeholder="Nội dung cho màn hình «Ghi chú» (tối đa 190 byte)">
-					<button id="sendnotebutton" type="button" class="primary" onclick="sendNote()">Gửi ghi chú</button>
+					<label for="noteTXT">Ghi chÃº:</label>
+					<input type="text" id="noteTXT" maxlength="190" style="flex:1" placeholder="Ná»™i dung cho mÃ n hÃ¬nh Â«Ghi chÃºÂ» (tá»‘i Ä‘a 190 byte)">
+					<button id="sendnotebutton" type="button" class="primary" onclick="sendNote()">Gá»­i ghi chÃº</button>
 				</div>
 				<div class="flex-group" style="flex:1 1 100%">
 					<label style="display:flex;align-items:center;gap:6px;cursor:pointer">
 						<input type="checkbox" id="hourlyFullCHK" checked onchange="setHourlyFull()">
-						Làm mới toàn màn hình mỗi giờ (chế độ đồng hồ) — nếu tắt, chỉ làm mới toàn màn lúc 00:00 (ít chớp hơn nhưng bóng mờ tích tụ nhiều hơn)
+						LÃ m má»›i toÃ n mÃ n hÃ¬nh má»—i giá» (cháº¿ Ä‘á»™ Ä‘á»“ng há»“) â€” náº¿u táº¯t, chá»‰ lÃ m má»›i toÃ n mÃ n lÃºc 00:00 (Ã­t chá»›p hÆ¡n nhÆ°ng bÃ³ng má» tÃ­ch tá»¥ nhiá»u hÆ¡n)
 					</label>
 				</div>
 				<div class="flex-group">
-					<button id="clearscreenbutton" type="button" class="secondary" onclick="clearScreen()">Xóa màn hình</button>
+					<button id="clearscreenbutton" type="button" class="secondary" onclick="clearScreen()">XÃ³a mÃ n hÃ¬nh</button>
 				</div>
 			</div>
 		</fieldset>
 		<fieldset>
-			<legend>Thiết kế màn hình (chế độ 20)</legend>
-			<p class="mode-gallery-hint">Bấm nút để thêm thành phần, kéo-thả trên khung để sắp xếp, chọn thành phần rồi «Đổi cỡ»/«Xóa». Đồng hồ và nhiệt độ vẫn tự cập nhật mỗi phút không chớp màn hình như các chế độ khác.</p>
+			<legend>Thiáº¿t káº¿ mÃ n hÃ¬nh (cháº¿ Ä‘á»™ 20)</legend>
+			<p class="mode-gallery-hint">Báº¥m nÃºt Ä‘á»ƒ thÃªm thÃ nh pháº§n, kÃ©o-tháº£ trÃªn khung Ä‘á»ƒ sáº¯p xáº¿p, chá»n thÃ nh pháº§n rá»“i Â«Äá»•i cá»¡Â»/Â«XÃ³aÂ». Äá»“ng há»“ vÃ  nhiá»‡t Ä‘á»™ váº«n tá»± cáº­p nháº­t má»—i phÃºt khÃ´ng chá»›p mÃ n hÃ¬nh nhÆ° cÃ¡c cháº¿ Ä‘á»™ khÃ¡c.</p>
 			<div class="designer-palette">
-				<button type="button" class="secondary" onclick="dsAdd(1)">+ Đồng hồ số</button>
-				<button type="button" class="secondary" onclick="dsAdd(2)">+ Đồng hồ kim</button>
+				<button type="button" class="secondary" onclick="dsAdd(1)">+ Äá»“ng há»“ sá»‘</button>
+				<button type="button" class="secondary" onclick="dsAdd(2)">+ Äá»“ng há»“ kim</button>
 				<button type="button" class="secondary" onclick="dsAdd(3)">+ Pin</button>
-				<button type="button" class="secondary" onclick="dsAdd(4)">+ Nhiệt độ</button>
-				<button type="button" class="secondary" onclick="dsAdd(5)">+ Ngày tháng</button>
-				<button type="button" class="secondary" onclick="dsAdd(6)">+ Âm lịch</button>
-				<button type="button" class="secondary" onclick="dsAdd(7)">+ Lịch tháng</button>
-				<button type="button" class="secondary" onclick="dsAdd(8)">+ Chữ 1</button>
-				<button type="button" class="secondary" onclick="dsAdd(9)">+ Chữ 2</button>
-				<button type="button" class="secondary" onclick="document.getElementById('dsIconFile').click()">+ Icon (chọn ảnh)</button>
+				<button type="button" class="secondary" onclick="dsAdd(4)">+ Nhiá»‡t Ä‘á»™</button>
+				<button type="button" class="secondary" onclick="dsAdd(5)">+ NgÃ y thÃ¡ng</button>
+				<button type="button" class="secondary" onclick="dsAdd(6)">+ Ã‚m lá»‹ch</button>
+				<button type="button" class="secondary" onclick="dsAdd(7)">+ Lá»‹ch thÃ¡ng</button>
+				<button type="button" class="secondary" onclick="dsAdd(8)">+ Chá»¯ 1</button>
+				<button type="button" class="secondary" onclick="dsAdd(9)">+ Chá»¯ 2</button>
+				<button type="button" class="secondary" onclick="document.getElementById('dsIconFile').click()">+ Icon (chá»n áº£nh)</button>
 				<input type="file" id="dsIconFile" accept=".png,.jpg,.jpeg,.webp,.bmp" style="display:none" onchange="dsIconFileChange(this)">
 			</div>
 			<canvas id="designerCanvas" width="400" height="300" class="designer-canvas"></canvas>
 			<div class="flex-container">
 				<div class="flex-group">
-					<button type="button" class="secondary" onclick="dsCycleSize()">Đổi cỡ</button>
-					<button type="button" class="secondary" onclick="dsDelete()">Xóa</button>
-					<button type="button" class="secondary" onclick="dsClear()">Xóa hết</button>
+					<button type="button" class="secondary" onclick="dsCycleSize()">Äá»•i cá»¡</button>
+					<button type="button" class="secondary" onclick="dsDelete()">XÃ³a</button>
+					<button type="button" class="secondary" onclick="dsClear()">XÃ³a háº¿t</button>
 					<label for="dsFrame">Khung:</label>
 					<select id="dsFrame" onchange="dsSetFrame(this.value)">
-						<option value="0">Không</option>
-						<option value="1">Viền đơn</option>
-						<option value="2">Viền kép</option>
+						<option value="0">KhÃ´ng</option>
+						<option value="1">Viá»n Ä‘Æ¡n</option>
+						<option value="2">Viá»n kÃ©p</option>
 					</select>
 				</div>
 				<div class="flex-group" style="flex:1 1 100%">
-					<label for="dsText1">Chữ 1:</label>
-					<input id="dsText1" type="text" maxlength="47" style="flex:1" oninput="dsTexts()" placeholder="Nội dung cho thành phần «Chữ 1»">
+					<label for="dsText1">Chá»¯ 1:</label>
+					<input id="dsText1" type="text" maxlength="47" style="flex:1" oninput="dsTexts()" placeholder="Ná»™i dung cho thÃ nh pháº§n Â«Chá»¯ 1Â»">
 				</div>
 				<div class="flex-group" style="flex:1 1 100%">
-					<label for="dsText2">Chữ 2:</label>
-					<input id="dsText2" type="text" maxlength="47" style="flex:1" oninput="dsTexts()" placeholder="Nội dung cho thành phần «Chữ 2»">
+					<label for="dsText2">Chá»¯ 2:</label>
+					<input id="dsText2" type="text" maxlength="47" style="flex:1" oninput="dsTexts()" placeholder="Ná»™i dung cho thÃ nh pháº§n Â«Chá»¯ 2Â»">
 				</div>
 				<div class="flex-group">
-					<button id="uploadlayoutbutton" type="button" class="primary" onclick="dsUpload()">Gửi lên thiết bị</button>
+					<button id="uploadlayoutbutton" type="button" class="primary" onclick="dsUpload()">Gá»­i lÃªn thiáº¿t bá»‹</button>
 				</div>
 			</div>
 		</fieldset>
 		<fieldset>
-			<legend>Truyền hình ảnh</legend>
+			<legend>Truyá»n hÃ¬nh áº£nh</legend>
 			<div class="flex-container">
 				<input type="file" id="imageFile" accept=".png,.jpg,.bmp,.webp,.jpeg" onchange="updateImage()">
 			</div>
 			<div class="flex-container options">
 				<div class="flex-group debug">
-					<label for="canvasSize">Kích thước canvas:</label>
+					<label for="canvasSize">KÃ­ch thÆ°á»›c canvas:</label>
 					<select id="canvasSize" onchange="updateCanvasSize()">
 						<option value="1.54_152_152">1.54 (152x152)</option>
 						<option value="1.54_200_200">1.54 (200x200)</option>
@@ -186,32 +186,32 @@
 					</select>
 				</div>
 				<div class="flex-group">
-					<label for="ditherMode">Chế độ màu:</label>
+					<label for="ditherMode">Cháº¿ Ä‘á»™ mÃ u:</label>
 					<select id="ditherMode" onchange="applyDither()">
-						<option value="blackWhiteColor">2 màu (đen trắng)</option>
-						<option value="threeColor">3 màu (đen trắng đỏ)</option>
-						<option value="fourColor">4 màu (đen trắng đỏ vàng)</option>
-						<option value="sixColor">6 màu</option>
+						<option value="blackWhiteColor">2 mÃ u (Ä‘en tráº¯ng)</option>
+						<option value="threeColor">3 mÃ u (Ä‘en tráº¯ng Ä‘á»)</option>
+						<option value="fourColor">4 mÃ u (Ä‘en tráº¯ng Ä‘á» vÃ ng)</option>
+						<option value="sixColor">6 mÃ u</option>
 					</select>
 				</div>
 				<div class="flex-group">
-					<label for="ditherAlg">Thuật toán dithering:</label>
+					<label for="ditherAlg">Thuáº­t toÃ¡n dithering:</label>
 					<select id="ditherAlg" onchange="applyDither()">
 						<option value="floydSteinberg">Floyd-Steinberg</option>
 						<option value="atkinson">Atkinson</option>
 						<option value="bayer">Bayer</option>
 						<option value="stucki">Stucki</option>
 						<option value="jarvis">Jarvis-Judice-Ninke</option>
-						<option value="none">Không dithering</option>
+						<option value="none">KhÃ´ng dithering</option>
 					</select>
 				</div>
 				<div class="flex-group">
-					<label for="ditherStrength">Cường độ dithering:</label>
+					<label for="ditherStrength">CÆ°á»ng Ä‘á»™ dithering:</label>
 					<input type="range" min="0" max="5" step="0.1" value="1.0" id="ditherStrength">
 					<label id="ditherStrengthValue">1.0</label>
 				</div>
 				<div class="flex-group">
-					<label for="ditherContrast">Tương phản:</label>
+					<label for="ditherContrast">TÆ°Æ¡ng pháº£n:</label>
 					<input type="range" min="0.5" max="2" step="0.1" value="1.2" id="ditherContrast">
 					<label id="ditherContrastValue">1.2</label>
 				</div>
@@ -220,38 +220,38 @@
 				<div class="flex-group debug">
 					<label for="mtusize">MTU:</label>
 					<input type="number" id="mtusize" value="20" min="0" max="255">
-					<label for="interleavedcount">Khoảng xác nhận:</label>
+					<label for="interleavedcount">Khoáº£ng xÃ¡c nháº­n:</label>
 					<input type="number" id="interleavedcount" value="50" min="0" max="500">
 				</div>
 			</div>
-			<div class="status-bar"><b>Trạng thái: </b><span id="status"></span></div>
+			<div class="status-bar"><b>Tráº¡ng thÃ¡i: </b><span id="status"></span></div>
 			<div class="flex-container">
 				<div class="flex-group">
 					<button type="button" class="secondary debug" onclick="rotateCanvas()">Xoay canvas</button>
-					<button type="button" class="secondary" onclick="clearCanvas()">Xóa canvas</button>
-					<button type="button" class="secondary debug" onclick="downloadDataArray()">Tải mảng dữ liệu</button>
-					<button id="sendimgbutton" type="button" class="primary" onclick="sendimg()">Gửi hình ảnh</button>
+					<button type="button" class="secondary" onclick="clearCanvas()">XÃ³a canvas</button>
+					<button type="button" class="secondary debug" onclick="downloadDataArray()">Táº£i máº£ng dá»¯ liá»‡u</button>
+					<button id="sendimgbutton" type="button" class="primary" onclick="sendimg()">Gá»­i hÃ¬nh áº£nh</button>
 				</div>
 			</div>
 			<div class="flex-container">
 				<div class="flex-group">
-					<button type="button" class="secondary" onclick="reloadImage()">Tải lại</button>
-					<button type="button" class="secondary" onclick="stretchToScreen()">Kéo giãn đầy màn</button>
-					<button type="button" class="secondary" onclick="fitToScreen()">Vừa màn hình</button>
-					<button type="button" class="secondary" onclick="rotateImage(90)">Xoay 90°</button>
-					<button type="button" class="secondary" onclick="rotateImage(-90)">Xoay -90°</button>
-					<button type="button" class="secondary" onclick="rotateImage(0)">Đặt lại xoay</button>
-					<button type="button" class="secondary" onclick="cropImage()">Cắt ảnh</button>
+					<button type="button" class="secondary" onclick="reloadImage()">Táº£i láº¡i</button>
+					<button type="button" class="secondary" onclick="stretchToScreen()">KÃ©o giÃ£n Ä‘áº§y mÃ n</button>
+					<button type="button" class="secondary" onclick="fitToScreen()">Vá»«a mÃ n hÃ¬nh</button>
+					<button type="button" class="secondary" onclick="rotateImage(90)">Xoay 90Â°</button>
+					<button type="button" class="secondary" onclick="rotateImage(-90)">Xoay -90Â°</button>
+					<button type="button" class="secondary" onclick="rotateImage(0)">Äáº·t láº¡i xoay</button>
+					<button type="button" class="secondary" onclick="cropImage()">Cáº¯t áº£nh</button>
 				</div>
 			</div>
 			<div class="flex-container options">
 				<div class="flex-group">
-					<label for="imgBrightness">Độ sáng:</label>
+					<label for="imgBrightness">Äá»™ sÃ¡ng:</label>
 					<input type="range" min="-100" max="100" step="1" value="0" id="imgBrightness">
 					<label id="imgBrightnessValue">0</label>
 				</div>
 				<div class="flex-group">
-					<label for="imgSaturation">Bão hòa:</label>
+					<label for="imgSaturation">BÃ£o hÃ²a:</label>
 					<input type="range" min="0" max="200" step="1" value="100" id="imgSaturation">
 					<label id="imgSaturationValue">100</label>
 				</div>
@@ -261,31 +261,31 @@
 				<canvas id="canvas" width="400" height="300"></canvas>
 				<div class="flex-container canvas-tools">
 					<div class="flex-group tool-buttons">
-						<button id="brush-mode" title="Bút vẽ" class="tool-button">✏️</button>
-						<button id="eraser-mode" title="Tẩy" class="tool-button">🧽</button>
-						<button id="text-mode" title="Thêm chữ" class="tool-button">T</button>
-						<button id="undo-btn" title="Hoàn tác (Ctrl+Z)" class="tool-button hide">↶</button>
-						<button id="redo-btn" title="Làm lại (Ctrl+Y)" class="tool-button hide">↷</button>
+						<button id="brush-mode" title="BÃºt váº½" class="tool-button">âœï¸</button>
+						<button id="eraser-mode" title="Táº©y" class="tool-button">ðŸ§½</button>
+						<button id="text-mode" title="ThÃªm chá»¯" class="tool-button">T</button>
+						<button id="undo-btn" title="HoÃ n tÃ¡c (Ctrl+Z)" class="tool-button hide">â†¶</button>
+						<button id="redo-btn" title="LÃ m láº¡i (Ctrl+Y)" class="tool-button hide">â†·</button>
 					</div>
 				</div>
 				<div class="flex-container canvas-tools">
 					<div class="flex-group brush-tools">
-						<label for="brush-color">Màu:</label>
+						<label for="brush-color">MÃ u:</label>
 						<select id="brush-color">
-							<option value="#000000">Đen</option>
-							<option value="#FF0000">Đỏ</option>
-							<option value="#FFFF00">Vàng</option>
-							<option value="#00FF00">Xanh lá</option>
-							<option value="#0000FF">Xanh dương</option>
-							<option value="#FFFFFF">Trắng</option>
+							<option value="#000000">Äen</option>
+							<option value="#FF0000">Äá»</option>
+							<option value="#FFFF00">VÃ ng</option>
+							<option value="#00FF00">Xanh lÃ¡</option>
+							<option value="#0000FF">Xanh dÆ°Æ¡ng</option>
+							<option value="#FFFFFF">Tráº¯ng</option>
 						</select>
-						<label for="brush-size">Độ dày:</label>
+						<label for="brush-size">Äá»™ dÃ y:</label>
 						<input type="number" id="brush-size" value="2" min="1" max="100">
 					</div>
 				</div>
 				<div class="flex-container canvas-tools">
 					<div class="flex-group text-tools">
-						<label for="font-family">Phông chữ:</label>
+						<label for="font-family">PhÃ´ng chá»¯:</label>
 						<select id="font-family">
 							<option value="Arial">Arial</option>
 							<option value="sans-serif">Sans-serif</option>
@@ -297,40 +297,40 @@
 							<option value="Georgia">Georgia</option>
 							<option value="Courier New">Courier New</option>
 						</select>
-						<label for="font-size">Cỡ chữ:</label>
+						<label for="font-size">Cá»¡ chá»¯:</label>
 						<input type="number" id="font-size" value="16" min="1" max="100">
 					</div>
 					<div class="flex-group text-tools">
-						<input type="text" id="text-input" placeholder="Nhập văn bản" style="width:150px">
-						<button id="text-bold" title="Đậm">B</button>
-						<button id="text-italic" title="Nghiêng">I</button>
-						<button id="add-text-btn" class="primary">Thêm chữ</button>
+						<input type="text" id="text-input" placeholder="Nháº­p vÄƒn báº£n" style="width:150px">
+						<button id="text-bold" title="Äáº­m">B</button>
+						<button id="text-italic" title="NghiÃªng">I</button>
+						<button id="add-text-btn" class="primary">ThÃªm chá»¯</button>
 					</div>
 					<div class="flex-group crop-tools">
-						<button id="crop-zoom-in" title="Phóng to" class="secondary">+</button>
-						<button id="crop-zoom-out" title="Thu nhỏ" class="secondary">-</button>
-						<button id="crop-move-left" title="Sang trái">⇦</button>
-						<button id="crop-move-up" title="Lên trên">⇧</button>
-						<button id="crop-move-down" title="Xuống dưới">⇩</button>
-						<button id="crop-move-right" title="Sang phải">⇨</button>
+						<button id="crop-zoom-in" title="PhÃ³ng to" class="secondary">+</button>
+						<button id="crop-zoom-out" title="Thu nhá»" class="secondary">-</button>
+						<button id="crop-move-left" title="Sang trÃ¡i">â‡¦</button>
+						<button id="crop-move-up" title="LÃªn trÃªn">â‡§</button>
+						<button id="crop-move-down" title="Xuá»‘ng dÆ°á»›i">â‡©</button>
+						<button id="crop-move-right" title="Sang pháº£i">â‡¨</button>
 						<button class="primary" onclick="applyDither()">Xong</button>
 					</div>
 				</div>
 			</div>
 		</fieldset>
 		<fieldset>
-			<legend>Cập nhật firmware (OTA)</legend>
+			<legend>Cáº­p nháº­t firmware (OTA)</legend>
 			<div class="flex-container">
 				<div class="flex-group">
 					<input type="file" id="otaFile" accept=".bin">
-					<button id="otabutton" type="button" class="secondary" onclick="otaUpdate()">Cập nhật firmware</button>
+					<button id="otabutton" type="button" class="secondary" onclick="otaUpdate()">Cáº­p nháº­t firmware</button>
 					<span id="otaProgress" class="system-time"></span>
 				</div>
 			</div>
-			<p class="mode-gallery-hint">Nạp file <b>.bin</b> tải về từ mục «Danh sách firmware» bên dưới. Không tắt nguồn thiết bị khi đang cập nhật — nếu lỗi giữa chừng, thiết bị vẫn chạy firmware cũ.</p>
+			<p class="mode-gallery-hint">Náº¡p file <b>.bin</b> táº£i vá» tá»« má»¥c Â«Danh sÃ¡ch firmwareÂ» bÃªn dÆ°á»›i. KhÃ´ng táº¯t nguá»“n thiáº¿t bá»‹ khi Ä‘ang cáº­p nháº­t â€” náº¿u lá»—i giá»¯a chá»«ng, thiáº¿t bá»‹ váº«n cháº¡y firmware cÅ©.</p>
 		</fieldset>
 		<fieldset>
-			<legend>Danh sách firmware</legend>
+			<legend>Danh sÃ¡ch firmware</legend>
 			<div style="overflow-x:auto">
 				<table class="fw-table">
 					<thead>
@@ -343,118 +343,118 @@
 						</tr>
 					</thead>
 					<tbody>
-						<!-- Thêm firmware mới: chép dòng mẫu dưới, sửa nội dung; file .bin
-						     đặt trong thư mục "OTA firmware/" của repo, ví dụ:
+						<!-- ThÃªm firmware má»›i: chÃ©p dÃ²ng máº«u dÆ°á»›i, sá»­a ná»™i dung; file .bin
+						     Ä‘áº·t trong thÆ° má»¥c "OTA firmware/" cá»§a repo, vÃ­ dá»¥:
 						<tr>
 							<td>1</td>
 							<td>1.0</td>
-							<td>Mô tả thay đổi</td>
+							<td>MÃ´ táº£ thay Ä‘á»•i</td>
 							<td>20/07/2026</td>
-							<td><a href="OTA firmware/fw_4_2inch_v1.0.bin" download>Tải về</a></td>
+							<td><a href="OTA firmware/fw_4_2inch_v1.0.bin" download>Táº£i vá»</a></td>
 						</tr>
 						-->
                         <tr>
 							<td>1</td>
 							<td>1.0</td>
-							<td>Bản dựng đầu tiên với 20 chế độ hình ảnh</td>
+							<td>Báº£n dá»±ng Ä‘áº§u tiÃªn vá»›i 20 cháº¿ Ä‘á»™ hÃ¬nh áº£nh</td>
 							<td>13/07/2026</td>
-							<td><a href="OTA firmware/fw_4_2inch_v1.0.bin" download>Tải về</a></td>
+							<td><a href="OTA firmware/fw_4_2inch_v1.0.bin" download>Táº£i vá»</a></td>
 						</tr>
 					</tbody>
 				</table>
 			</div>
-			<p class="mode-gallery-hint">Tải file .bin tương ứng về rồi nạp bằng khung «Cập nhật firmware (OTA)» phía trên. <br> Nếu gặp bất kì vấn đề hoặc yêu cầu nào về cập nhật firmware mới, vui lòng nhắn tin cho tôi qua kênh bán hàng và tôi sẽ cập nhật bản update ở đây.</p>
+			<p class="mode-gallery-hint">Táº£i file .bin tÆ°Æ¡ng á»©ng vá» rá»“i náº¡p báº±ng khung Â«Cáº­p nháº­t firmware (OTA)Â» phÃ­a trÃªn. <br> Náº¿u gáº·p báº¥t kÃ¬ váº¥n Ä‘á» hoáº·c yÃªu cáº§u nÃ o vá» cáº­p nháº­t firmware má»›i, vui lÃ²ng nháº¯n tin cho tÃ´i qua kÃªnh bÃ¡n hÃ ng vÃ  tÃ´i sáº½ cáº­p nháº­t báº£n update á»Ÿ Ä‘Ã¢y.</p>
 		</fieldset>
 		</template>
 
 		<template id="tpl-2_13">
 		<fieldset>
-			<legend>Thời gian</legend>
+			<legend>Thá»i gian</legend>
 			<div class="time-sync-row">
-				<label for="synctimebutton">Giờ hệ thống:</label>
+				<label for="synctimebutton">Giá» há»‡ thá»‘ng:</label>
 				<span id="systemTime" class="system-time">--</span>
 				<button id="synctimebutton" type="button" class="primary" onclick="manualSyncTime()">Sync time</button>
-				<button id="calibratebutton" type="button" class="secondary" onclick="calibrateClock()">Hiệu chỉnh giờ</button>
-				<span class="mode-gallery-hint" style="margin:0">«Sync time» đặt giờ và hiển thị đồng hồ. «Hiệu chỉnh giờ» bù sai số nhanh/chậm (đo sau ≥ 2 ngày kể từ lần đặt giờ).</span>
+				<button id="calibratebutton" type="button" class="secondary" onclick="calibrateClock()">Hiá»‡u chá»‰nh giá»</button>
+				<span class="mode-gallery-hint" style="margin:0">Â«Sync timeÂ» Ä‘áº·t giá» vÃ  hiá»ƒn thá»‹ Ä‘á»“ng há»“. Â«Hiá»‡u chá»‰nh giá»Â» bÃ¹ sai sá»‘ nhanh/cháº­m (Ä‘o sau â‰¥ 2 ngÃ y ká»ƒ tá»« láº§n Ä‘áº·t giá»).</span>
 			</div>
 		</fieldset>
 		<fieldset>
-			<legend>Màn hình</legend>
+			<legend>MÃ n hÃ¬nh</legend>
 			<div class="flex-container">
 				<div class="flex-group">
-					<label>Độ phân giải hiện tại:</label>
-					<span id="resLabel" class="system-time">212×104</span>
-					<button id="resswitchbutton" type="button" class="primary" onclick="switchResolution()">Chuyển sang 250×122</button>
+					<label>Äá»™ phÃ¢n giáº£i hiá»‡n táº¡i:</label>
+					<span id="resLabel" class="system-time">212Ã—104</span>
+					<button id="resswitchbutton" type="button" class="primary" onclick="switchResolution()">Chuyá»ƒn sang 250Ã—122</button>
 				</div>
 				<div class="flex-group">
-					<label>Nhiệt độ màn hình:</label>
+					<label>Nhiá»‡t Ä‘á»™ mÃ n hÃ¬nh:</label>
 					<span id="panelTemp" class="system-time">--</span>
-					<button id="temprefreshbutton" type="button" class="secondary" onclick="readPanelTemp()">Đọc nhiệt độ</button>
+					<button id="temprefreshbutton" type="button" class="secondary" onclick="readPanelTemp()">Äá»c nhiá»‡t Ä‘á»™</button>
 				</div>
 				<div class="flex-group">
 					<label>Pin:</label>
 					<span id="battVolt" class="system-time">--</span>
 				</div>
 			</div>
-			<p class="mode-gallery-hint">Một cú bấm để đổi giữa hai loại panel 2.13": <b>212×104</b> (HINK-E0213A41/A55) và <b>250×122</b> (OPM021B1). Lựa chọn được lưu trong flash của thiết bị. Nhiệt độ do firmware đọc từ cảm biến tích hợp <b>trong màn hình</b>, tự cập nhật sau mỗi lần làm mới.</p>
+			<p class="mode-gallery-hint">Má»™t cÃº báº¥m Ä‘á»ƒ Ä‘á»•i giá»¯a hai loáº¡i panel 2.13": <b>212Ã—104</b> (HINK-E0213A41/A55) vÃ  <b>250Ã—122</b> (OPM021B1). Lá»±a chá»n Ä‘Æ°á»£c lÆ°u trong flash cá»§a thiáº¿t bá»‹. Nhiá»‡t Ä‘á»™ do firmware Ä‘á»c tá»« cáº£m biáº¿n tÃ­ch há»£p <b>trong mÃ n hÃ¬nh</b>, tá»± cáº­p nháº­t sau má»—i láº§n lÃ m má»›i.</p>
 		</fieldset>
 		<fieldset>
-			<legend>Điều khiển thiết bị</legend>
-			<p class="mode-gallery-hint">Chọn giao diện màn hình bên dưới rồi bấm «Áp dụng». Chưa đồng bộ giờ thì webtool tự gửi «Sync time» trước. Giao diện đã chọn được lưu trong flash thiết bị — mất nguồn vẫn nhớ, đồng bộ giờ lại là hiện lại đúng giao diện.</p>
+			<legend>Äiá»u khiá»ƒn thiáº¿t bá»‹</legend>
+			<p class="mode-gallery-hint">Chá»n giao diá»‡n mÃ n hÃ¬nh bÃªn dÆ°á»›i rá»“i báº¥m Â«Ãp dá»¥ngÂ». ChÆ°a Ä‘á»“ng bá»™ giá» thÃ¬ webtool tá»± gá»­i Â«Sync timeÂ» trÆ°á»›c. Giao diá»‡n Ä‘Ã£ chá»n Ä‘Æ°á»£c lÆ°u trong flash thiáº¿t bá»‹ â€” máº¥t nguá»“n váº«n nhá»›, Ä‘á»“ng bá»™ giá» láº¡i lÃ  hiá»‡n láº¡i Ä‘Ãºng giao diá»‡n.</p>
 			<div class="mode-gallery" id="modeGallery"></div>
 			<div class="flex-container">
 				<div class="flex-group">
-					<button id="resetdevicebutton" type="button" class="secondary" onclick="resetDevice()">Khởi động lại thiết bị</button>
+					<button id="resetdevicebutton" type="button" class="secondary" onclick="resetDevice()">Khá»Ÿi Ä‘á»™ng láº¡i thiáº¿t bá»‹</button>
 				</div>
 			</div>
 		</fieldset>
 		<fieldset>
-			<legend>Cấu hình giao diện</legend>
+			<legend>Cáº¥u hÃ¬nh giao diá»‡n</legend>
 			<div class="flex-container">
 				<div class="flex-group">
-					<label for="eventName">Sự kiện đếm ngược:</label>
-					<input type="text" id="eventName" placeholder="Tên sự kiện (vd. Đếm ngược ngày)" maxlength="30" style="width:220px">
+					<label for="eventName">Sá»± kiá»‡n Ä‘áº¿m ngÆ°á»£c:</label>
+					<input type="text" id="eventName" placeholder="TÃªn sá»± kiá»‡n (vd. Äáº¿m ngÆ°á»£c ngÃ y)" maxlength="30" style="width:220px">
 					<input type="date" id="eventDate">
-					<button id="sendeventbutton" type="button" class="primary" onclick="sendEvent()">Gửi sự kiện</button>
+					<button id="sendeventbutton" type="button" class="primary" onclick="sendEvent()">Gá»­i sá»± kiá»‡n</button>
 				</div>
 			</div>
 			<div class="flex-container">
 				<div class="flex-group">
-					<label for="noteLine0">Bảng tên / ghi chú:</label>
-					<input type="text" id="noteLine0" placeholder="Dòng 1 — chữ lớn (vd. họ tên)" maxlength="30" style="width:220px">
-					<input type="text" id="noteLine1" placeholder="Dòng 2 (vd. chức danh)" maxlength="30" style="width:200px">
-					<input type="text" id="noteLine2" placeholder="Dòng 3 (vd. điện thoại)" maxlength="30" style="width:200px">
-					<button id="sendnotebutton" type="button" class="primary" onclick="sendNote()">Gửi ghi chú</button>
+					<label for="noteLine0">Báº£ng tÃªn / ghi chÃº:</label>
+					<input type="text" id="noteLine0" placeholder="DÃ²ng 1 â€” chá»¯ lá»›n (vd. há» tÃªn)" maxlength="30" style="width:220px">
+					<input type="text" id="noteLine1" placeholder="DÃ²ng 2 (vd. chá»©c danh)" maxlength="30" style="width:200px">
+					<input type="text" id="noteLine2" placeholder="DÃ²ng 3 (vd. Ä‘iá»‡n thoáº¡i)" maxlength="30" style="width:200px">
+					<button id="sendnotebutton" type="button" class="primary" onclick="sendNote()">Gá»­i ghi chÃº</button>
 				</div>
 			</div>
 			<div class="flex-container">
 				<div class="flex-group" style="flex:1 1 100%">
 					<label style="display:flex;align-items:center;gap:6px;cursor:pointer">
 						<input type="checkbox" id="hourlyFullCHK" checked onchange="setHourlyFull()">
-						Làm mới toàn màn hình mỗi giờ — nếu tắt, chỉ làm mới toàn màn lúc 00:00 (ít chớp hơn nhưng bóng mờ tích tụ nhiều hơn)
+						LÃ m má»›i toÃ n mÃ n hÃ¬nh má»—i giá» â€” náº¿u táº¯t, chá»‰ lÃ m má»›i toÃ n mÃ n lÃºc 00:00 (Ã­t chá»›p hÆ¡n nhÆ°ng bÃ³ng má» tÃ­ch tá»¥ nhiá»u hÆ¡n)
 					</label>
 				</div>
 			</div>
-			<p class="mode-gallery-hint">Nội dung gửi xuống được lưu trong flash thiết bị (mất nguồn không mất). Sửa các ô trên là thẻ xem trước «Đếm ngược sự kiện» / «Bảng tên» đổi theo. Tối đa 43 byte UTF-8 mỗi dòng (khoảng 25-30 ký tự tiếng Việt).</p>
+			<p class="mode-gallery-hint">Ná»™i dung gá»­i xuá»‘ng Ä‘Æ°á»£c lÆ°u trong flash thiáº¿t bá»‹ (máº¥t nguá»“n khÃ´ng máº¥t). Sá»­a cÃ¡c Ã´ trÃªn lÃ  tháº» xem trÆ°á»›c Â«Äáº¿m ngÆ°á»£c sá»± kiá»‡nÂ» / Â«Báº£ng tÃªnÂ» Ä‘á»•i theo. Tá»‘i Ä‘a 43 byte UTF-8 má»—i dÃ²ng (khoáº£ng 25-30 kÃ½ tá»± tiáº¿ng Viá»‡t).</p>
 		</fieldset>
 		<fieldset>
-			<legend>Thiết kế màn hình</legend>
-			<p class="mode-gallery-hint">Bấm để thêm thành phần, kéo thả để xếp chỗ trên canvas (đúng kích thước màn hình). Bấm chọn một thành phần rồi «Đổi cỡ» / «Xóa». Gửi xuống là thiết bị chuyển sang giao diện «Tự thiết kế» và nhớ bố cục trong flash — giống chế độ Tự thiết kế của bản 4.2".</p>
+			<legend>Thiáº¿t káº¿ mÃ n hÃ¬nh</legend>
+			<p class="mode-gallery-hint">Báº¥m Ä‘á»ƒ thÃªm thÃ nh pháº§n, kÃ©o tháº£ Ä‘á»ƒ xáº¿p chá»— trÃªn canvas (Ä‘Ãºng kÃ­ch thÆ°á»›c mÃ n hÃ¬nh). Báº¥m chá»n má»™t thÃ nh pháº§n rá»“i Â«Äá»•i cá»¡Â» / Â«XÃ³aÂ». Gá»­i xuá»‘ng lÃ  thiáº¿t bá»‹ chuyá»ƒn sang giao diá»‡n Â«Tá»± thiáº¿t káº¿Â» vÃ  nhá»› bá»‘ cá»¥c trong flash â€” giá»‘ng cháº¿ Ä‘á»™ Tá»± thiáº¿t káº¿ cá»§a báº£n 4.2".</p>
 			<div class="flex-container">
 				<div class="flex-group">
-					<button type="button" class="secondary" onclick="dsAdd(1)">+ Giờ số</button>
-					<button type="button" class="secondary" onclick="dsAdd(2)">+ Đồng hồ kim</button>
+					<button type="button" class="secondary" onclick="dsAdd(1)">+ Giá» sá»‘</button>
+					<button type="button" class="secondary" onclick="dsAdd(2)">+ Äá»“ng há»“ kim</button>
 					<button type="button" class="secondary" onclick="dsAdd(3)">+ Pin</button>
-					<button type="button" class="secondary" onclick="dsAdd(4)">+ Nhiệt độ</button>
-					<button type="button" class="secondary" onclick="dsAdd(5)">+ Ngày tháng</button>
-					<button type="button" class="secondary" onclick="dsAdd(6)">+ Âm lịch</button>
-					<button type="button" class="secondary" onclick="dsAdd(7)">+ Lịch tháng</button>
-					<button type="button" class="secondary" onclick="dsAdd(8)">+ Chữ 1</button>
-					<button type="button" class="secondary" onclick="dsAdd(9)">+ Chữ 2</button>
-					<button type="button" class="secondary" onclick="dsAdd(11)">+ Thứ</button>
-					<button type="button" class="secondary" onclick="dsAdd(12)">+ Ngày</button>
+					<button type="button" class="secondary" onclick="dsAdd(4)">+ Nhiá»‡t Ä‘á»™</button>
+					<button type="button" class="secondary" onclick="dsAdd(5)">+ NgÃ y thÃ¡ng</button>
+					<button type="button" class="secondary" onclick="dsAdd(6)">+ Ã‚m lá»‹ch</button>
+					<button type="button" class="secondary" onclick="dsAdd(7)">+ Lá»‹ch thÃ¡ng</button>
+					<button type="button" class="secondary" onclick="dsAdd(8)">+ Chá»¯ 1</button>
+					<button type="button" class="secondary" onclick="dsAdd(9)">+ Chá»¯ 2</button>
+					<button type="button" class="secondary" onclick="dsAdd(11)">+ Thá»©</button>
+					<button type="button" class="secondary" onclick="dsAdd(12)">+ NgÃ y</button>
 					<input type="file" id="dsIconFile" accept="image/*" style="display:none" onchange="dsIconFile(this)">
-					<button type="button" class="secondary" onclick="document.getElementById('dsIconFile').click()">+ Ảnh…</button>
+					<button type="button" class="secondary" onclick="document.getElementById('dsIconFile').click()">+ áº¢nhâ€¦</button>
 				</div>
 			</div>
 			<div class="canvas-container">
@@ -462,59 +462,59 @@
 			</div>
 			<div class="flex-container">
 				<div class="flex-group">
-					<button type="button" class="secondary" onclick="dsCycleSize()">Đổi cỡ</button>
-					<button type="button" class="secondary" onclick="dsDelete()">Xóa thành phần</button>
-					<button type="button" class="secondary" onclick="dsClear()">Xóa hết</button>
-					<label for="dsFrame">Viền:</label>
+					<button type="button" class="secondary" onclick="dsCycleSize()">Äá»•i cá»¡</button>
+					<button type="button" class="secondary" onclick="dsDelete()">XÃ³a thÃ nh pháº§n</button>
+					<button type="button" class="secondary" onclick="dsClear()">XÃ³a háº¿t</button>
+					<label for="dsFrame">Viá»n:</label>
 					<select id="dsFrame" onchange="dsSetFrame(this.value)">
-						<option value="0">Không</option>
-						<option value="1">Viền đơn</option>
-						<option value="2">Viền đôi</option>
+						<option value="0">KhÃ´ng</option>
+						<option value="1">Viá»n Ä‘Æ¡n</option>
+						<option value="2">Viá»n Ä‘Ã´i</option>
 					</select>
 				</div>
 			</div>
 			<div class="flex-container">
 				<div class="flex-group">
-					<input type="text" id="dsText1" placeholder="Chữ 1 (tự do)" maxlength="30" style="width:200px" oninput="dsTexts()">
-					<input type="text" id="dsText2" placeholder="Chữ 2 (tự do)" maxlength="30" style="width:200px" oninput="dsTexts()">
-					<button id="dsuploadbutton" type="button" class="primary" onclick="dsUpload()">Gửi giao diện</button>
+					<input type="text" id="dsText1" placeholder="Chá»¯ 1 (tá»± do)" maxlength="30" style="width:200px" oninput="dsTexts()">
+					<input type="text" id="dsText2" placeholder="Chá»¯ 2 (tá»± do)" maxlength="30" style="width:200px" oninput="dsTexts()">
+					<button id="dsuploadbutton" type="button" class="primary" onclick="dsUpload()">Gá»­i giao diá»‡n</button>
 				</div>
 			</div>
 		</fieldset>
 		<fieldset>
-			<legend>Truyền hình ảnh</legend>
+			<legend>Truyá»n hÃ¬nh áº£nh</legend>
 			<div class="flex-container">
 				<input type="file" id="imageFile" accept=".png,.jpg,.bmp,.webp,.jpeg" onchange="updateImage()">
 			</div>
 			<div class="flex-container options">
 				<div class="flex-group debug">
-					<label>Kích thước canvas:</label>
-					<label id="canvasSizeLabel">2.13" (212×104)</label>
+					<label>KÃ­ch thÆ°á»›c canvas:</label>
+					<label id="canvasSizeLabel">2.13" (212Ã—104)</label>
 				</div>
 				<div class="flex-group debug">
-					<label for="ditherMode">Chế độ màu:</label>
+					<label for="ditherMode">Cháº¿ Ä‘á»™ mÃ u:</label>
 					<select id="ditherMode" onchange="applyDither()">
-						<option value="blackWhiteColor" selected>2 màu (đen trắng)</option>
+						<option value="blackWhiteColor" selected>2 mÃ u (Ä‘en tráº¯ng)</option>
 					</select>
 				</div>
 				<div class="flex-group">
-					<label for="ditherAlg">Thuật toán dithering:</label>
+					<label for="ditherAlg">Thuáº­t toÃ¡n dithering:</label>
 					<select id="ditherAlg" onchange="applyDither()">
 						<option value="floydSteinberg">Floyd-Steinberg</option>
 						<option value="atkinson">Atkinson</option>
 						<option value="bayer">Bayer</option>
 						<option value="stucki">Stucki</option>
 						<option value="jarvis">Jarvis-Judice-Ninke</option>
-						<option value="none">Không dithering</option>
+						<option value="none">KhÃ´ng dithering</option>
 					</select>
 				</div>
 				<div class="flex-group">
-					<label for="ditherStrength">Cường độ dithering:</label>
+					<label for="ditherStrength">CÆ°á»ng Ä‘á»™ dithering:</label>
 					<input type="range" min="0" max="5" step="0.1" value="1.0" id="ditherStrength">
 					<label id="ditherStrengthValue">1.0</label>
 				</div>
 				<div class="flex-group">
-					<label for="ditherContrast">Tương phản:</label>
+					<label for="ditherContrast">TÆ°Æ¡ng pháº£n:</label>
 					<input type="range" min="0.5" max="2" step="0.1" value="1.2" id="ditherContrast">
 					<label id="ditherContrastValue">1.2</label>
 				</div>
@@ -525,35 +525,35 @@
 					<input type="number" id="mtusize" value="244" min="20" max="255">
 				</div>
 			</div>
-			<div class="status-bar"><b>Trạng thái: </b><span id="status"></span></div>
+			<div class="status-bar"><b>Tráº¡ng thÃ¡i: </b><span id="status"></span></div>
 			<div class="flex-container">
 				<div class="flex-group">
 					<button type="button" class="secondary debug" onclick="rotateCanvas()">Xoay canvas</button>
-					<button type="button" class="secondary" onclick="clearCanvas()">Xóa canvas</button>
-					<button type="button" class="secondary debug" onclick="downloadDataArray()">Tải mảng dữ liệu</button>
-					<button id="sendimgbutton" type="button" class="primary" onclick="sendimg()">Gửi hình ảnh</button>
-					<button id="saveflashbutton" type="button" class="secondary" onclick="saveImageFlash()">Lưu ảnh vào flash</button>
+					<button type="button" class="secondary" onclick="clearCanvas()">XÃ³a canvas</button>
+					<button type="button" class="secondary debug" onclick="downloadDataArray()">Táº£i máº£ng dá»¯ liá»‡u</button>
+					<button id="sendimgbutton" type="button" class="primary" onclick="sendimg()">Gá»­i hÃ¬nh áº£nh</button>
+					<button id="saveflashbutton" type="button" class="secondary" onclick="saveImageFlash()">LÆ°u áº£nh vÃ o flash</button>
 				</div>
 			</div>
 			<div class="flex-container">
 				<div class="flex-group">
-					<button type="button" class="secondary" onclick="reloadImage()">Tải lại</button>
-					<button type="button" class="secondary" onclick="stretchToScreen()">Kéo giãn đầy màn</button>
-					<button type="button" class="secondary" onclick="fitToScreen()">Vừa màn hình</button>
-					<button type="button" class="secondary" onclick="rotateImage(90)">Xoay 90°</button>
-					<button type="button" class="secondary" onclick="rotateImage(-90)">Xoay -90°</button>
-					<button type="button" class="secondary" onclick="rotateImage(0)">Đặt lại xoay</button>
-					<button type="button" class="secondary" onclick="cropImage()">Cắt ảnh</button>
+					<button type="button" class="secondary" onclick="reloadImage()">Táº£i láº¡i</button>
+					<button type="button" class="secondary" onclick="stretchToScreen()">KÃ©o giÃ£n Ä‘áº§y mÃ n</button>
+					<button type="button" class="secondary" onclick="fitToScreen()">Vá»«a mÃ n hÃ¬nh</button>
+					<button type="button" class="secondary" onclick="rotateImage(90)">Xoay 90Â°</button>
+					<button type="button" class="secondary" onclick="rotateImage(-90)">Xoay -90Â°</button>
+					<button type="button" class="secondary" onclick="rotateImage(0)">Äáº·t láº¡i xoay</button>
+					<button type="button" class="secondary" onclick="cropImage()">Cáº¯t áº£nh</button>
 				</div>
 			</div>
 			<div class="flex-container options">
 				<div class="flex-group">
-					<label for="imgBrightness">Độ sáng:</label>
+					<label for="imgBrightness">Äá»™ sÃ¡ng:</label>
 					<input type="range" min="-100" max="100" step="1" value="0" id="imgBrightness">
 					<label id="imgBrightnessValue">0</label>
 				</div>
 				<div class="flex-group">
-					<label for="imgSaturation">Bão hòa:</label>
+					<label for="imgSaturation">BÃ£o hÃ²a:</label>
 					<input type="range" min="0" max="200" step="1" value="100" id="imgSaturation">
 					<label id="imgSaturationValue">100</label>
 				</div>
@@ -563,27 +563,27 @@
 				<canvas id="canvas" width="212" height="104"></canvas>
 				<div class="flex-container canvas-tools">
 					<div class="flex-group tool-buttons">
-						<button id="brush-mode" title="Bút vẽ" class="tool-button">✏️</button>
-						<button id="eraser-mode" title="Tẩy" class="tool-button">🧽</button>
-						<button id="text-mode" title="Thêm chữ" class="tool-button">T</button>
-						<button id="undo-btn" title="Hoàn tác (Ctrl+Z)" class="tool-button hide">↶</button>
-						<button id="redo-btn" title="Làm lại (Ctrl+Y)" class="tool-button hide">↷</button>
+						<button id="brush-mode" title="BÃºt váº½" class="tool-button">âœï¸</button>
+						<button id="eraser-mode" title="Táº©y" class="tool-button">ðŸ§½</button>
+						<button id="text-mode" title="ThÃªm chá»¯" class="tool-button">T</button>
+						<button id="undo-btn" title="HoÃ n tÃ¡c (Ctrl+Z)" class="tool-button hide">â†¶</button>
+						<button id="redo-btn" title="LÃ m láº¡i (Ctrl+Y)" class="tool-button hide">â†·</button>
 					</div>
 				</div>
 				<div class="flex-container canvas-tools">
 					<div class="flex-group brush-tools">
-						<label for="brush-color">Màu:</label>
+						<label for="brush-color">MÃ u:</label>
 						<select id="brush-color">
-							<option value="#000000">Đen</option>
-							<option value="#FFFFFF">Trắng</option>
+							<option value="#000000">Äen</option>
+							<option value="#FFFFFF">Tráº¯ng</option>
 						</select>
-						<label for="brush-size">Độ dày:</label>
+						<label for="brush-size">Äá»™ dÃ y:</label>
 						<input type="number" id="brush-size" value="2" min="1" max="100">
 					</div>
 				</div>
 				<div class="flex-container canvas-tools">
 					<div class="flex-group text-tools">
-						<label for="font-family">Phông chữ:</label>
+						<label for="font-family">PhÃ´ng chá»¯:</label>
 						<select id="font-family">
 							<option value="Arial">Arial</option>
 							<option value="sans-serif">Sans-serif</option>
@@ -595,40 +595,40 @@
 							<option value="Georgia">Georgia</option>
 							<option value="Courier New">Courier New</option>
 						</select>
-						<label for="font-size">Cỡ chữ:</label>
+						<label for="font-size">Cá»¡ chá»¯:</label>
 						<input type="number" id="font-size" value="16" min="1" max="100">
 					</div>
 					<div class="flex-group text-tools">
-						<input type="text" id="text-input" placeholder="Nhập văn bản" style="width:150px">
-						<button id="text-bold" title="Đậm">B</button>
-						<button id="text-italic" title="Nghiêng">I</button>
-						<button id="add-text-btn" class="primary">Thêm chữ</button>
+						<input type="text" id="text-input" placeholder="Nháº­p vÄƒn báº£n" style="width:150px">
+						<button id="text-bold" title="Äáº­m">B</button>
+						<button id="text-italic" title="NghiÃªng">I</button>
+						<button id="add-text-btn" class="primary">ThÃªm chá»¯</button>
 					</div>
 					<div class="flex-group crop-tools">
-						<button id="crop-zoom-in" title="Phóng to" class="secondary">+</button>
-						<button id="crop-zoom-out" title="Thu nhỏ" class="secondary">-</button>
-						<button id="crop-move-left" title="Sang trái">⇦</button>
-						<button id="crop-move-up" title="Lên trên">⇧</button>
-						<button id="crop-move-down" title="Xuống dưới">⇩</button>
-						<button id="crop-move-right" title="Sang phải">⇨</button>
+						<button id="crop-zoom-in" title="PhÃ³ng to" class="secondary">+</button>
+						<button id="crop-zoom-out" title="Thu nhá»" class="secondary">-</button>
+						<button id="crop-move-left" title="Sang trÃ¡i">â‡¦</button>
+						<button id="crop-move-up" title="LÃªn trÃªn">â‡§</button>
+						<button id="crop-move-down" title="Xuá»‘ng dÆ°á»›i">â‡©</button>
+						<button id="crop-move-right" title="Sang pháº£i">â‡¨</button>
 						<button class="primary" onclick="applyDither()">Xong</button>
 					</div>
 				</div>
 			</div>
 		</fieldset>        
 		<fieldset>
-			<legend>Cập nhật firmware (OTA)</legend>
+			<legend>Cáº­p nháº­t firmware (OTA)</legend>
 			<div class="flex-container">
 				<div class="flex-group">
 					<input type="file" id="otaFile" accept=".bin">
-					<button id="otabutton" type="button" class="secondary" onclick="otaUpdate()">Cập nhật firmware</button>
+					<button id="otabutton" type="button" class="secondary" onclick="otaUpdate()">Cáº­p nháº­t firmware</button>
 					<span id="otaProgress" class="system-time"></span>
 				</div>
 			</div>
-			<p class="mode-gallery-hint">Nạp file <b>.bin</b> được tải về từ trang web cấu hình thiết bị. Không tắt nguồn thiết bị khi đang cập nhật.</p>
+			<p class="mode-gallery-hint">Náº¡p file <b>.bin</b> Ä‘Æ°á»£c táº£i vá» tá»« trang web cáº¥u hÃ¬nh thiáº¿t bá»‹. KhÃ´ng táº¯t nguá»“n thiáº¿t bá»‹ khi Ä‘ang cáº­p nháº­t.</p>
 		</fieldset>
 		<fieldset>
-			<legend>Danh sách firmware</legend>
+			<legend>Danh sÃ¡ch firmware</legend>
 			<div style="overflow-x:auto">
 				<table class="fw-table">
 					<thead>
@@ -641,124 +641,124 @@
 						</tr>
 					</thead>
 					<tbody>
-						<!-- Thêm firmware mới: chép dòng mẫu dưới, sửa nội dung; file .bin
-						     đặt trong thư mục "OTA firmware/" của repo, ví dụ:
+						<!-- ThÃªm firmware má»›i: chÃ©p dÃ²ng máº«u dÆ°á»›i, sá»­a ná»™i dung; file .bin
+						     Ä‘áº·t trong thÆ° má»¥c "OTA firmware/" cá»§a repo, vÃ­ dá»¥:
 						<tr>
 							<td>2</td>
 							<td>1.1</td>
-							<td>Mô tả thay đổi</td>
+							<td>MÃ´ táº£ thay Ä‘á»•i</td>
 							<td>20/07/2026</td>
-							<td><a href="OTA firmware/fw_2_13inch_v1.1.bin" download>Tải về</a></td>
+							<td><a href="OTA firmware/fw_2_13inch_v1.1.bin" download>Táº£i vá»</a></td>
 						</tr>
 						-->
 						<tr>
 							<td>0</td>
 							<td>0.1</td>
-							<td>Phiên bản public, chỉ cần cài là sử dụng ngay, có 1 chế độ màn hình cơ bản</td>
+							<td>PhiÃªn báº£n public, chá»‰ cáº§n cÃ i lÃ  sá»­ dá»¥ng ngay, cÃ³ 1 cháº¿ Ä‘á»™ mÃ n hÃ¬nh cÆ¡ báº£n</td>
 							<td>12/07/2026</td>
-							<td><a href="OTA firmware/fw_2_13inch_v0.1.bin" download>Tải về</a></td>
+							<td><a href="OTA firmware/fw_2_13inch_v0.1.bin" download>Táº£i vá»</a></td>
 						</tr>
                         <tr>
 							<td>1</td>
 							<td>1.0</td>
-							<td>Phiên bản nâng cấp với 28 chế độ màn hình riêng biệt</td>
+							<td>PhiÃªn báº£n nÃ¢ng cáº¥p vá»›i 28 cháº¿ Ä‘á»™ mÃ n hÃ¬nh riÃªng biá»‡t</td>
 							<td>12/07/2026</td>
-							<td><a href="OTA firmware/fw_2_13inch_v1.0.bin" download>Tải về</a></td>
+							<td><a href="OTA firmware/fw_2_13inch_v1.0.bin" download>Táº£i vá»</a></td>
 						</tr>
 					</tbody>
 				</table>
 			</div>
-			<p class="mode-gallery-hint">Tải file .bin tương ứng về rồi nạp bằng khung «Cập nhật firmware (OTA)» phía trên. <br> Nếu gặp bất kì vấn đề hoặc yêu cầu nào về cập nhật firmware mới, vui lòng nhắn tin cho tôi qua kênh bán hàng và tôi sẽ cập nhật bản update ở đây.</p>
+			<p class="mode-gallery-hint">Táº£i file .bin tÆ°Æ¡ng á»©ng vá» rá»“i náº¡p báº±ng khung Â«Cáº­p nháº­t firmware (OTA)Â» phÃ­a trÃªn. <br> Náº¿u gáº·p báº¥t kÃ¬ váº¥n Ä‘á» hoáº·c yÃªu cáº§u nÃ o vá» cáº­p nháº­t firmware má»›i, vui lÃ²ng nháº¯n tin cho tÃ´i qua kÃªnh bÃ¡n hÃ ng vÃ  tÃ´i sáº½ cáº­p nháº­t báº£n update á»Ÿ Ä‘Ã¢y.</p>
 		</fieldset>
 		</template>
 
 		<template id="tpl-2_9">
 		<fieldset>
-			<legend>Thời gian</legend>
+			<legend>Thá»i gian</legend>
 			<div class="time-sync-row">
-				<label for="synctimebutton">Giờ hệ thống:</label>
+				<label for="synctimebutton">Giá» há»‡ thá»‘ng:</label>
 				<span id="systemTime" class="system-time">--</span>
 				<button id="synctimebutton" type="button" class="primary" onclick="manualSyncTime()">Sync time</button>
-				<button id="calibratebutton" type="button" class="secondary" onclick="calibrateClock()">Hiệu chỉnh giờ</button>
-				<span class="mode-gallery-hint" style="margin:0">«Sync time» đặt giờ và hiển thị đồng hồ. «Hiệu chỉnh giờ» bù sai số nhanh/chậm (đo sau ≥ 2 ngày kể từ lần đặt giờ).</span>
+				<button id="calibratebutton" type="button" class="secondary" onclick="calibrateClock()">Hiá»‡u chá»‰nh giá»</button>
+				<span class="mode-gallery-hint" style="margin:0">Â«Sync timeÂ» Ä‘áº·t giá» vÃ  hiá»ƒn thá»‹ Ä‘á»“ng há»“. Â«Hiá»‡u chá»‰nh giá»Â» bÃ¹ sai sá»‘ nhanh/cháº­m (Ä‘o sau â‰¥ 2 ngÃ y ká»ƒ tá»« láº§n Ä‘áº·t giá»).</span>
 			</div>
 		</fieldset>
 		<fieldset>
-			<legend>Màn hình</legend>
+			<legend>MÃ n hÃ¬nh</legend>
 			<div class="flex-container">
 				<div class="flex-group">
-					<label>Màn hình:</label>
-					<span class="system-time">2.9" — 296×128 (đen trắng đỏ)</span>
+					<label>MÃ n hÃ¬nh:</label>
+					<span class="system-time">2.9" â€” 296Ã—128 (Ä‘en tráº¯ng Ä‘á»)</span>
 				</div>
 				<div class="flex-group">
-					<label>Nhiệt độ màn hình:</label>
+					<label>Nhiá»‡t Ä‘á»™ mÃ n hÃ¬nh:</label>
 					<span id="panelTemp" class="system-time">--</span>
-					<button id="temprefreshbutton" type="button" class="secondary" onclick="readPanelTemp()">Đọc nhiệt độ</button>
+					<button id="temprefreshbutton" type="button" class="secondary" onclick="readPanelTemp()">Äá»c nhiá»‡t Ä‘á»™</button>
 				</div>
 				<div class="flex-group">
 					<label>Pin:</label>
 					<span id="battVolt" class="system-time">--</span>
 				</div>
 			</div>
-			<p class="mode-gallery-hint">Panel <b>HINK-E029A10-A3</b> 296×128, cố định — không cần đổi phân giải. Nhiệt độ do firmware đọc từ cảm biến tích hợp <b>trong màn hình</b>, tự cập nhật sau mỗi lần làm mới. Các phần tử tĩnh của giao diện (tiêu đề, ô «hôm nay», ngày lễ…) hiển thị bằng <b>mực đỏ</b>; nội dung đổi mỗi phút vẫn cập nhật không chớp màn.</p>
+			<p class="mode-gallery-hint">Panel <b>HINK-E029A10-A3</b> 296Ã—128, cá»‘ Ä‘á»‹nh â€” khÃ´ng cáº§n Ä‘á»•i phÃ¢n giáº£i. Nhiá»‡t Ä‘á»™ do firmware Ä‘á»c tá»« cáº£m biáº¿n tÃ­ch há»£p <b>trong mÃ n hÃ¬nh</b>, tá»± cáº­p nháº­t sau má»—i láº§n lÃ m má»›i. CÃ¡c pháº§n tá»­ tÄ©nh cá»§a giao diá»‡n (tiÃªu Ä‘á», Ã´ Â«hÃ´m nayÂ», ngÃ y lá»…â€¦) hiá»ƒn thá»‹ báº±ng <b>má»±c Ä‘á»</b>; ná»™i dung Ä‘á»•i má»—i phÃºt váº«n cáº­p nháº­t khÃ´ng chá»›p mÃ n.</p>
 		</fieldset>
 		<fieldset>
-			<legend>Điều khiển thiết bị</legend>
-			<p class="mode-gallery-hint">Chọn giao diện màn hình bên dưới rồi bấm «Áp dụng». Phần <b>màu đỏ</b> trên thẻ xem trước là phần firmware vẽ bằng mực đỏ của panel BWR. Chưa đồng bộ giờ thì webtool tự gửi «Sync time» trước. Giao diện đã chọn được lưu trong flash thiết bị — mất nguồn vẫn nhớ.</p>
+			<legend>Äiá»u khiá»ƒn thiáº¿t bá»‹</legend>
+			<p class="mode-gallery-hint">Chá»n giao diá»‡n mÃ n hÃ¬nh bÃªn dÆ°á»›i rá»“i báº¥m Â«Ãp dá»¥ngÂ». Pháº§n <b>mÃ u Ä‘á»</b> trÃªn tháº» xem trÆ°á»›c lÃ  pháº§n firmware váº½ báº±ng má»±c Ä‘á» cá»§a panel BWR. ChÆ°a Ä‘á»“ng bá»™ giá» thÃ¬ webtool tá»± gá»­i Â«Sync timeÂ» trÆ°á»›c. Giao diá»‡n Ä‘Ã£ chá»n Ä‘Æ°á»£c lÆ°u trong flash thiáº¿t bá»‹ â€” máº¥t nguá»“n váº«n nhá»›.</p>
 			<div class="mode-gallery" id="modeGallery"></div>
 			<div class="flex-container">
 				<div class="flex-group" style="flex:1 1 100%">
 					<label style="display:flex;align-items:center;gap:6px;cursor:pointer">
 						<input type="checkbox" id="hourlyFullCHK" checked onchange="setHourlyFull()">
-						Làm mới toàn màn hình mỗi giờ — nếu tắt, chỉ làm mới toàn màn lúc 00:00 (ít chớp hơn nhưng bóng mờ tích tụ nhiều hơn)
+						LÃ m má»›i toÃ n mÃ n hÃ¬nh má»—i giá» â€” náº¿u táº¯t, chá»‰ lÃ m má»›i toÃ n mÃ n lÃºc 00:00 (Ã­t chá»›p hÆ¡n nhÆ°ng bÃ³ng má» tÃ­ch tá»¥ nhiá»u hÆ¡n)
 					</label>
 				</div>
 			</div>
 			<div class="flex-container">
 				<div class="flex-group">
-					<button id="resetdevicebutton" type="button" class="secondary" onclick="resetDevice()">Khởi động lại thiết bị</button>
+					<button id="resetdevicebutton" type="button" class="secondary" onclick="resetDevice()">Khá»Ÿi Ä‘á»™ng láº¡i thiáº¿t bá»‹</button>
 				</div>
 			</div>
 		</fieldset>
 		<fieldset>
-			<legend>Cấu hình giao diện</legend>
+			<legend>Cáº¥u hÃ¬nh giao diá»‡n</legend>
 			<div class="flex-container">
 				<div class="flex-group">
-					<label for="eventName">Sự kiện đếm ngược:</label>
-					<input type="text" id="eventName" placeholder="Tên sự kiện (vd. Đếm ngược ngày)" maxlength="30" style="width:220px">
+					<label for="eventName">Sá»± kiá»‡n Ä‘áº¿m ngÆ°á»£c:</label>
+					<input type="text" id="eventName" placeholder="TÃªn sá»± kiá»‡n (vd. Äáº¿m ngÆ°á»£c ngÃ y)" maxlength="30" style="width:220px">
 					<input type="date" id="eventDate">
-					<button id="sendeventbutton" type="button" class="primary" onclick="sendEvent()">Gửi sự kiện</button>
+					<button id="sendeventbutton" type="button" class="primary" onclick="sendEvent()">Gá»­i sá»± kiá»‡n</button>
 				</div>
 			</div>
 			<div class="flex-container">
 				<div class="flex-group">
-					<label for="noteLine0">Bảng tên / ghi chú:</label>
-					<input type="text" id="noteLine0" placeholder="Dòng 1 — chữ lớn (vd. họ tên)" maxlength="30" style="width:220px">
-					<input type="text" id="noteLine1" placeholder="Dòng 2 (vd. chức danh)" maxlength="30" style="width:200px">
-					<input type="text" id="noteLine2" placeholder="Dòng 3 (vd. điện thoại)" maxlength="30" style="width:200px">
-					<button id="sendnotebutton" type="button" class="primary" onclick="sendNote()">Gửi ghi chú</button>
+					<label for="noteLine0">Báº£ng tÃªn / ghi chÃº:</label>
+					<input type="text" id="noteLine0" placeholder="DÃ²ng 1 â€” chá»¯ lá»›n (vd. há» tÃªn)" maxlength="30" style="width:220px">
+					<input type="text" id="noteLine1" placeholder="DÃ²ng 2 (vd. chá»©c danh)" maxlength="30" style="width:200px">
+					<input type="text" id="noteLine2" placeholder="DÃ²ng 3 (vd. Ä‘iá»‡n thoáº¡i)" maxlength="30" style="width:200px">
+					<button id="sendnotebutton" type="button" class="primary" onclick="sendNote()">Gá»­i ghi chÃº</button>
 				</div>
 			</div>
-			<p class="mode-gallery-hint">Nội dung gửi xuống được lưu trong flash thiết bị (mất nguồn không mất). Tên sự kiện và dòng 1 bảng tên hiển thị bằng <b>mực đỏ</b>. Tối đa 43 byte UTF-8 mỗi dòng (khoảng 25-30 ký tự tiếng Việt).</p>
+			<p class="mode-gallery-hint">Ná»™i dung gá»­i xuá»‘ng Ä‘Æ°á»£c lÆ°u trong flash thiáº¿t bá»‹ (máº¥t nguá»“n khÃ´ng máº¥t). TÃªn sá»± kiá»‡n vÃ  dÃ²ng 1 báº£ng tÃªn hiá»ƒn thá»‹ báº±ng <b>má»±c Ä‘á»</b>. Tá»‘i Ä‘a 43 byte UTF-8 má»—i dÃ²ng (khoáº£ng 25-30 kÃ½ tá»± tiáº¿ng Viá»‡t).</p>
 		</fieldset>
 		<fieldset>
-			<legend>Thiết kế màn hình</legend>
-			<p class="mode-gallery-hint">Bấm để thêm thành phần, kéo thả để xếp chỗ trên canvas (đúng kích thước màn 296×128). Bấm chọn một thành phần rồi «Đổi cỡ» / «Xóa». Gửi xuống là thiết bị chuyển sang giao diện «Tự thiết kế» và nhớ bố cục trong flash.</p>
+			<legend>Thiáº¿t káº¿ mÃ n hÃ¬nh</legend>
+			<p class="mode-gallery-hint">Báº¥m Ä‘á»ƒ thÃªm thÃ nh pháº§n, kÃ©o tháº£ Ä‘á»ƒ xáº¿p chá»— trÃªn canvas (Ä‘Ãºng kÃ­ch thÆ°á»›c mÃ n 296Ã—128). Báº¥m chá»n má»™t thÃ nh pháº§n rá»“i Â«Äá»•i cá»¡Â» / Â«XÃ³aÂ». Gá»­i xuá»‘ng lÃ  thiáº¿t bá»‹ chuyá»ƒn sang giao diá»‡n Â«Tá»± thiáº¿t káº¿Â» vÃ  nhá»› bá»‘ cá»¥c trong flash.</p>
 			<div class="flex-container">
 				<div class="flex-group">
-					<button type="button" class="secondary" onclick="dsAdd(1)">+ Giờ số</button>
-					<button type="button" class="secondary" onclick="dsAdd(2)">+ Đồng hồ kim</button>
+					<button type="button" class="secondary" onclick="dsAdd(1)">+ Giá» sá»‘</button>
+					<button type="button" class="secondary" onclick="dsAdd(2)">+ Äá»“ng há»“ kim</button>
 					<button type="button" class="secondary" onclick="dsAdd(3)">+ Pin</button>
-					<button type="button" class="secondary" onclick="dsAdd(4)">+ Nhiệt độ</button>
-					<button type="button" class="secondary" onclick="dsAdd(5)">+ Ngày tháng</button>
-					<button type="button" class="secondary" onclick="dsAdd(6)">+ Âm lịch</button>
-					<button type="button" class="secondary" onclick="dsAdd(7)">+ Lịch tháng</button>
-					<button type="button" class="secondary" onclick="dsAdd(8)">+ Chữ 1</button>
-					<button type="button" class="secondary" onclick="dsAdd(9)">+ Chữ 2</button>
-					<button type="button" class="secondary" onclick="dsAdd(11)">+ Thứ</button>
-					<button type="button" class="secondary" onclick="dsAdd(12)">+ Ngày</button>
+					<button type="button" class="secondary" onclick="dsAdd(4)">+ Nhiá»‡t Ä‘á»™</button>
+					<button type="button" class="secondary" onclick="dsAdd(5)">+ NgÃ y thÃ¡ng</button>
+					<button type="button" class="secondary" onclick="dsAdd(6)">+ Ã‚m lá»‹ch</button>
+					<button type="button" class="secondary" onclick="dsAdd(7)">+ Lá»‹ch thÃ¡ng</button>
+					<button type="button" class="secondary" onclick="dsAdd(8)">+ Chá»¯ 1</button>
+					<button type="button" class="secondary" onclick="dsAdd(9)">+ Chá»¯ 2</button>
+					<button type="button" class="secondary" onclick="dsAdd(11)">+ Thá»©</button>
+					<button type="button" class="secondary" onclick="dsAdd(12)">+ NgÃ y</button>
 					<input type="file" id="dsIconFile" accept="image/*" style="display:none" onchange="dsIconFile(this)">
-					<button type="button" class="secondary" onclick="document.getElementById('dsIconFile').click()">+ Ảnh…</button>
+					<button type="button" class="secondary" onclick="document.getElementById('dsIconFile').click()">+ áº¢nhâ€¦</button>
 				</div>
 			</div>
 			<div class="canvas-container">
@@ -766,60 +766,60 @@
 			</div>
 			<div class="flex-container">
 				<div class="flex-group">
-					<button type="button" class="secondary" onclick="dsCycleSize()">Đổi cỡ</button>
-					<button type="button" class="secondary" onclick="dsDelete()">Xóa thành phần</button>
-					<button type="button" class="secondary" onclick="dsClear()">Xóa hết</button>
-					<label for="dsFrame">Viền:</label>
+					<button type="button" class="secondary" onclick="dsCycleSize()">Äá»•i cá»¡</button>
+					<button type="button" class="secondary" onclick="dsDelete()">XÃ³a thÃ nh pháº§n</button>
+					<button type="button" class="secondary" onclick="dsClear()">XÃ³a háº¿t</button>
+					<label for="dsFrame">Viá»n:</label>
 					<select id="dsFrame" onchange="dsSetFrame(this.value)">
-						<option value="0">Không</option>
-						<option value="1">Viền đơn</option>
-						<option value="2">Viền đôi</option>
+						<option value="0">KhÃ´ng</option>
+						<option value="1">Viá»n Ä‘Æ¡n</option>
+						<option value="2">Viá»n Ä‘Ã´i</option>
 					</select>
 				</div>
 			</div>
 			<div class="flex-container">
 				<div class="flex-group">
-					<input type="text" id="dsText1" placeholder="Chữ 1 (tự do)" maxlength="30" style="width:200px" oninput="dsTexts()">
-					<input type="text" id="dsText2" placeholder="Chữ 2 (tự do)" maxlength="30" style="width:200px" oninput="dsTexts()">
-					<button id="dsuploadbutton" type="button" class="primary" onclick="dsUpload()">Gửi giao diện</button>
+					<input type="text" id="dsText1" placeholder="Chá»¯ 1 (tá»± do)" maxlength="30" style="width:200px" oninput="dsTexts()">
+					<input type="text" id="dsText2" placeholder="Chá»¯ 2 (tá»± do)" maxlength="30" style="width:200px" oninput="dsTexts()">
+					<button id="dsuploadbutton" type="button" class="primary" onclick="dsUpload()">Gá»­i giao diá»‡n</button>
 				</div>
 			</div>
 		</fieldset>
 		<fieldset>
-			<legend>Truyền hình ảnh</legend>
+			<legend>Truyá»n hÃ¬nh áº£nh</legend>
 			<div class="flex-container">
 				<input type="file" id="imageFile" accept=".png,.jpg,.bmp,.webp,.jpeg" onchange="updateImage()">
 			</div>
 			<div class="flex-container options">
 				<div class="flex-group debug">
-					<label>Kích thước canvas:</label>
-					<label id="canvasSizeLabel">2.9" (296×128)</label>
+					<label>KÃ­ch thÆ°á»›c canvas:</label>
+					<label id="canvasSizeLabel">2.9" (296Ã—128)</label>
 				</div>
 				<div class="flex-group debug">
-					<label for="ditherMode">Chế độ màu:</label>
+					<label for="ditherMode">Cháº¿ Ä‘á»™ mÃ u:</label>
 					<select id="ditherMode" onchange="applyDither()">
-						<option value="threeColor" selected>3 màu (đen trắng đỏ)</option>
-						<option value="blackWhiteColor">2 màu (đen trắng)</option>
+						<option value="threeColor" selected>3 mÃ u (Ä‘en tráº¯ng Ä‘á»)</option>
+						<option value="blackWhiteColor">2 mÃ u (Ä‘en tráº¯ng)</option>
 					</select>
 				</div>
 				<div class="flex-group">
-					<label for="ditherAlg">Thuật toán dithering:</label>
+					<label for="ditherAlg">Thuáº­t toÃ¡n dithering:</label>
 					<select id="ditherAlg" onchange="applyDither()">
 						<option value="floydSteinberg">Floyd-Steinberg</option>
 						<option value="atkinson">Atkinson</option>
 						<option value="bayer">Bayer</option>
 						<option value="stucki">Stucki</option>
 						<option value="jarvis">Jarvis-Judice-Ninke</option>
-						<option value="none">Không dithering</option>
+						<option value="none">KhÃ´ng dithering</option>
 					</select>
 				</div>
 				<div class="flex-group">
-					<label for="ditherStrength">Cường độ dithering:</label>
+					<label for="ditherStrength">CÆ°á»ng Ä‘á»™ dithering:</label>
 					<input type="range" min="0" max="5" step="0.1" value="1.0" id="ditherStrength">
 					<label id="ditherStrengthValue">1.0</label>
 				</div>
 				<div class="flex-group">
-					<label for="ditherContrast">Tương phản:</label>
+					<label for="ditherContrast">TÆ°Æ¡ng pháº£n:</label>
 					<input type="range" min="0.5" max="2" step="0.1" value="1.2" id="ditherContrast">
 					<label id="ditherContrastValue">1.2</label>
 				</div>
@@ -830,35 +830,35 @@
 					<input type="number" id="mtusize" value="244" min="20" max="255">
 				</div>
 			</div>
-			<div class="status-bar"><b>Trạng thái: </b><span id="status"></span></div>
+			<div class="status-bar"><b>Tráº¡ng thÃ¡i: </b><span id="status"></span></div>
 			<div class="flex-container">
 				<div class="flex-group">
 					<button type="button" class="secondary debug" onclick="rotateCanvas()">Xoay canvas</button>
-					<button type="button" class="secondary" onclick="clearCanvas()">Xóa canvas</button>
-					<button type="button" class="secondary debug" onclick="downloadDataArray()">Tải mảng dữ liệu</button>
-					<button id="sendimgbutton" type="button" class="primary" onclick="sendimg()">Gửi hình ảnh</button>
-					<button id="saveflashbutton" type="button" class="secondary" onclick="saveImageFlash()">Lưu ảnh vào flash</button>
+					<button type="button" class="secondary" onclick="clearCanvas()">XÃ³a canvas</button>
+					<button type="button" class="secondary debug" onclick="downloadDataArray()">Táº£i máº£ng dá»¯ liá»‡u</button>
+					<button id="sendimgbutton" type="button" class="primary" onclick="sendimg()">Gá»­i hÃ¬nh áº£nh</button>
+					<button id="saveflashbutton" type="button" class="secondary" onclick="saveImageFlash()">LÆ°u áº£nh vÃ o flash</button>
 				</div>
 			</div>
 			<div class="flex-container">
 				<div class="flex-group">
-					<button type="button" class="secondary" onclick="reloadImage()">Tải lại</button>
-					<button type="button" class="secondary" onclick="stretchToScreen()">Kéo giãn đầy màn</button>
-					<button type="button" class="secondary" onclick="fitToScreen()">Vừa màn hình</button>
-					<button type="button" class="secondary" onclick="rotateImage(90)">Xoay 90°</button>
-					<button type="button" class="secondary" onclick="rotateImage(-90)">Xoay -90°</button>
-					<button type="button" class="secondary" onclick="rotateImage(0)">Đặt lại xoay</button>
-					<button type="button" class="secondary" onclick="cropImage()">Cắt ảnh</button>
+					<button type="button" class="secondary" onclick="reloadImage()">Táº£i láº¡i</button>
+					<button type="button" class="secondary" onclick="stretchToScreen()">KÃ©o giÃ£n Ä‘áº§y mÃ n</button>
+					<button type="button" class="secondary" onclick="fitToScreen()">Vá»«a mÃ n hÃ¬nh</button>
+					<button type="button" class="secondary" onclick="rotateImage(90)">Xoay 90Â°</button>
+					<button type="button" class="secondary" onclick="rotateImage(-90)">Xoay -90Â°</button>
+					<button type="button" class="secondary" onclick="rotateImage(0)">Äáº·t láº¡i xoay</button>
+					<button type="button" class="secondary" onclick="cropImage()">Cáº¯t áº£nh</button>
 				</div>
 			</div>
 			<div class="flex-container options">
 				<div class="flex-group">
-					<label for="imgBrightness">Độ sáng:</label>
+					<label for="imgBrightness">Äá»™ sÃ¡ng:</label>
 					<input type="range" min="-100" max="100" step="1" value="0" id="imgBrightness">
 					<label id="imgBrightnessValue">0</label>
 				</div>
 				<div class="flex-group">
-					<label for="imgSaturation">Bão hòa:</label>
+					<label for="imgSaturation">BÃ£o hÃ²a:</label>
 					<input type="range" min="0" max="200" step="1" value="100" id="imgSaturation">
 					<label id="imgSaturationValue">100</label>
 				</div>
@@ -868,28 +868,28 @@
 				<canvas id="canvas" width="296" height="128"></canvas>
 				<div class="flex-container canvas-tools">
 					<div class="flex-group tool-buttons">
-						<button id="brush-mode" title="Bút vẽ" class="tool-button">✏️</button>
-						<button id="eraser-mode" title="Tẩy" class="tool-button">🧽</button>
-						<button id="text-mode" title="Thêm chữ" class="tool-button">T</button>
-						<button id="undo-btn" title="Hoàn tác (Ctrl+Z)" class="tool-button hide">↶</button>
-						<button id="redo-btn" title="Làm lại (Ctrl+Y)" class="tool-button hide">↷</button>
+						<button id="brush-mode" title="BÃºt váº½" class="tool-button">âœï¸</button>
+						<button id="eraser-mode" title="Táº©y" class="tool-button">ðŸ§½</button>
+						<button id="text-mode" title="ThÃªm chá»¯" class="tool-button">T</button>
+						<button id="undo-btn" title="HoÃ n tÃ¡c (Ctrl+Z)" class="tool-button hide">â†¶</button>
+						<button id="redo-btn" title="LÃ m láº¡i (Ctrl+Y)" class="tool-button hide">â†·</button>
 					</div>
 				</div>
 				<div class="flex-container canvas-tools">
 					<div class="flex-group brush-tools">
-						<label for="brush-color">Màu:</label>
+						<label for="brush-color">MÃ u:</label>
 						<select id="brush-color">
-							<option value="#000000">Đen</option>
-							<option value="#FF0000">Đỏ</option>
-							<option value="#FFFFFF">Trắng</option>
+							<option value="#000000">Äen</option>
+							<option value="#FF0000">Äá»</option>
+							<option value="#FFFFFF">Tráº¯ng</option>
 						</select>
-						<label for="brush-size">Độ dày:</label>
+						<label for="brush-size">Äá»™ dÃ y:</label>
 						<input type="number" id="brush-size" value="2" min="1" max="100">
 					</div>
 				</div>
 				<div class="flex-container canvas-tools">
 					<div class="flex-group text-tools">
-						<label for="font-family">Phông chữ:</label>
+						<label for="font-family">PhÃ´ng chá»¯:</label>
 						<select id="font-family">
 							<option value="Arial">Arial</option>
 							<option value="sans-serif">Sans-serif</option>
@@ -901,40 +901,40 @@
 							<option value="Georgia">Georgia</option>
 							<option value="Courier New">Courier New</option>
 						</select>
-						<label for="font-size">Cỡ chữ:</label>
+						<label for="font-size">Cá»¡ chá»¯:</label>
 						<input type="number" id="font-size" value="16" min="1" max="100">
 					</div>
 					<div class="flex-group text-tools">
-						<input type="text" id="text-input" placeholder="Nhập văn bản" style="width:150px">
-						<button id="text-bold" title="Đậm">B</button>
-						<button id="text-italic" title="Nghiêng">I</button>
-						<button id="add-text-btn" class="primary">Thêm chữ</button>
+						<input type="text" id="text-input" placeholder="Nháº­p vÄƒn báº£n" style="width:150px">
+						<button id="text-bold" title="Äáº­m">B</button>
+						<button id="text-italic" title="NghiÃªng">I</button>
+						<button id="add-text-btn" class="primary">ThÃªm chá»¯</button>
 					</div>
 					<div class="flex-group crop-tools">
-						<button id="crop-zoom-in" title="Phóng to" class="secondary">+</button>
-						<button id="crop-zoom-out" title="Thu nhỏ" class="secondary">-</button>
-						<button id="crop-move-left" title="Sang trái">⇦</button>
-						<button id="crop-move-up" title="Lên trên">⇧</button>
-						<button id="crop-move-down" title="Xuống dưới">⇩</button>
-						<button id="crop-move-right" title="Sang phải">⇨</button>
+						<button id="crop-zoom-in" title="PhÃ³ng to" class="secondary">+</button>
+						<button id="crop-zoom-out" title="Thu nhá»" class="secondary">-</button>
+						<button id="crop-move-left" title="Sang trÃ¡i">â‡¦</button>
+						<button id="crop-move-up" title="LÃªn trÃªn">â‡§</button>
+						<button id="crop-move-down" title="Xuá»‘ng dÆ°á»›i">â‡©</button>
+						<button id="crop-move-right" title="Sang pháº£i">â‡¨</button>
 						<button class="primary" onclick="applyDither()">Xong</button>
 					</div>
 				</div>
 			</div>
 		</fieldset>
 		<fieldset>
-			<legend>Cập nhật firmware (OTA)</legend>
+			<legend>Cáº­p nháº­t firmware (OTA)</legend>
 			<div class="flex-container">
 				<div class="flex-group">
 					<input type="file" id="otaFile" accept=".bin">
-					<button id="otabutton" type="button" class="secondary" onclick="otaUpdate()">Cập nhật firmware</button>
+					<button id="otabutton" type="button" class="secondary" onclick="otaUpdate()">Cáº­p nháº­t firmware</button>
 					<span id="otaProgress" class="system-time"></span>
 				</div>
 			</div>
-			<p class="mode-gallery-hint">Nạp file <b>.bin</b> được tải về từ trang web cấu hình thiết bị. Không tắt nguồn thiết bị khi đang cập nhật.</p>
+			<p class="mode-gallery-hint">Náº¡p file <b>.bin</b> Ä‘Æ°á»£c táº£i vá» tá»« trang web cáº¥u hÃ¬nh thiáº¿t bá»‹. KhÃ´ng táº¯t nguá»“n thiáº¿t bá»‹ khi Ä‘ang cáº­p nháº­t.</p>
 		</fieldset>
 		<fieldset>
-			<legend>Danh sách firmware</legend>
+			<legend>Danh sÃ¡ch firmware</legend>
 			<div style="overflow-x:auto">
 				<table class="fw-table">
 					<thead>
@@ -947,85 +947,85 @@
 						</tr>
 					</thead>
 					<tbody>
-						<!-- Thêm firmware mới: chép dòng mẫu dưới, sửa nội dung; file .bin
-						     đặt trong thư mục "OTA firmware/" của repo, ví dụ:
+						<!-- ThÃªm firmware má»›i: chÃ©p dÃ²ng máº«u dÆ°á»›i, sá»­a ná»™i dung; file .bin
+						     Ä‘áº·t trong thÆ° má»¥c "OTA firmware/" cá»§a repo, vÃ­ dá»¥:
 						<tr>
 							<td>0</td>
 							<td>0.1</td>
-							<td>Bản đầu tiên: 1 chế độ đồng hồ + gửi ảnh</td>
+							<td>Báº£n Ä‘áº§u tiÃªn: 1 cháº¿ Ä‘á»™ Ä‘á»“ng há»“ + gá»­i áº£nh</td>
 							<td>14/07/2026</td>
-							<td><a href="OTA firmware/fw_2_9inch_v0.1.bin" download>Tải về</a></td>
+							<td><a href="OTA firmware/fw_2_9inch_v0.1.bin" download>Táº£i vá»</a></td>
 						</tr>
 						-->
 					</tbody>
 				</table>
 			</div>
-			<p class="mode-gallery-hint">Firmware 2.9" bản đầu (1 chế độ đồng hồ + gửi ảnh) sẽ được đăng ở đây sau khi kiểm chứng trên thiết bị thật. <br> Nếu gặp bất kì vấn đề hoặc yêu cầu nào về cập nhật firmware mới, vui lòng nhắn tin cho tôi qua kênh bán hàng và tôi sẽ cập nhật bản update ở đây.</p>
+			<p class="mode-gallery-hint">Firmware 2.9" báº£n Ä‘áº§u (1 cháº¿ Ä‘á»™ Ä‘á»“ng há»“ + gá»­i áº£nh) sáº½ Ä‘Æ°á»£c Ä‘Äƒng á»Ÿ Ä‘Ã¢y sau khi kiá»ƒm chá»©ng trÃªn thiáº¿t bá»‹ tháº­t. <br> Náº¿u gáº·p báº¥t kÃ¬ váº¥n Ä‘á» hoáº·c yÃªu cáº§u nÃ o vá» cáº­p nháº­t firmware má»›i, vui lÃ²ng nháº¯n tin cho tÃ´i qua kÃªnh bÃ¡n hÃ ng vÃ  tÃ´i sáº½ cáº­p nháº­t báº£n update á»Ÿ Ä‘Ã¢y.</p>
 		</fieldset>
 		</template>
 
 		<template id="tpl-dlg">
 		<fieldset>
-			<legend>Thời gian</legend>
+			<legend>Thá»i gian</legend>
 			<div class="time-sync-row">
-				<button id="time-setter" type="button" class="primary" onclick="setTime()">Đặt giờ</button>
-				<label for="hour-offset">Chênh lệch múi giờ (giờ):</label>
-				<input type="number" max="24" min="0" id="hour-offset" value="0" title="Chênh lệch múi giờ (giờ)">
-				<span class="mode-gallery-hint" style="margin:0">Bấm «Đặt giờ» để đồng bộ ngày giờ hiện tại xuống thiết bị. Bình thường để chênh lệch múi giờ = 0.</span>
+				<button id="time-setter" type="button" class="primary" onclick="setTime()">Äáº·t giá»</button>
+				<label for="hour-offset">ChÃªnh lá»‡ch mÃºi giá» (giá»):</label>
+				<input type="number" max="24" min="0" id="hour-offset" value="0" title="ChÃªnh lá»‡ch mÃºi giá» (giá»)">
+				<span class="mode-gallery-hint" style="margin:0">Báº¥m Â«Äáº·t giá»Â» Ä‘á»ƒ Ä‘á»“ng bá»™ ngÃ y giá» hiá»‡n táº¡i xuá»‘ng thiáº¿t bá»‹. BÃ¬nh thÆ°á»ng Ä‘á»ƒ chÃªnh lá»‡ch mÃºi giá» = 0.</span>
 			</div>
 		</fieldset>
 		<fieldset>
-			<legend>Điều khiển thiết bị</legend>
-			<p class="mode-gallery-hint">Bấm nút để chuyển chế độ hiển thị — thiết bị tự làm mới màn hình sau mỗi lệnh.</p>
+			<legend>Äiá»u khiá»ƒn thiáº¿t bá»‹</legend>
+			<p class="mode-gallery-hint">Báº¥m nÃºt Ä‘á»ƒ chuyá»ƒn cháº¿ Ä‘á»™ hiá»ƒn thá»‹ â€” thiáº¿t bá»‹ tá»± lÃ m má»›i mÃ n hÃ¬nh sau má»—i lá»‡nh.</p>
 			<div class="flex-container">
 				<div class="flex-group">
-					<button type="button" class="primary" onclick="setri('e102')" title="Bấm để chuyển chế độ đồng hồ">Chế độ đồng hồ</button>
-					<button type="button" class="primary" onclick="setri('e102')" title="Bấm để chuyển chế độ kết hợp">Chế độ kết hợp</button>
-					<button type="button" class="primary" onclick="setri('e101')" title="Bấm để chuyển chế độ lịch">Chế độ lịch</button>
-					<button type="button" class="secondary" onclick="setri('e4')" title="Bấm để đổi màu đồng hồ">Đổi màu đồng hồ</button>
-					<button type="button" class="secondary" onclick="triggerRxTxCmd('e100')" title="Hiển thị ảnh đã tải lên cố định trên màn">Chế độ hình ảnh</button>
+					<button type="button" class="primary" onclick="setri('e102')" title="Báº¥m Ä‘á»ƒ chuyá»ƒn cháº¿ Ä‘á»™ Ä‘á»“ng há»“">Cháº¿ Ä‘á»™ Ä‘á»“ng há»“</button>
+					<button type="button" class="primary" onclick="setri('e102')" title="Báº¥m Ä‘á»ƒ chuyá»ƒn cháº¿ Ä‘á»™ káº¿t há»£p">Cháº¿ Ä‘á»™ káº¿t há»£p</button>
+					<button type="button" class="primary" onclick="setri('e101')" title="Báº¥m Ä‘á»ƒ chuyá»ƒn cháº¿ Ä‘á»™ lá»‹ch">Cháº¿ Ä‘á»™ lá»‹ch</button>
+					<button type="button" class="secondary" onclick="setri('e4')" title="Báº¥m Ä‘á»ƒ Ä‘á»•i mÃ u Ä‘á»“ng há»“">Äá»•i mÃ u Ä‘á»“ng há»“</button>
+					<button type="button" class="secondary" onclick="triggerRxTxCmd('e100')" title="Hiá»ƒn thá»‹ áº£nh Ä‘Ã£ táº£i lÃªn cá»‘ Ä‘á»‹nh trÃªn mÃ n">Cháº¿ Ä‘á»™ hÃ¬nh áº£nh</button>
 				</div>
 				<div class="flex-group">
-					<button type="button" class="secondary" onclick="triggerRxTxCmd('e3')" title="Bấm để đảo màu đen trắng">Đảo màu đen trắng</button>
-					<button type="button" class="secondary" onclick="triggerRxTxCmd('e5')" title="Bấm để lật màn hình">Xoay màn hình 180°</button>
-					<button type="button" class="secondary" onclick="triggerRxTxCmd('E2')" title="Không phản hồi? Bấm để làm mới">Làm mới màn hình</button>
+					<button type="button" class="secondary" onclick="triggerRxTxCmd('e3')" title="Báº¥m Ä‘á»ƒ Ä‘áº£o mÃ u Ä‘en tráº¯ng">Äáº£o mÃ u Ä‘en tráº¯ng</button>
+					<button type="button" class="secondary" onclick="triggerRxTxCmd('e5')" title="Báº¥m Ä‘á»ƒ láº­t mÃ n hÃ¬nh">Xoay mÃ n hÃ¬nh 180Â°</button>
+					<button type="button" class="secondary" onclick="triggerRxTxCmd('E2')" title="KhÃ´ng pháº£n há»“i? Báº¥m Ä‘á»ƒ lÃ m má»›i">LÃ m má»›i mÃ n hÃ¬nh</button>
 				</div>
 				<div class="flex-group debug">
-					<button type="button" class="secondary" onclick="triggerRxTxCmd('AA')" title="Gửi lệnh AA qua RxTx">Gửi AA</button>
-					<button type="button" class="secondary" onclick="triggerRxTxCmd('E5')" title="Gửi lệnh AB qua RxTx">Gửi AB</button>
+					<button type="button" class="secondary" onclick="triggerRxTxCmd('AA')" title="Gá»­i lá»‡nh AA qua RxTx">Gá»­i AA</button>
+					<button type="button" class="secondary" onclick="triggerRxTxCmd('E5')" title="Gá»­i lá»‡nh AB qua RxTx">Gá»­i AB</button>
 				</div>
 				<div class="flex-group" style="flex:1 1 100%">
-					<label for="cmdlut_red">Hiệu chỉnh làm mới một phần:</label>
-					<input type="text" id="cmdlut_red" style="flex:1" placeholder="Hex 01-0f: chỉnh màu đỏ · 10-f0: tắt đỏ và chỉnh đen (số cao = tối hơn)" value="">
-					<button type="button" class="secondary" onclick="triggerEpdRed_lut(document.getElementById('cmdlut_red').value)">Áp dụng</button>
+					<label for="cmdlut_red">Hiá»‡u chá»‰nh lÃ m má»›i má»™t pháº§n:</label>
+					<input type="text" id="cmdlut_red" style="flex:1" placeholder="Hex 01-0f: chá»‰nh mÃ u Ä‘á» Â· 10-f0: táº¯t Ä‘á» vÃ  chá»‰nh Ä‘en (sá»‘ cao = tá»‘i hÆ¡n)" value="">
+					<button type="button" class="secondary" onclick="triggerEpdRed_lut(document.getElementById('cmdlut_red').value)">Ãp dá»¥ng</button>
 				</div>
 				<div class="flex-group">
-					<label for="D_S_hour">Giờ bắt đầu:</label>
+					<label for="D_S_hour">Giá» báº¯t Ä‘áº§u:</label>
 					<input type="number" id="D_S_hour" value="0" min="0" max="23">
-					<label for="D_S_min">Giờ kết thúc:</label>
+					<label for="D_S_min">Giá» káº¿t thÃºc:</label>
 					<input type="number" id="D_S_min" value="0" min="0" max="59">
-					<button type="button" class="secondary" onclick="triggerRxTxCmd_XM('FB01')" title="Không làm mới màn hình trong khoảng giờ bên cạnh (tiết kiệm pin ban đêm)">Bật ngủ</button>
-					<button type="button" class="secondary" onclick="triggerRxTxCmd_XM('FB00')" title="Cho phép làm mới màn hình trong khoảng giờ bên cạnh">Tắt ngủ</button>
+					<button type="button" class="secondary" onclick="triggerRxTxCmd_XM('FB01')" title="KhÃ´ng lÃ m má»›i mÃ n hÃ¬nh trong khoáº£ng giá» bÃªn cáº¡nh (tiáº¿t kiá»‡m pin ban Ä‘Ãªm)">Báº­t ngá»§</button>
+					<button type="button" class="secondary" onclick="triggerRxTxCmd_XM('FB00')" title="Cho phÃ©p lÃ m má»›i mÃ n hÃ¬nh trong khoáº£ng giá» bÃªn cáº¡nh">Táº¯t ngá»§</button>
 				</div>
 				<div class="flex-group" style="flex:1 1 100%">
-					<label for="CP">Biển số (đồng hồ 2.13"):</label>
-					<input type="text" id="CP" placeholder="Nhập số cần hiển thị" value="" style="width:160px">
-					<button type="button" class="secondary" onclick="triggerEpdCHEPAI(document.getElementById('CP').value)">Hiển thị số</button>
+					<label for="CP">Biá»ƒn sá»‘ (Ä‘á»“ng há»“ 2.13"):</label>
+					<input type="text" id="CP" placeholder="Nháº­p sá»‘ cáº§n hiá»ƒn thá»‹" value="" style="width:160px">
+					<button type="button" class="secondary" onclick="triggerEpdCHEPAI(document.getElementById('CP').value)">Hiá»ƒn thá»‹ sá»‘</button>
 				</div>
 				<div class="flex-group" style="flex:1 1 100%">
-					<label for="cmdJH">Kích hoạt (không cần nếu màn hình đang chạy):</label>
-					<input type="text" id="cmdJH" placeholder="Nhập mã kích hoạt" value="" style="width:200px">
-					<button type="button" class="secondary" onclick="triggerEpdJH(document.getElementById('cmdJH').value)">Kích hoạt</button>
+					<label for="cmdJH">KÃ­ch hoáº¡t (khÃ´ng cáº§n náº¿u mÃ n hÃ¬nh Ä‘ang cháº¡y):</label>
+					<input type="text" id="cmdJH" placeholder="Nháº­p mÃ£ kÃ­ch hoáº¡t" value="" style="width:200px">
+					<button type="button" class="secondary" onclick="triggerEpdJH(document.getElementById('cmdJH').value)">KÃ­ch hoáº¡t</button>
 				</div>
 			</div>
 		</fieldset>
 		<fieldset>
-			<legend>Đếm ngược</legend>
-			<p class="mode-gallery-hint">Chọn ngày và nhập chữ hiển thị — đồng hồ sẽ hiện số ngày còn lại đến ngày đã chọn. «Dừng đếm ngược» đưa thiết bị về chế độ đồng hồ.</p>
+			<legend>Äáº¿m ngÆ°á»£c</legend>
+			<p class="mode-gallery-hint">Chá»n ngÃ y vÃ  nháº­p chá»¯ hiá»ƒn thá»‹ â€” Ä‘á»“ng há»“ sáº½ hiá»‡n sá»‘ ngÃ y cÃ²n láº¡i Ä‘áº¿n ngÃ y Ä‘Ã£ chá»n. Â«Dá»«ng Ä‘áº¿m ngÆ°á»£cÂ» Ä‘Æ°a thiáº¿t bá»‹ vá» cháº¿ Ä‘á»™ Ä‘á»“ng há»“.</p>
 			<div class="date-picker-container">
-				<label for="datePicker">Chọn ngày:</label>
+				<label for="datePicker">Chá»n ngÃ y:</label>
 				<input type="date" id="datePicker" style="width:auto;flex:0 1 auto">
-				<div class="chip-outlined">Đếm ngược đồng hồ</div>
+				<div class="chip-outlined">Äáº¿m ngÆ°á»£c Ä‘á»“ng há»“</div>
 			</div>
 			<div style="display:none">
 				<select id="gridSizeSelect"><option value="16" selected>Clock Countdown Interface</option></select>
@@ -1035,11 +1035,11 @@
 			</div>
 			<div class="flex-container">
 				<div class="flex-group" style="flex:1 1 100%">
-					<label for="textInput">Chữ hiển thị:</label>
-					<input type="text" id="textInput" maxlength="8" value="COUNT" style="flex:1" placeholder="Nhập 1–8 ký tự">
+					<label for="textInput">Chá»¯ hiá»ƒn thá»‹:</label>
+					<input type="text" id="textInput" maxlength="8" value="COUNT" style="flex:1" placeholder="Nháº­p 1â€“8 kÃ½ tá»±">
 				</div>
 				<div class="flex-group">
-					<label for="fontFamily">Phông chữ (chỉ máy tính):</label>
+					<label for="fontFamily">PhÃ´ng chá»¯ (chá»‰ mÃ¡y tÃ­nh):</label>
 					<select id="fontFamily">
 						<option value="Arial">Arial</option>
 						<option value="SimSun" selected>SimSun</option>
@@ -1049,54 +1049,54 @@
 					</select>
 				</div>
 				<div class="flex-group" style="flex:1 1 100%">
-					<label for="fontSizeSlider">Cỡ chữ (50%–150%):</label>
+					<label for="fontSizeSlider">Cá»¡ chá»¯ (50%â€“150%):</label>
 					<input type="range" id="fontSizeSlider" min="50" max="150" value="100" style="flex:1">
 					<span class="slider-value" id="fontSizeValue">100%</span>
 				</div>
 			</div>
-			<p class="mode-gallery-hint" id="sizeHint">Đếm ngược đồng hồ hỗ trợ tối đa 8 ký tự ASCII. Cỡ chữ quá lớn có thể bị cắt ký tự.</p>
+			<p class="mode-gallery-hint" id="sizeHint">Äáº¿m ngÆ°á»£c Ä‘á»“ng há»“ há»— trá»£ tá»‘i Ä‘a 8 kÃ½ tá»± ASCII. Cá»¡ chá»¯ quÃ¡ lá»›n cÃ³ thá»ƒ bá»‹ cáº¯t kÃ½ tá»±.</p>
 			<div class="preview-container">
 				<canvas id="previewCanvas"></canvas>
 				<div class="grid-info" id="gridInfoText"></div>
 			</div>
 			<div class="flex-container">
 				<div class="flex-group">
-					<button id="generateBtn" type="button">Bắt đầu đếm ngược</button>
-					<button id="copyBtn" type="button">Dừng đếm ngược</button>
+					<button id="generateBtn" type="button">Báº¯t Ä‘áº§u Ä‘áº¿m ngÆ°á»£c</button>
+					<button id="copyBtn" type="button">Dá»«ng Ä‘áº¿m ngÆ°á»£c</button>
 				</div>
 			</div>
 		</fieldset>
 		<fieldset id="dlg-image-section">
-			<legend>Truyền hình ảnh</legend>
+			<legend>Truyá»n hÃ¬nh áº£nh</legend>
 			<div class="flex-container">
 				<input type="file" id="image_file" onchange="update_image1()" accept=".png,.jpg,.bmp,.webp,.jpeg">
 			</div>
 			<div class="flex-container options">
 				<div class="flex-group">
-					<label for="screen-size">Kích thước màn hình:</label>
+					<label for="screen-size">KÃ­ch thÆ°á»›c mÃ n hÃ¬nh:</label>
 					<select id="screen-size" onchange="updateCanvasSize()">
-						<option value="2.13_212_104" selected>2.13" (212×104)</option>
-						<option value="2.13hd_250_144">2.13" (250×144)</option>
-						<option value="4.2_400_300">4.2" Transfer (400×300)</option>
-						<option value="4.2cal_280_100">4.2" Calendar Small (280×100)</option>
-						<option value="7.5_800_480">7.5" Transfer (800×480)</option>
-						<option value="7.5cal_400_180">7.5" Calendar Small (400×180)</option>
-						<option value="2.9_296_128">2.9" Transfer (296×128)</option>
+						<option value="2.13_212_104" selected>2.13" (212Ã—104)</option>
+						<option value="2.13hd_250_144">2.13" (250Ã—144)</option>
+						<option value="4.2_400_300">4.2" Transfer (400Ã—300)</option>
+						<option value="4.2cal_280_100">4.2" Calendar Small (280Ã—100)</option>
+						<option value="7.5_800_480">7.5" Transfer (800Ã—480)</option>
+						<option value="7.5cal_400_180">7.5" Calendar Small (400Ã—180)</option>
+						<option value="2.9_296_128">2.9" Transfer (296Ã—128)</option>
 					</select>
 				</div>
 				<div class="flex-group">
-					<label for="dithering">Thuật toán dithering:</label>
+					<label for="dithering">Thuáº­t toÃ¡n dithering:</label>
 					<select id="dithering">
-						<optgroup label="Ba màu Đen/Trắng/Đỏ">
-							<option value="bwr_none">BWR không dithering</option>
+						<optgroup label="Ba mÃ u Äen/Tráº¯ng/Äá»">
+							<option value="bwr_none">BWR khÃ´ng dithering</option>
 							<option value="bwr_floydsteinberg">BWR Floyd-Steinberg</option>
 							<option value="bwr_atkinson">BWR Atkinson</option>
 							<option value="bwr_bayer">BWR Bayer</option>
 							<option value="bwr_stucki">BWR Stucki</option>
 							<option value="bwr_jarvis">BWR Jarvis-Judice-Ninke</option>
 						</optgroup>
-						<optgroup label="Đen trắng">
-							<option value="none">Không dithering</option>
+						<optgroup label="Äen tráº¯ng">
+							<option value="none">KhÃ´ng dithering</option>
 							<option value="floydsteinberg">Floyd-Steinberg</option>
 							<option value="atkinson">Atkinson</option>
 							<option value="bayer">Bayer</option>
@@ -1106,104 +1106,104 @@
 					</select>
 				</div>
 				<div class="flex-group">
-					<label for="threshold">Ngưỡng (chế độ đen trắng):</label>
+					<label for="threshold">NgÆ°á»¡ng (cháº¿ Ä‘á»™ Ä‘en tráº¯ng):</label>
 					<input type="range" max="255" min="10" value="125" id="threshold">
 				</div>
 				<div class="flex-group">
 					<label for="rotationSlider">Xoay:</label>
 					<input type="range" id="rotationSlider" min="0" max="360" value="0" oninput="updateRotation(this.value)">
-					<label id="rotationValue">0°</label>
+					<label id="rotationValue">0Â°</label>
 				</div>
 				<div class="flex-group">
-					<label for="scaleSlider">Tỷ lệ:</label>
+					<label for="scaleSlider">Tá»· lá»‡:</label>
 					<input type="range" id="scaleSlider" min="10" max="500" value="100" oninput="updateScale(this.value)">
 					<label id="scaleValue">100%</label>
 				</div>
 			</div>
 			<div class="flex-container">
 				<div class="flex-group">
-					<button type="button" class="secondary" onclick="update_image()">Tải lại</button>
-					<button type="button" class="secondary" onclick="stretchToCanvas()">Kéo giãn đầy màn</button>
-					<button type="button" class="secondary" onclick="fitToCanvas()">Vừa màn hình</button>
-					<button type="button" class="secondary" onclick="updateScale('100')">Đặt lại 100%</button>
-					<button type="button" class="secondary" onclick="rotateImage(90)">Xoay 90°</button>
-					<button type="button" class="secondary" onclick="rotateImage(-90)">Xoay -90°</button>
-					<button type="button" class="secondary" onclick="rotateImage(0)">Đặt lại xoay</button>
+					<button type="button" class="secondary" onclick="update_image()">Táº£i láº¡i</button>
+					<button type="button" class="secondary" onclick="stretchToCanvas()">KÃ©o giÃ£n Ä‘áº§y mÃ n</button>
+					<button type="button" class="secondary" onclick="fitToCanvas()">Vá»«a mÃ n hÃ¬nh</button>
+					<button type="button" class="secondary" onclick="updateScale('100')">Äáº·t láº¡i 100%</button>
+					<button type="button" class="secondary" onclick="rotateImage(90)">Xoay 90Â°</button>
+					<button type="button" class="secondary" onclick="rotateImage(-90)">Xoay -90Â°</button>
+					<button type="button" class="secondary" onclick="rotateImage(0)">Äáº·t láº¡i xoay</button>
 				</div>
 			</div>
 			<div id="canvas-box">
 				<canvas id="canvas"></canvas>
 			</div>
 			<div class="image-adjustments">
-				<h3>Chỉnh sửa hình ảnh</h3>
+				<h3>Chá»‰nh sá»­a hÃ¬nh áº£nh</h3>
 				<div class="adjustment-row">
-					<label for="brightness">Độ sáng:</label>
+					<label for="brightness">Äá»™ sÃ¡ng:</label>
 					<span class="adjustment-value" id="brightnessValue">0</span>
 					<input type="range" id="brightness" min="-100" max="100" value="0">
 				</div>
 				<div class="adjustment-row">
-					<label for="contrast">Tương phản:</label>
+					<label for="contrast">TÆ°Æ¡ng pháº£n:</label>
 					<span class="adjustment-value" id="contrastValue">100</span>
 					<input type="range" id="contrast" min="0" max="200" value="100">
 				</div>
 				<div class="adjustment-row">
-					<label for="saturation">Bão hòa:</label>
+					<label for="saturation">BÃ£o hÃ²a:</label>
 					<span class="adjustment-value" id="saturationValue">100</span>
 					<input type="range" id="saturation" min="0" max="200" value="100">
 				</div>
 				<div class="adjustment-row">
-					<label for="diffusion">Cường độ khuếch tán:</label>
+					<label for="diffusion">CÆ°á»ng Ä‘á»™ khuáº¿ch tÃ¡n:</label>
 					<span class="adjustment-value" id="diffusionValue">50</span>
 					<input type="range" id="diffusion" min="0" max="100" value="50">
 				</div>
 				<div class="flex-container">
 					<div class="flex-group">
-						<button type="button" class="secondary" onclick="update_image()">Áp dụng chỉnh sửa</button>
-						<button id="uploadimagebutton" type="button" class="primary" onclick="upload_image()">Gửi hình ảnh</button>
+						<button type="button" class="secondary" onclick="update_image()">Ãp dá»¥ng chá»‰nh sá»­a</button>
+						<button id="uploadimagebutton" type="button" class="primary" onclick="upload_image()">Gá»­i hÃ¬nh áº£nh</button>
 					</div>
 				</div>
 			</div>
 		</fieldset>
 		<fieldset>
-			<legend>Thiết kế mẫu</legend>
-			<p class="mode-gallery-hint">Thêm phần tử (chữ, hình khối, icon, mã QR...), kéo-thả trên canvas để sắp xếp. Xong bấm «Áp dụng mẫu» — thiết kế được chuyển sang khung «Truyền hình ảnh» phía trên để gửi xuống thiết bị.</p>
+			<legend>Thiáº¿t káº¿ máº«u</legend>
+			<p class="mode-gallery-hint">ThÃªm pháº§n tá»­ (chá»¯, hÃ¬nh khá»‘i, icon, mÃ£ QR...), kÃ©o-tháº£ trÃªn canvas Ä‘á»ƒ sáº¯p xáº¿p. Xong báº¥m Â«Ãp dá»¥ng máº«uÂ» â€” thiáº¿t káº¿ Ä‘Æ°á»£c chuyá»ƒn sang khung Â«Truyá»n hÃ¬nh áº£nhÂ» phÃ­a trÃªn Ä‘á»ƒ gá»­i xuá»‘ng thiáº¿t bá»‹.</p>
 			<div class="editor-container">
 				<div class="editor-canvas-wrap">
 					<canvas id="canvas_YS" width="600" height="450"></canvas>
 				</div>
 				<div class="control-panel">
 					<div class="control-group size-controls1" id="size-controls">
-						<h3>Kích thước phần tử</h3>
+						<h3>KÃ­ch thÆ°á»›c pháº§n tá»­</h3>
 						<div class="size-inputs">
-							<input type="number" id="width-input" placeholder="Rộng" min="10" max="400" value="40">
+							<input type="number" id="width-input" placeholder="Rá»™ng" min="10" max="400" value="40">
 							<input type="number" id="height-input" placeholder="Cao" min="10" max="300" value="40">
 						</div>
-						<button id="apply-size" type="button" class="secondary">Áp dụng kích thước</button>
+						<button id="apply-size" type="button" class="secondary">Ãp dá»¥ng kÃ­ch thÆ°á»›c</button>
 					</div>
 					<div class="control-group" id="rotate-controls1">
-						<h3>Xoay phần tử</h3>
+						<h3>Xoay pháº§n tá»­</h3>
 						<div class="rotate-controls">
 							<input type="range" id="rotation-input" min="0" max="360" value="0" step="1">
-							<span id="rotation-value">0°</span>
-							<button id="apply-rotation" type="button" style="display:none">Áp dụng</button>
+							<span id="rotation-value">0Â°</span>
+							<button id="apply-rotation" type="button" style="display:none">Ãp dá»¥ng</button>
 						</div>
 					</div>
 					<div class="control-group">
 						<div class="element-actions">
-							<button id="delete-element" type="button" class="danger">Xóa phần tử</button>
-							<button id="duplicate-element" type="button" class="secondary">Sao chép</button>
+							<button id="delete-element" type="button" class="danger">XÃ³a pháº§n tá»­</button>
+							<button id="duplicate-element" type="button" class="secondary">Sao chÃ©p</button>
 						</div>
 						<div class="element-actions">
-							<button id="bring-to-front" type="button" style="display:none">Lên trước</button>
+							<button id="bring-to-front" type="button" style="display:none">LÃªn trÆ°á»›c</button>
 							<button id="send-to-back" type="button" style="display:none">Ra sau</button>
 						</div>
 						<div class="position-controls">
-							<button id="move-up" type="button" class="secondary">▲ Lên</button>
+							<button id="move-up" type="button" class="secondary">â–² LÃªn</button>
 						</div>
 						<div class="position-controls">
-							<button id="move-left" type="button" class="secondary">◀ Trái</button>
-							<button id="move-down" type="button" class="secondary">▼ Xuống</button>
-							<button id="move-right" type="button" class="secondary">▶ Phải</button>
+							<button id="move-left" type="button" class="secondary">â—€ TrÃ¡i</button>
+							<button id="move-down" type="button" class="secondary">â–¼ Xuá»‘ng</button>
+							<button id="move-right" type="button" class="secondary">â–¶ Pháº£i</button>
 						</div>
 					</div>
 				</div>
@@ -1211,25 +1211,25 @@
 			<div class="editor-container">
 				<div class="control-panel">
 					<div class="control-group">
-						<h3>Thêm phần tử</h3>
+						<h3>ThÃªm pháº§n tá»­</h3>
 						<select id="element-type">
-							<option value="image">Hình / Icon</option>
-							<option value="text">Chữ</option>
-							<option value="rect">Hình chữ nhật</option>
-							<option value="circle">Hình tròn</option>
-							<option value="triangle">Tam giác</option>
-							<option value="line">Đường thẳng</option>
-							<option value="star">Ngôi sao</option>
+							<option value="image">HÃ¬nh / Icon</option>
+							<option value="text">Chá»¯</option>
+							<option value="rect">HÃ¬nh chá»¯ nháº­t</option>
+							<option value="circle">HÃ¬nh trÃ²n</option>
+							<option value="triangle">Tam giÃ¡c</option>
+							<option value="line">ÄÆ°á»ng tháº³ng</option>
+							<option value="star">NgÃ´i sao</option>
 						</select>
 						<div class="shape-params" id="shape-params">
-							<input type="number" id="param1" placeholder="Tham số 1" min="3" max="20" value="5">
-							<input type="number" id="param2" placeholder="Tham số 2" min="0.1" max="5" step="0.1" value="0.5">
+							<input type="number" id="param1" placeholder="Tham sá»‘ 1" min="3" max="20" value="5">
+							<input type="number" id="param2" placeholder="Tham sá»‘ 2" min="0.1" max="5" step="0.1" value="0.5">
 						</div>
-						<button id="add-element" type="button" class="primary">Thêm phần tử</button>
-						<textarea id="text-content" placeholder="Nhập nội dung chữ">Chữ tùy chỉnh</textarea>
+						<button id="add-element" type="button" class="primary">ThÃªm pháº§n tá»­</button>
+						<textarea id="text-content" placeholder="Nháº­p ná»™i dung chá»¯">Chá»¯ tÃ¹y chá»‰nh</textarea>
 					</div>
 					<div class="control-group">
-						<h3>Chữ &amp; màu sắc</h3>
+						<h3>Chá»¯ &amp; mÃ u sáº¯c</h3>
 						<div class="color-palette">
 							<div class="color-option selected" data-color="#ffffff" style="background-color:#ffffff;border:1px solid #ccc;"></div>
 							<div class="color-option" data-color="#000000" style="background-color:#000000;"></div>
@@ -1288,25 +1288,25 @@
 							</select>
 						</div>
 						<div class="text-style">
-							<button id="text-bold" type="button" class="secondary">Đậm</button>
-							<button id="text-italic" type="button" class="secondary">Nghiêng</button>
-							<button id="text-underline" type="button" class="secondary">Gạch chân</button>
+							<button id="text-bold" type="button" class="secondary">Äáº­m</button>
+							<button id="text-italic" type="button" class="secondary">NghiÃªng</button>
+							<button id="text-underline" type="button" class="secondary">Gáº¡ch chÃ¢n</button>
 						</div>
-						<button id="update-text" type="button" class="secondary">Cập nhật chữ</button>
+						<button id="update-text" type="button" class="secondary">Cáº­p nháº­t chá»¯</button>
 						<div class="qrcode-controls">
-							<textarea id="qrcode-content" placeholder="Nhập nội dung tạo mã QR (chữ, URL, liên hệ...)">https://elink-config.github.io/da14585-webtool/</textarea>
-							<button id="generate-qrcode" type="button" class="secondary">Tạo mã QR</button>
+							<textarea id="qrcode-content" placeholder="Nháº­p ná»™i dung táº¡o mÃ£ QR (chá»¯, URL, liÃªn há»‡...)">https://elink-config.github.io/da14585-webtool/</textarea>
+							<button id="generate-qrcode" type="button" class="secondary">Táº¡o mÃ£ QR</button>
 						</div>
 					</div>
 				</div>
 				<div class="control-panel">
 					<div class="control-group">
-						<h3>Nền canvas</h3>
+						<h3>Ná»n canvas</h3>
 						<div class="bg-color-selector">
 							<div class="bg-color-picker" id="bg-color-picker" style="background-color:#ffffff"></div>
 							<input type="color" id="bg-color-input" value="#ffffff" style="display:none">
 							<span class="bg-color-value" id="bg-color-value">#FFFFFF</span>
-							<button id="apply-bg-color" type="button" class="secondary">Áp dụng</button>
+							<button id="apply-bg-color" type="button" class="secondary">Ãp dá»¥ng</button>
 						</div>
 						<div class="template-preview" id="bg-templates">
 							<div class="template-item selected" style="display:none" data-type="none">
@@ -1347,13 +1347,13 @@
 							</div>
 						</div>
 						<button type="button" class="upload-btn secondary" style="margin-bottom:8px;">
-							<span>Tải ảnh nền</span>
+							<span>Táº£i áº£nh ná»n</span>
 							<input type="file" id="bg-upload" accept="image/*">
 						</button>
 						<button id="apply-bg" type="button" style="display:none">Apply Background</button>
 					</div>
 					<div class="control-group">
-						<h3>Icon có sẵn</h3>
+						<h3>Icon cÃ³ sáºµn</h3>
 						<div class="icon-materials-container">
 							<div class="template-preview" id="image-templates">
 								<div class="template-item selected" data-type="icon1"><div style="width:100%;height:100%;background:transparent;display:flex;align-items:center;justify-content:center;font-size:18px;">I1</div></div>
@@ -1384,18 +1384,18 @@
 							</div>
 						</div>
 						<button type="button" class="upload-btn secondary" style="margin-bottom:8px;">
-							<span>Tải icon tùy chỉnh</span>
+							<span>Táº£i icon tÃ¹y chá»‰nh</span>
 							<input type="file" id="icon-upload" accept="image/*" multiple>
 						</button>
-						<button id="save-canvas" type="button" class="secondary">Lưu canvas thành ảnh (khôi phục qua «Tải ảnh nền»)</button>
+						<button id="save-canvas" type="button" class="secondary">LÆ°u canvas thÃ nh áº£nh (khÃ´i phá»¥c qua Â«Táº£i áº£nh ná»nÂ»)</button>
 						<button id="add-local-image" type="button" class="local-image-btn" style="display:none"></button>
 					</div>
 				</div>
 			</div>
 			<div class="flex-container">
 				<div class="flex-group">
-					<button id="clear-canvas" type="button" class="danger">Xóa toàn bộ phần tử</button>
-					<button type="button" class="primary" onclick="saveCanvasYSAndUpdateImage()">Áp dụng mẫu → Truyền hình ảnh</button>
+					<button id="clear-canvas" type="button" class="danger">XÃ³a toÃ n bá»™ pháº§n tá»­</button>
+					<button type="button" class="primary" onclick="saveCanvasYSAndUpdateImage()">Ãp dá»¥ng máº«u â†’ Truyá»n hÃ¬nh áº£nh</button>
 				</div>
 			</div>
 		</fieldset>
@@ -1406,12 +1406,12 @@
 			<span class="copy">&copy; 2026 doantruonglam</span>
 			<span class="links">
 				<a href="https://github.com/elink-config/elink-config.github.io">Github</a>
-				<a href="https://vn.shp.ee/ZX4DY1pi" target="_blank" rel="noopener">Link mua hàng</a>
-				<a href="?debug=true" id="debug-toggle">Chế độ dev</a>
+				<a href="https://vn.shp.ee/ZX4DY1pi" target="_blank" rel="noopener">Link mua hÃ ng</a>
+				<a href="?debug=true" id="debug-toggle">Cháº¿ Ä‘á»™ dev</a>
 			</span>
 		</div>
 	</div>
-	<script type="text/javascript" src="js/connector.js?v=20260715a"></script>
+	<script type="text/javascript" src="js/connector.js?v=20260715b"></script>
 	<script>
 		var _hmt = _hmt || [];
 		(function () {
