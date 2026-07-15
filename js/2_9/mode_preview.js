@@ -920,32 +920,25 @@
     font(x, 21, 1); x.fillStyle = BK;
     x.fillText(pad2(now.getHours()) + ':' + pad2(now.getMinutes()), 140, H - 12);
   }
-  // mode 33: Đồng hồ nhị phân BCD — chấm đặc = 1
+  // mode 33: Thẻ lịch đỏ — kiểu lịch để bàn của bản 4.2" (DrawComboRed)
   function m33(x, now, W, H) {
     statusBatt(x, W);
-    const xs = [30, 70, 124, 164], nb = [2, 4, 3, 4];
-    const dg = [(now.getHours() / 10) | 0, now.getHours() % 10,
-                (now.getMinutes() / 10) | 0, now.getMinutes() % 10];
-    font(x, 10, 1);
-    center(x, 'GIỜ', 50, 11, RD);
-    center(x, 'PHÚT', 144, 11, RD);
-    for (let c = 0; c < 4; c++) {
-      for (let b = 0; b < nb[c]; b++) {
-        const cy = H - 26 - b * 24;
-        x.beginPath(); x.arc(xs[c], cy, 8, 0, 7);
-        if (dg[c] & (1 << b)) { x.fillStyle = BK; x.fill(); }
-        else { x.strokeStyle = BK; x.lineWidth = 1.4; x.stroke(); }
-      }
-      font(x, 10, 1);
-      center(x, dg[c], xs[c], H - 2, BK);
-    }
     x.fillStyle = RD;
-    x.beginPath(); x.arc(97, H / 2 - 12, 3, 0, 7); x.fill();
-    x.beginPath(); x.arc(97, H / 2 + 12, 3, 0, 7); x.fill();
-    font(x, 21, 1); x.fillStyle = BK;
-    x.fillText(pad2(now.getHours()) + ':' + pad2(now.getMinutes()), 206, 48);
-    font(x, 9, 0); x.fillStyle = RD; x.fillText('Nhị phân BCD', 206, 70);
-    x.fillStyle = BK; x.fillText('chấm đặc = 1', 206, 86);
+    x.beginPath();
+    if (x.roundRect) { x.roundRect(4, 4, 114, H - 9, 6); x.fill(); }
+    else x.fillRect(4, 4, 114, H - 9);
+    font(x, 11, 1);
+    center(x, WD_FULL[now.getDay()], 61, 22, WH);
+    font(x, 52, 1);
+    center(x, now.getDate(), 61, 84, WH);
+    font(x, 11, 1);
+    center(x, 'Tháng ' + (now.getMonth() + 1), 61, H - 12, WH);
+    font(x, 26, 1); x.fillStyle = BK;
+    x.fillText(pad2(now.getHours()) + ':' + pad2(now.getMinutes()), 134, 48);
+    font(x, 9, 0); x.fillStyle = BK;
+    x.fillText(pad2(now.getDate()) + '/' + pad2(now.getMonth() + 1) + '/' + now.getFullYear(), 134, 72);
+    x.fillStyle = RD; x.fillText(lunarStr(now), 134, 88);
+    x.fillStyle = BK; x.fillText(panelTempVal() + '°C', 134, 104);
   }
 
   // «Ảnh đã lưu» LUÔN đứng cuối — chế độ mới thêm vào TRƯỚC nó.
@@ -966,7 +959,7 @@
     { mode: 30, name: 'Đồng hồ chữ', tick: 'Giờ bằng chữ tiếng Việt — làm mới mỗi phút', draw: m30 },
     { mode: 31, name: 'Tiến trình ngày', tick: 'Ngày (đen) / tháng / năm (đỏ) — làm mới mỗi phút', draw: m31 },
     { mode: 32, name: 'Lịch âm', tick: 'Âm lịch là chính, năm can chi — làm mới mỗi phút', draw: m32 },
-    { mode: 33, name: 'Đồng hồ nhị phân', tick: 'BCD — chấm đặc = 1, làm mới mỗi phút', draw: m33 },
+    { mode: 33, name: 'Thẻ lịch đỏ', tick: 'Lịch để bàn kiểu 4.2" — làm mới mỗi phút', draw: m33 },
     // thu tu nhom DOC theo nguoi dung chon (13,20,15,14,16,19,17,18 theo vi tri cu)
     { mode: 13, name: 'Dọc: đồng hồ', tick: 'Dựng dọc — làm mới mỗi phút', draw: m17, vert: true },
     { mode: 14, name: 'Dọc: giờ nổi 3D', tick: 'Dựng dọc — làm mới mỗi phút', draw: m24, vert: true },
