@@ -618,13 +618,24 @@ async function sendimg() {
     return;
   }
   if (threeColor) {
-    // mặt đen trắng vào buffer thiết bị (0x93), mặt ĐỎ vào thẳng RAM panel
-    // (0x9e 00 — panel mở sẵn chờ 0x94), rồi hiển thị
+    // mặt đen trắng vào buffer thiết bị (0x93), mặt ĐỎ vào FLASH
+    // (0x9e 02 xóa → 0x9e 01 từng khối → 0x9e 03 chốt — từng gói tự trọn
+    // vẹn như OTA, không giữ panel mở qua các gói BLE), rồi 0x94 02 hiển
+    // thị cả hai mặt trong một chu kỳ liền mạch trên thiết bị
     const pl = canvas2planes(canvas);
     addLog(`Bắt đầu gửi ảnh 3 màu ${canvas.width}x${canvas.height} (2 × ${pl.bw.length} byte)`);
-    if (await writeImage(pl.bw) && await writeRedPlane(pl.red, 0x00, 'Khối màu đỏ')) {
-      await sleep(200);
-      sent = await write([0x94]);
+    if (await writeImage(pl.bw) && await write([0x9e, 0x02], true)) {
+      await sleep(400);                     // chờ thiết bị xóa 3 sector
+      if (await writeRedPlane(pl.red, 0x01, 'Khối màu đỏ') &&
+          await write([0x9e, 0x03], true)) {
+        await sleep(100);
+        // lưu luôn header + mặt đen trắng (0x95 03): ảnh giữ được qua mất
+        // nguồn, thẻ «Ảnh» (0x94 01) luôn hiện lại được ảnh vừa gửi
+        if (await write([0x95, 0x03], true)) {
+          await sleep(300);
+          sent = await write([0x94, 0x02]);
+        }
+      }
     }
   } else {
     const data = canvas2bytesBW(canvas);
@@ -693,10 +704,11 @@ async function saveImageFlash() {
     return;
   }
 
+  // gửi lại CẢ mặt đen trắng: sau khi hiển thị (0x94 02) buffer thiết bị
+  // đã bị mượn để đọc mặt đỏ từ flash nên không còn giữ mặt đen trắng
   const pl = canvas2planes(canvas);
   let ok = false;
-  setStatus('Đang xóa vùng ảnh trong flash…');
-  if (await write([0x9e, 0x02], true)) {
+  if (await writeImage(pl.bw) && await write([0x9e, 0x02], true)) {
     await sleep(400);                       // chờ thiết bị xóa 3 sector
     if (await writeRedPlane(pl.red, 0x01, 'Lưu mặt đỏ') &&
         await write([0x9e, 0x03], true)) {
