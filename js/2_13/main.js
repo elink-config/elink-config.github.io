@@ -492,7 +492,9 @@ async function otaUpdate() {
     const buf = new Uint8Array(136);
     const dv = new DataView(buf.buffer);
     buf[0] = 0xa0; buf[1] = 0x00;
-    dv.setUint16(2, firmSize, true);
+    // size u32 (truoc u16): firmware > 64KB. Tuong thich nguoc: fw cu doc u16
+    // (2 byte thap) van dung khi firmware dich < 64KB (vd ban "temp" cau noi).
+    dv.setUint32(2, firmSize, true);
     show('Đang xoá flash…');
     await write(buf, true);
 
