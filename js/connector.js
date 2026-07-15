@@ -1,6 +1,6 @@
 // Hub for the combined 4.2" / 2.13" / 2.9" / DLG-CLOCK webtool.
 //
-// The page starts with only the [KÃ¡ÂºÂ¿t nÃ¡Â»â€˜i Bluetooth] fieldset. This script
+// The page starts with only the [Kết nối Bluetooth] fieldset. This script
 // owns the connect button: it scans with the 'DIY-' and 'DLG-CLOCK-' name
 // prefixes, detects the device type from the advertised name, then
 // instantiates the matching app (HTML from its <template>, scripts from
@@ -8,12 +8,12 @@
 // over to the app's own connect().
 //
 // Each app's scripts are the unmodified per-device tools, so they are only
-// loaded once and only one type can be active per page load Ã¢â‚¬â€ connecting a
+// loaded once and only one type can be active per page load — connecting a
 // device of another type afterwards requires a page reload (the hub asks).
 (function () {
   'use strict';
 
-  const VER = '20260715c'; // cache-buster, keep in sync with index.html
+  const VER = '20260715d'; // cache-buster, keep in sync with index.html
 
   const EPD42_SERVICE = '62750001-d828-918d-fb46-b6c11c675aec';
   const HM213_SERVICE = '0000ff00-0000-1000-8000-00805f9b34fb';
@@ -26,29 +26,29 @@
 
   const APPS = {
     '4_2': {
-      label: '4.2" (400Ãƒâ€”300)',
-      sub: 'DA14585 Ã¢â‚¬â€ 4.2" (400Ãƒâ€”300): kÃ¡ÂºÂ¿t nÃ¡Â»â€˜i, cÃ¡ÂºÂ¥u hÃƒÂ¬nh vÃƒÂ  truyÃ¡Â»Ân hÃƒÂ¬nh Ã¡ÂºÂ£nh',
+      label: '4.2" (400×300)',
+      sub: 'DA14585 — 4.2" (400×300): kết nối, cấu hình và truyền hình ảnh',
       template: 'tpl-4_2',
       scripts: ['js/dithering.js', 'js/paint.js', 'js/crop.js',
         'js/4_2/mode_preview.js', 'js/4_2/designer.js', 'js/4_2/main.js'],
     },
     '2_13': {
-      label: '2.13" (212Ãƒâ€”104)',
-      sub: 'DA14585 Ã¢â‚¬â€ 2.13" (212Ãƒâ€”104): kÃ¡ÂºÂ¿t nÃ¡Â»â€˜i, cÃ¡ÂºÂ¥u hÃƒÂ¬nh vÃƒÂ  truyÃ¡Â»Ân hÃƒÂ¬nh Ã¡ÂºÂ£nh',
+      label: '2.13" (212×104)',
+      sub: 'DA14585 — 2.13" (212×104): kết nối, cấu hình và truyền hình ảnh',
       template: 'tpl-2_13',
       scripts: ['js/dithering.js', 'js/paint.js', 'js/crop.js',
         'js/2_13/designer.js', 'js/2_13/mode_preview.js', 'js/2_13/main.js'],
     },
     '2_9': {
-      label: '2.9" (296Ãƒâ€”128)',
-      sub: 'DA14585 Ã¢â‚¬â€ 2.9" (296Ãƒâ€”128 BWR): kÃ¡ÂºÂ¿t nÃ¡Â»â€˜i, cÃ¡ÂºÂ¥u hÃƒÂ¬nh vÃƒÂ  truyÃ¡Â»Ân hÃƒÂ¬nh Ã¡ÂºÂ£nh',
+      label: '2.9" (296×128)',
+      sub: 'DA14585 — 2.9" (296×128 BWR): kết nối, cấu hình và truyền hình ảnh',
       template: 'tpl-2_9',
       scripts: ['js/dithering.js', 'js/paint.js', 'js/crop.js',
         'js/2_9/designer.js', 'js/2_9/mode_preview.js', 'js/2_9/main.js'],
     },
     'dlg': {
-      label: 'Ã„ÂÃ¡Â»â€œng hÃ¡Â»â€œ DLG-CLOCK',
-      sub: 'Ã„ÂÃ¡Â»â€œng hÃ¡Â»â€œ E-Ink DLG-CLOCK: Ã„â€˜Ã¡ÂºÂ·t giÃ¡Â»Â, Ã„â€˜Ã¡ÂºÂ¿m ngÃ†Â°Ã¡Â»Â£c, truyÃ¡Â»Ân hÃƒÂ¬nh Ã¡ÂºÂ£nh vÃƒÂ  thiÃ¡ÂºÂ¿t kÃ¡ÂºÂ¿ mÃ¡ÂºÂ«u',
+      label: 'Đồng hồ DLG-CLOCK',
+      sub: 'Đồng hồ E-Ink DLG-CLOCK: đặt giờ, đếm ngược, truyền hình ảnh và thiết kế mẫu',
       template: 'tpl-dlg',
       scripts: ['js/dlg/image.js', 'js/dlg/qrcode.min.js', 'js/dlg/main.js', 'js/dlg/editor.js'],
     },
@@ -63,8 +63,8 @@
     return new URLSearchParams(window.location.search).get('debug') === 'true';
   }
 
-  // DIY-2_13-xxxx Ã¢â€ â€™ 2.13", DIY-2_9-xxxx Ã¢â€ â€™ 2.9", DIY-4_2-xxxx Ã¢â€ â€™ 4.2",
-  // DLG-CLOCK-xxxx Ã¢â€ â€™ Ã„â€˜Ã¡Â»â€œng hÃ¡Â»â€œ DLG.
+  // DIY-2_13-xxxx → 2.13", DIY-2_9-xxxx → 2.9", DIY-4_2-xxxx → 4.2",
+  // DLG-CLOCK-xxxx → đồng hồ DLG.
   // Plain DIY-xxxx = 4.2" board on older firmware without the size tag.
   function detectType(name) {
     name = name || '';
@@ -77,7 +77,7 @@
   }
 
   // app globals (gattServer, bleDevice, ...) are top-level let bindings of the
-  // dynamically loaded main.js Ã¢â‚¬â€ they only exist after loadApp(), so every
+  // dynamically loaded main.js — they only exist after loadApp(), so every
   // access from hub code is guarded
   function isConnected() {
     try {
@@ -93,14 +93,14 @@
       s.src = src + '?v=' + VER;
       s.async = false;
       s.onload = resolve;
-      s.onerror = () => reject(new Error('KhÃƒÂ´ng tÃ¡ÂºÂ£i Ã„â€˜Ã†Â°Ã¡Â»Â£c ' + src));
+      s.onerror = () => reject(new Error('Không tải được ' + src));
       document.body.appendChild(s);
     });
   }
 
   async function loadApp(type) {
     const cfg = APPS[type];
-    addLog('ThiÃ¡ÂºÂ¿t bÃ¡Â»â€¹ loÃ¡ÂºÂ¡i ' + cfg.label + ' Ã¢â‚¬â€ Ã„â€˜ang tÃ¡ÂºÂ£i giao diÃ¡Â»â€¡n Ã„â€˜iÃ¡Â»Âu khiÃ¡Â»Æ’n...');
+    addLog('Thiết bị loại ' + cfg.label + ' — đang tải giao diện điều khiển...');
 
     // instantiate the app's sections (templates keep the duplicate element
     // ids of the apps out of the document until one is chosen)
@@ -113,20 +113,20 @@
     }
 
     // the app assigns its init to document.body.onload, which never fires for
-    // dynamically loaded scripts Ã¢â‚¬â€ run it manually
+    // dynamically loaded scripts — run it manually
     if (typeof document.body.onload === 'function') {
       document.body.onload();
       document.body.onload = null;
     }
 
     // the app's main.js overwrote window.preConnect with its own (it filters
-    // by its own name prefix only) Ã¢â‚¬â€ take the connect button back so device
+    // by its own name prefix only) — take the connect button back so device
     // type keeps being checked on later connections
     appPreConnect = window.preConnect;
     window.preConnect = hubPreConnect;
 
     // wrap the app's disconnect so the per-device sections hide again on any
-    // disconnect path (button press or connection drop) Ã¢â‚¬â€ function
+    // disconnect path (button press or connection drop) — function
     // declarations share the global binding, so the app's own
     // gattserverdisconnected listeners also reach this wrapper
     const appDisconnect = window.disconnect;
@@ -135,7 +135,7 @@
       if (typeof appDisconnect === 'function') return appDisconnect.apply(this, arguments);
     };
 
-    // and re-reveal them when the app's own "KÃ¡ÂºÂ¿t nÃ¡Â»â€˜i lÃ¡ÂºÂ¡i" button succeeds
+    // and re-reveal them when the app's own "Kết nối lại" button succeeds
     const appReConnect = window.reConnect;
     if (typeof appReConnect === 'function') {
       window.reConnect = async function () {
@@ -146,7 +146,7 @@
     }
 
     // the DIY apps redefine addLog identically; the DLG tool's version wrote
-    // raw innerHTML Ã¢â‚¬â€ keep the hub's styled log for a consistent look
+    // raw innerHTML — keep the hub's styled log for a consistent look
     if (type === 'dlg') window.addLog = hubAddLog;
 
     const sub = document.getElementById('app-header-sub');
@@ -184,14 +184,14 @@
     } catch (e) {
       console.error(e);
       if (e.name === 'NotFoundError') {
-        addLog('KhÃƒÂ´ng tÃƒÂ¬m thÃ¡ÂºÂ¥y thiÃ¡ÂºÂ¿t bÃ¡Â»â€¹ E-Ink (DIY-4_2-xxxx / DIY-2_13-xxxx / DIY-2_9-xxxx / DLG-CLOCK-xxxx)');
+        addLog('Không tìm thấy thiết bị E-Ink (DIY-4_2-xxxx / DIY-2_13-xxxx / DIY-2_9-xxxx / DLG-CLOCK-xxxx)');
       } else if (e.message) {
         addLog('requestDevice: ' + e.message);
       }
-      addLog('KiÃ¡Â»Æ’m tra Bluetooth Ã„â€˜ÃƒÂ£ bÃ¡ÂºÂ­t vÃƒÂ  trÃƒÂ¬nh duyÃ¡Â»â€¡t hÃ¡Â»â€” trÃ¡Â»Â£ Web Bluetooth! KhuyÃƒÂªn dÃƒÂ¹ng:');
-      addLog('Ã¢â‚¬Â¢ MÃƒÂ¡y tÃƒÂ­nh: Chrome/Edge');
-      addLog('Ã¢â‚¬Â¢ Android: Chrome/Edge');
-      addLog('Ã¢â‚¬Â¢ iOS: trÃƒÂ¬nh duyÃ¡Â»â€¡t Bluefy');
+      addLog('Kiểm tra Bluetooth đã bật và trình duyệt hỗ trợ Web Bluetooth! Khuyên dùng:');
+      addLog('• Máy tính: Chrome/Edge');
+      addLog('• Android: Chrome/Edge');
+      addLog('• iOS: trình duyệt Bluefy');
       return;
     }
 
@@ -199,7 +199,7 @@
     if (!type && isDebugMode()) {
       // debug mode lists every BLE device; fall back to probing the GATT
       // services when the name gives no hint
-      addLog('TÃƒÂªn "' + (device.name || '?') + '" khÃƒÂ´ng nhÃ¡ÂºÂ­n dÃ¡ÂºÂ¡ng Ã„â€˜Ã†Â°Ã¡Â»Â£c Ã¢â‚¬â€ dÃƒÂ² dÃ¡Â»â€¹ch vÃ¡Â»Â¥ GATT...');
+      addLog('Tên "' + (device.name || '?') + '" không nhận dạng được — dò dịch vụ GATT...');
       try {
         const gatt = await device.gatt.connect();
         try {
@@ -215,18 +215,18 @@
         }
       } catch (e) {
         console.error(e);
-        addLog('KhÃƒÂ´ng kÃ¡ÂºÂ¿t nÃ¡Â»â€˜i Ã„â€˜Ã†Â°Ã¡Â»Â£c Ã„â€˜Ã¡Â»Æ’ dÃƒÂ² loÃ¡ÂºÂ¡i thiÃ¡ÂºÂ¿t bÃ¡Â»â€¹: ' + e.message);
+        addLog('Không kết nối được để dò loại thiết bị: ' + e.message);
         return;
       }
     }
     if (!type) {
-      addLog('ThiÃ¡ÂºÂ¿t bÃ¡Â»â€¹ "' + (device.name || '?') + '" khÃƒÂ´ng phÃ¡ÂºÂ£i DIY-4_2-xxxx / DIY-2_13-xxxx / DIY-2_9-xxxx / DLG-CLOCK-xxxx.');
+      addLog('Thiết bị "' + (device.name || '?') + '" không phải DIY-4_2-xxxx / DIY-2_13-xxxx / DIY-2_9-xxxx / DLG-CLOCK-xxxx.');
       return;
     }
 
     if (hubApp && type !== hubApp) {
-      if (confirm('ThiÃ¡ÂºÂ¿t bÃ¡Â»â€¹ ' + device.name + ' thuÃ¡Â»â„¢c loÃ¡ÂºÂ¡i ' + APPS[type].label +
-        ', khÃƒÂ¡c vÃ¡Â»â€ºi loÃ¡ÂºÂ¡i Ã„â€˜ang mÃ¡Â»Å¸ (' + APPS[hubApp].label + ').\nTÃ¡ÂºÂ£i lÃ¡ÂºÂ¡i trang Ã„â€˜Ã¡Â»Æ’ chuyÃ¡Â»Æ’n loÃ¡ÂºÂ¡i thiÃ¡ÂºÂ¿t bÃ¡Â»â€¹?')) {
+      if (confirm('Thiết bị ' + device.name + ' thuộc loại ' + APPS[type].label +
+        ', khác với loại đang mở (' + APPS[hubApp].label + ').\nTải lại trang để chuyển loại thiết bị?')) {
         location.reload();
       }
       return;
@@ -238,7 +238,7 @@
         await loadApp(type);
       } catch (e) {
         console.error(e);
-        addLog('LÃ¡Â»â€”i tÃ¡ÂºÂ£i giao diÃ¡Â»â€¡n: ' + e.message);
+        addLog('Lỗi tải giao diện: ' + e.message);
         return;
       } finally {
         loading = false;
@@ -294,8 +294,8 @@
   };
 
   window.preConnect = hubPreConnect;
-  window.reConnect = function () { addLog('ChÃ†Â°a kÃ¡ÂºÂ¿t nÃ¡Â»â€˜i thiÃ¡ÂºÂ¿t bÃ¡Â»â€¹ nÃƒÂ o.'); };
-  window.sendcmd = function () { addLog('ChÃ†Â°a kÃ¡ÂºÂ¿t nÃ¡Â»â€˜i thiÃ¡ÂºÂ¿t bÃ¡Â»â€¹ nÃƒÂ o.'); };
+  window.reConnect = function () { addLog('Chưa kết nối thiết bị nào.'); };
+  window.sendcmd = function () { addLog('Chưa kết nối thiết bị nào.'); };
 
   function hubInit() {
     document.getElementById('reconnectbutton').disabled = true;
@@ -306,9 +306,9 @@
     const link = document.getElementById('debug-toggle');
     if (isDebugMode()) {
       document.body.classList.add('dark-mode');
-      link.innerHTML = 'ChÃ¡ÂºÂ¿ Ã„â€˜Ã¡Â»â„¢ thÃ†Â°Ã¡Â»Âng';
+      link.innerHTML = 'Chế độ thường';
       link.setAttribute('href', window.location.pathname);
-      addLog('ChÃƒÂº ÃƒÂ½: chÃ¡ÂºÂ¿ Ã„â€˜Ã¡Â»â„¢ dev Ã„â€˜ÃƒÂ£ bÃ¡ÂºÂ­t! KhÃƒÂ´ng hiÃ¡Â»Æ’u thÃƒÂ¬ Ã„â€˜Ã¡Â»Â«ng chÃ¡Â»â€°nh sÃ¡Â»Â­a tÃƒÂ¹y tiÃ¡Â»â€¡n!');
+      addLog('Chú ý: chế độ dev đã bật! Không hiểu thì đừng chỉnh sửa tùy tiện!');
     } else {
       link.setAttribute('href', window.location.pathname + '?debug=true');
     }
@@ -320,10 +320,10 @@
       loading = true;
       loadApp(appParam).then(() => {
         revealSections();
-        addLog('Xem trÃ†Â°Ã¡Â»â€ºc giao diÃ¡Â»â€¡n ' + APPS[appParam].label + ' (chÃ†Â°a kÃ¡ÂºÂ¿t nÃ¡Â»â€˜i thiÃ¡ÂºÂ¿t bÃ¡Â»â€¹).');
+        addLog('Xem trước giao diện ' + APPS[appParam].label + ' (chưa kết nối thiết bị).');
       }).catch((e) => {
         console.error(e);
-        addLog('LÃ¡Â»â€”i tÃ¡ÂºÂ£i giao diÃ¡Â»â€¡n: ' + e.message);
+        addLog('Lỗi tải giao diện: ' + e.message);
       }).finally(() => { loading = false; });
     }
   }
