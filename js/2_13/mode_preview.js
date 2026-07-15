@@ -853,6 +853,97 @@
     center(x, 'Ảnh đã lưu trong flash', W / 2, H - 8, GY);
   }
 
+  // ---- 4 giao diện mới (30-33) — khớp paint_* trong firmware ----
+  const VNU = ['không','một','hai','ba','bốn','năm','sáu','bảy','tám','chín'];
+  function numVN(n){
+    if(n<10) return VNU[n];
+    if(n<20) return n===10?'mười':('mười '+(n%10===5?'lăm':VNU[n%10]));
+    const t=(n/10)|0, u=n%10;
+    if(u===0) return VNU[t]+' mươi';
+    return VNU[t]+' mươi '+(u===1?'mốt':u===5?'lăm':u===4?'tư':VNU[u]);
+  }
+  const p2v = n => ('0'+n).slice(-2);
+  const hmv = m => p2v((m/60)|0)+':'+p2v(m%60);
+  function sunTimesVN(now){
+    const yday = Math.floor((now - new Date(now.getFullYear(),0,0)) / 86400000);
+    const daylen = 720 + 57*Math.cos(2*Math.PI*(yday-172)/365);
+    return { sr: Math.round(720-daylen/2), ss: Math.round(720+daylen/2) };
+  }
+  function buoiVN(h){ return h<11?'sáng':h<13?'trưa':h<18?'chiều':'tối'; }
+
+  function mWord(x, now, W, H) {                          // 30
+    const h12 = ((now.getHours()+11)%12)+1, m = now.getMinutes();
+    const up = s => s.charAt(0).toUpperCase()+s.slice(1);
+    const mw = m===0?'đúng':m===30?'rưỡi':m===15?'mười lăm':numVN(m);
+    font(x, 8, 0); x.fillStyle = GY; x.textAlign='left'; x.fillText('Bây giờ là', 6, 12);
+    battery(x, W-16, 5, BK, voltLabel());
+    x.fillStyle = BK; font(x, Math.round(H*0.19), 1);
+    center(x, up(numVN(h12))+' giờ', W/2, H*0.42);
+    center(x, mw, W/2, H*0.66);
+    line(x, 4, H-15, W-4, H-15, BK, 1);
+    font(x, 8, 0);
+    center(x, WD_FULL[now.getDay()]+' · '+p2v(now.getDate())+'/'+p2v(now.getMonth()+1)+' · '+buoiVN(now.getHours()), W/2, H-4, BK);
+  }
+
+  function mProgress(x, now, W, H) {                      // 31
+    battery(x, W-16, 5, BK, voltLabel());
+    x.fillStyle = BK; font(x, Math.round(H*0.28), 1);
+    center(x, p2v(now.getHours())+':'+p2v(now.getMinutes()), W/2, H*0.33);
+    const dim = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+    const yday = Math.floor((now - new Date(now.getFullYear(),0,0)) / 86400000);
+    const mins = now.getHours()*60+now.getMinutes();
+    const rows = [['Ngày', mins/1440*100],
+                  ['Tháng', ((now.getDate()-1)+mins/1440)/dim*100],
+                  ['Năm', ((yday-1)+mins/1440)/365*100]];
+    const barY = H*0.46, rowh = (H-barY-4)/3;
+    rows.forEach((r,i)=>{
+      const y = barY + i*rowh, pc = Math.max(0, Math.min(100, Math.round(r[1])));
+      font(x, 8, 1); x.fillStyle = BK; x.textAlign='left'; x.fillText(r[0], 6, y+7);
+      right(x, pc+'%', W-6, y+7, BK);
+      const by = y+9, bh = Math.max(5, rowh-12);
+      x.strokeStyle = BK; x.lineWidth = 1; x.strokeRect(6, by, W-12, bh);
+      x.fillStyle = BK; x.fillRect(6, by, (W-12)*pc/100, bh);
+    });
+  }
+
+  function mDash(x, now, W, H) {                          // 32
+    x.strokeStyle = BK; x.lineWidth = 1; x.strokeRect(1.5, 1.5, W-3, H-3);
+    x.fillStyle = BK; font(x, Math.round(H*0.28), 1); x.textAlign='left';
+    x.fillText(p2v(now.getHours())+':'+p2v(now.getMinutes()), 8, H*0.30);
+    font(x, 8, 0);
+    right(x, voltLabel(), W-8, 12, BK);
+    right(x, panelTempVal()+'°C', W-8, 26, BK);
+    const divY = H*0.58, cw = (W-6)/3, cx0 = 3;
+    line(x, 3, divY, W-4, divY, BK, 1);
+    line(x, cx0+cw, divY+2, cx0+cw, H-3, BK, 1);
+    line(x, cx0+2*cw, divY+2, cx0+2*cw, H-3, BK, 1);
+    font(x, 7, 0); x.fillStyle = GY;
+    center(x, 'Dương', cx0+cw/2, divY+11);
+    center(x, 'Âm lịch', cx0+cw+cw/2, divY+11);
+    center(x, 'Ngày', cx0+2.5*cw, divY+11);
+    font(x, 10, 1); x.fillStyle = BK;
+    center(x, p2v(now.getDate())+'/'+p2v(now.getMonth()+1), cx0+cw/2, divY+23);
+    center(x, lunarStr(now), cx0+cw+cw/2, divY+23);
+    center(x, WD_FULL[now.getDay()], cx0+2.5*cw, divY+23);
+  }
+
+  function mSunArc(x, now, W, H) {                        // 33
+    battery(x, W-16, 5, BK, voltLabel());
+    const { sr, ss } = sunTimesVN(now);
+    const cx = W/2, baseY = H*0.70, R = Math.min(W/2-14, baseY-6);
+    line(x, cx-R, baseY, cx+R, baseY, BK, 1);
+    x.fillStyle = BK;
+    for(let d=0; d<=180; d+=8){ const a=d*Math.PI/180; x.beginPath(); x.arc(cx+R*Math.cos(a), baseY-R*Math.sin(a), 0.9, 0, 7); x.fill(); }
+    let cur = Math.max(sr, Math.min(ss, now.getHours()*60+now.getMinutes()));
+    const f = (ss>sr)?(cur-sr)/(ss-sr):0.5, a=(1-f)*Math.PI;
+    x.beginPath(); x.arc(cx+R*Math.cos(a), baseY-R*Math.sin(a), 4, 0, 7); x.strokeStyle=BK; x.lineWidth=1.4; x.stroke();
+    x.fillStyle = BK; font(x, Math.round(H*0.19), 1);
+    center(x, p2v(now.getHours())+':'+p2v(now.getMinutes()), cx, baseY-R*0.32);
+    font(x, 8, 0); x.textAlign='left'; x.fillText('Mọc '+hmv(sr), cx-R, baseY+11);
+    right(x, 'Lặn '+hmv(ss), cx+R, baseY+11, BK);
+    center(x, WD_FULL[now.getDay()]+' · '+p2v(now.getDate())+'/'+p2v(now.getMonth()+1), cx, H-4, BK);
+  }
+
   // «Ảnh đã lưu» LUÔN đứng cuối — chế độ mới thêm vào TRƯỚC nó.
   const MODE_LIST = [
     { mode: 1, name: 'Đồng hồ + lịch âm', tick: 'Làm mới mỗi phút', draw: m0 },
@@ -867,6 +958,10 @@
     { mode: 10, name: 'Nhiệt độ + đồng hồ', tick: 'Làm mới mỗi phút', draw: m4 },
     { mode: 11, name: 'Lịch tuần', tick: 'Làm mới mỗi phút', draw: m9 },
     { mode: 12, name: 'Lịch bloc', tick: 'Làm mới mỗi phút', draw: m8 },
+    { mode: 30, name: 'Đồng hồ chữ', tick: 'Làm mới mỗi phút', draw: mWord },
+    { mode: 31, name: 'Tiến độ ngày/tháng/năm', tick: 'Làm mới mỗi phút', draw: mProgress },
+    { mode: 32, name: 'Bảng thông tin', tick: 'Làm mới mỗi phút', draw: mDash },
+    { mode: 33, name: 'Vòng cung mặt trời', tick: 'Làm mới mỗi phút', draw: mSunArc },
     // thu tu nhom DOC theo nguoi dung chon (13,20,15,14,16,19,17,18 theo vi tri cu)
     { mode: 13, name: 'Dọc: đồng hồ', tick: 'Dựng dọc — làm mới mỗi phút', draw: m17, vert: true },
     { mode: 14, name: 'Dọc: giờ nổi 3D', tick: 'Dựng dọc — làm mới mỗi phút', draw: m24, vert: true },
