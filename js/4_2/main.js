@@ -31,11 +31,12 @@ const EpdCmd = {
 };
 
 const EPD_SERVICE = '62750001-d828-918d-fb46-b6c11c675aec';
-// Only ever offer devices named DIY-xxxx (in both normal and debug mode).
-// Prefix stays 'DIY-' (not 'DIY-4_2-') so this still finds boards on older
-// firmware that haven't been reflashed with the size-tagged name yet.
+// Chỉ liệt kê đúng máy 4.2" (DIY-4_2-xxxx): các board 2.13"/2.9" quảng bá
+// DIY-2_13-/DIY-2_9- dùng giao thức khác (service 0xff00), hiện trong hộp
+// chọn chỉ gây nhầm. Board 4.2" chạy firmware quá cũ (tên chưa gắn cỡ màn)
+// vẫn kết nối được bằng chế độ dev (?debug=true).
 const BLE_REQUEST_FILTERS = [
-  { namePrefix: 'DIY-' },
+  { namePrefix: 'DIY-4_2' },
 ];
 
 function sleep(ms) {
@@ -484,7 +485,7 @@ async function preConnect() {
     } catch (e) {
       console.error(e);
       if (e.name === 'NotFoundError') {
-        addLog("Không tìm thấy thiết bị E-Ink (DIY- / NRF_EPD)");
+        addLog("Không tìm thấy thiết bị E-Ink 4.2\" (tên DIY-4_2-xxxx)");
       } else if (e.message) {
         addLog("requestDevice: " + e.message);
       }
