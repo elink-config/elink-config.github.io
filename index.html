@@ -6,7 +6,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>E-Ink DA14585</title>
 	<link rel="shortcut icon" type="image/png" href="favicon.png">
-	<link rel="stylesheet" href="css/main.css?v=20260715e">
+	<link rel="stylesheet" href="css/main.css?v=20260715f">
 	<script>
 		// apply the saved theme before first paint to avoid a flash
 		(function () {
@@ -74,6 +74,37 @@
 		<!-- per-device sections get cloned here from the templates below after a
 		     successful connection; only one app type is ever instantiated -->
 		<div id="appMount" class="hidden"></div>
+
+		<!-- popup kích hoạt: hiện khi thiết bị DIY báo «act=off» sau khi kết nối
+		     (firmware khóa mọi lệnh cho tới khi nhận mã kích hoạt hợp lệ) -->
+		<div id="act-overlay" class="act-overlay" hidden>
+			<div class="act-dialog" role="dialog" aria-modal="true" aria-labelledby="act-title">
+				<div id="act-form-view">
+					<h2 id="act-title">Thiết bị chưa kích hoạt</h2>
+					<p>Thiết bị phải được <b>kích hoạt</b> trước khi sử dụng. Vui lòng liên hệ
+						<a href="https://vn.shp.ee/ZX4DY1pi" target="_blank" rel="noopener">người bán</a>
+						và gửi mã bên dưới để nhận <b>mã kích hoạt</b> cho thiết bị của bạn:</p>
+					<div class="act-row">
+						<input id="act-mac" type="text" readonly value="" onclick="this.select()">
+						<button id="act-copy" type="button" class="secondary">Sao chép</button>
+					</div>
+					<p style="margin-top:14px">Nhận được mã kích hoạt thì dán vào ô dưới rồi bấm «Kích hoạt»:</p>
+					<textarea id="act-key" placeholder="Dán mã kích hoạt tại đây" spellcheck="false"></textarea>
+					<p class="act-hint" id="act-key-hint" hidden>Mã không đúng định dạng — cần 256 ký tự hex (có thể kèm «26» ở đầu và khoảng trắng).</p>
+					<div class="act-actions">
+						<button id="act-close" type="button" class="secondary">Đóng</button>
+						<button id="act-submit" type="button" class="primary" disabled>Kích hoạt</button>
+					</div>
+				</div>
+				<div id="act-result-view" hidden>
+					<h2 id="act-result-title"></h2>
+					<p id="act-result-text"></p>
+					<div class="act-actions">
+						<button id="act-result-btn" type="button" class="primary"></button>
+					</div>
+				</div>
+			</div>
+		</div>
 
 		<template id="tpl-4_2">
 		<fieldset>
@@ -1433,7 +1464,7 @@
 			</span>
 		</div>
 	</div>
-	<script type="text/javascript" src="js/connector.js?v=20260715e"></script>
+	<script type="text/javascript" src="js/connector.js?v=20260715f"></script>
 	<script>
 		var _hmt = _hmt || [];
 		(function () {
