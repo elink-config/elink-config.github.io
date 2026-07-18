@@ -6,6 +6,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>E-Ink DA14585</title>
 	<link rel="shortcut icon" type="image/png" href="favicon.png">
+	<link rel="shortcut icon" type="image/png" href="favicon.png">
 	<link rel="stylesheet" href="css/main.css?v=20260716a">
 	<script>
 		// apply the saved theme before first paint to avoid a flash
@@ -33,6 +34,12 @@
 			if (document.documentElement.getAttribute('data-theme') === 'dark')
 				document.getElementById('theme-toggle-icon').textContent = 'light_mode';
 		</script>
+		<a class="zalo-banner" href="https://zalo.me/g/gqlpuz2xpxy1kttjbeqb" target="_blank" rel="noopener">
+			<span class="material-symbols-outlined" aria-hidden="true">forum</span>
+			<span class="zalo-banner-text"><b>Nhóm Zalo hỗ trợ khách hàng</b> — cần trợ giúp khi cài đặt,
+				sử dụng hoặc cập nhật thiết bị? Tham gia nhóm để được hỗ trợ trực tiếp.</span>
+			<span class="zalo-banner-cta">Tham gia nhóm</span>
+		</a>
 		<fieldset>
 			<legend>Kết nối Bluetooth</legend>
 			<p class="mode-gallery-hint">Bấm «Kết nối» và chọn thiết bị <b>DIY-4_2-xxxx</b> (màn 4.2"),
@@ -74,6 +81,37 @@
 		<!-- per-device sections get cloned here from the templates below after a
 		     successful connection; only one app type is ever instantiated -->
 		<div id="appMount" class="hidden"></div>
+
+		<!-- popup kích hoạt: hiện khi thiết bị DIY báo «act=off» sau khi kết nối
+		     (firmware khóa mọi lệnh cho tới khi nhận mã kích hoạt hợp lệ) -->
+		<div id="act-overlay" class="act-overlay" hidden>
+			<div class="act-dialog" role="dialog" aria-modal="true" aria-labelledby="act-title">
+				<div id="act-form-view">
+					<h2 id="act-title">Thiết bị chưa kích hoạt</h2>
+					<p>Thiết bị phải được <b>kích hoạt</b> trước khi sử dụng. Vui lòng liên hệ
+						<a href="https://vn.shp.ee/ZX4DY1pi" target="_blank" rel="noopener">người bán</a>
+						và gửi mã bên dưới để nhận <b>mã kích hoạt</b> cho thiết bị của bạn:</p>
+					<div class="act-row">
+						<input id="act-mac" type="text" readonly value="" onclick="this.select()">
+						<button id="act-copy" type="button" class="secondary">Sao chép</button>
+					</div>
+					<p style="margin-top:14px">Nhận được mã kích hoạt thì dán vào ô dưới rồi bấm «Kích hoạt»:</p>
+					<textarea id="act-key" placeholder="Dán mã kích hoạt tại đây" spellcheck="false"></textarea>
+					<p class="act-hint" id="act-key-hint" hidden>Mã không đúng định dạng — cần 256 ký tự hex (có thể kèm «26» ở đầu và khoảng trắng).</p>
+					<div class="act-actions">
+						<button id="act-close" type="button" class="secondary">Đóng</button>
+						<button id="act-submit" type="button" class="primary" disabled>Kích hoạt</button>
+					</div>
+				</div>
+				<div id="act-result-view" hidden>
+					<h2 id="act-result-title"></h2>
+					<p id="act-result-text"></p>
+					<div class="act-actions">
+						<button id="act-result-btn" type="button" class="primary"></button>
+					</div>
+				</div>
+			</div>
+		</div>
 
 		<template id="tpl-4_2">
 		<fieldset>
@@ -660,16 +698,59 @@
                         <tr>
 							<td>1</td>
 							<td>1.0</td>
-							<td>Phiên bản nâng cấp với 28 chế độ màn hình riêng biệt. [KHÔNG sử dụng phiên bản này do đã phát hiện lỗi treo màn hình sau khi chạy 1 thời gian hoặc màn hình hiển thị lỗi giao diện]</td>
+							<td>Phiên bản nâng cấp với 28 chế độ màn hình riêng biệt. [KHÔNG sử dụng phiên bản này do đã phát hiện lỗi treo màn hình sau khi chạy 1 thời gian hoặc màn hình hiển thị lỗi giao diện.]<br>
+							Phiên bản này không thể sử dụng chức năng Update OTA để nâng lên phiên bản cao hơn, hãy làm theo hướng dẫn của phiên bản 1.0.1 bên dưới</td>
 							<td>12/07/2026</td>
-							<td><a href="OTA firmware/fw_2_13inch_v1.0.bin" download>Tải về</a></td>
+							<td>🚫</td>
+							<!-- <td><a href="OTA firmware/fw_2_13inch_v1.0.bin" download>Tải về</a></td> -->
+						</tr>
+						<tr>
+							<td>2</td>
+							<td>1.0.1</td>
+							<td>Bản vá sửa lỗi OTA cho phép update lên các phiên bản mới hơn, tải về sau đó sử dụng chức năng OTA để cập nhật, sau khi cập nhật thành công tiếp tục tải phiên bản 1.1 bên dưới để cập nhật tiếp.<br>
+							Phiên bản này chỉ có tác dụng duy nhất là bản vá lỗi để update lên phiên bản khác, không thể sử dụng các chức năng đồng hồ.</td>
+							<td>16/07/2026</td>
+                            <td>🚫</td>
+							<!-- <td><a href="OTA firmware/fw_2_13inch_v1.0.1.bin" download>Tải về</a></td> -->
 						</tr>
                         <tr>
-							<td>2</td>
+							<td>3</td>
+							<td>1.0.2</td>
+							<td>Bản vá sửa lỗi OTA cho phép update lên các phiên bản mới hơn, tải về sau đó sử dụng chức năng OTA để cập nhật, sau khi cập nhật thành công tiếp tục tải phiên bản 1.1 bên dưới để cập nhật tiếp.<br>
+							Phiên bản này chỉ có tác dụng duy nhất là bản vá lỗi để update lên phiên bản khác, không thể sử dụng các chức năng đồng hồ.</td>
+							<td>16/07/2026</td>
+							<td><a href="OTA firmware/fw_2_13inch_v1.0.2.bin" download>Tải về</a></td>
+						</tr>
+                        <tr>
+							<td>3</td>
 							<td>1.1</td>
-							<td>Sửa lỗi phiên bản 1.0, hỗ trợ cả 2 độ phân giải của màn hình 2.13 inch, căn chỉnh giao diện. [Cần kích hoạt lại, 1 lần duy nhất, vui lòng nhắn tin cho shop để nhận mã kích hoạt]</td>
-							<td>12/07/2026</td>
-							<td><a href="OTA firmware/fw_2_13inch_v1.1.bin" download>Tải về</a></td>
+							<td>Sửa lỗi phiên bản 1.0, hỗ trợ cả 2 độ phân giải của màn hình 2.13 inch (212x104 và 250x144), căn chỉnh lại các giao diện. Chỉ được cập nhật khi đã update phiên bản 1.0.1, nếu không mạch sẽ bị hỏng.<br>[Cần kích hoạt lại, 1 lần duy nhất, sau khi update lên các phiên bản sau sẽ không cần kích hoạt lại nữa, vui lòng nhắn tin cho shop để nhận mã kích hoạt]</td>
+							<td>16/07/2026</td>
+                            <td>🚫</td>
+							<!-- <td><a href="OTA firmware/fw_2_13inch_v1.1.bin" download>Tải về</a></td> -->
+						</tr>
+                        <tr>
+							<td>4</td>
+							<td>1.2</td>
+							<td>Sửa lỗi thiết bị bị ngắt kết nối ngay sau khi ấn [Sync Time]. Chỉ được cập nhật từ phiên bản 1.0.1 hoặc 1.1, nếu không mạch sẽ bị hỏng.</td>
+							<td>16/07/2026</td>
+                            <td>🚫</td>
+							<!-- <td><a href="OTA firmware/fw_2_13inch_v1.2.bin" download>Tải về</a></td> -->
+						</tr>
+                        <tr>
+							<td>5</td>
+							<td>1.3</td>
+							<td>Sửa lỗi thiết bị không nhận firmware mới sau khi update OTA. Chỉ được cập nhật từ phiên bản 1.0.2</td>
+							<td>17/07/2026</td>
+							<td><a href="OTA firmware/fw_2_13inch_v1.3.bin" download>Tải về</a></td>
+						</tr>
+						<tr>
+							<td>6</td>
+							<td>1.3</td>
+							<td>Cập nhật thêm 4 giao diện màn hình ngang mới, update từ phiên bản 1.0.1 hoặc 1.1</td>
+							<td>17/07/2026</td>
+                            <td>🚧</td>
+							<!--<td><a href="" download>Tải về</a></td>-->
 						</tr>
 					</tbody>
 				</table>
@@ -1417,7 +1498,7 @@
 			</span>
 		</div>
 	</div>
-	<script type="text/javascript" src="js/connector.js?v=20260716a"></script>
+	<script type="text/javascript" src="js/connector.js?v=20260715g"></script>
 	<script>
 		var _hmt = _hmt || [];
 		(function () {
