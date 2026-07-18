@@ -525,11 +525,13 @@ async function otaUpdate() {
 
   setDisId('otabutton', true);
   try {
-    // 0xA0: bắt đầu — firmware xoá bank không hoạt động
+    // 0xA0: bắt đầu — firmware xoá bank không hoạt động. Size gửi u32
+    // (firmware >64KB làm u16 tràn → xóa thiếu sector → hỏng bank);
+    // firmware cũ đọc u16 vẫn đúng vì 2 byte cao = 0 khi size <64KB.
     const buf = new Uint8Array(136);
     const dv = new DataView(buf.buffer);
     buf[0] = 0xa0; buf[1] = 0x00;
-    dv.setUint16(2, firmSize, true);
+    dv.setUint32(2, firmSize, true);
     show('Đang xoá flash…');
     await write(buf, true);
 
