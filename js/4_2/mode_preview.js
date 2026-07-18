@@ -46,10 +46,11 @@
     return w;
   }
   function battery(x, bx, by, col, label) {
+    // icon xoay 180° khớp firmware: núm bên TRÁI, mức đầy bám mép PHẢI
     col = col || BK;
     x.strokeStyle = col; x.lineWidth = 1.5; x.strokeRect(bx, by, 22, 11);
-    x.fillStyle = col; x.fillRect(bx + 22, by + 3, 3, 5); x.fillRect(bx + 2, by + 2, 14, 7);
-    if (label) { font(x, 12, 0); x.textAlign = 'right'; x.fillText(label, bx - 5, by + 10); x.textAlign = 'left'; }
+    x.fillStyle = col; x.fillRect(bx - 3, by + 3, 3, 5); x.fillRect(bx + 6, by + 2, 14, 7);
+    if (label) { font(x, 12, 0); x.textAlign = 'right'; x.fillText(label, bx - 8, by + 10); x.textAlign = 'left'; }
   }
   function analogClock(x, cx, cy, r, now, numerals, tickCol, handCol) {
     tickCol = tickCol || BK; handCol = handCol || BK;
