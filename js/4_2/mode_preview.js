@@ -467,18 +467,6 @@
         if (rows[r] & (0x40 >> c)) x.fillRect(X + i * 9 * s + c * s, Y + r * s, s, s);
     }
   }
-  function pxSpark(x, cx, cy, s, col) {
-    x.fillStyle = col;
-    x.fillRect(cx - (s >> 1), cy - 2.5 * s, s, 2 * s); x.fillRect(cx - (s >> 1), cy + s, s, 2 * s);
-    x.fillRect(cx - 2.5 * s, cy - (s >> 1), 2 * s, s); x.fillRect(cx + s, cy - (s >> 1), 2 * s, s);
-    x.fillRect(cx - (s >> 1), cy - (s >> 1), s, s);
-  }
-  function pxStar(x, X, Y, s, col) {
-    const rows = [0x010, 0x038, 0x1FF, 0x0FE, 0x07C, 0x0FE, 0x1C7, 0x082];
-    x.fillStyle = col;
-    for (let r = 0; r < 8; r++) for (let c = 0; c < 9; c++)
-      if (rows[r] & (0x100 >> c)) x.fillRect(X + c * s, Y + r * s, s, s);
-  }
   function m21(x, now) { // Núi tuyết 8-bit
     pxDither(x, 0, 8, 400, 8, 4, BK); pxDither(x, 0, 132, 400, 8, 4, BK);
     pxMtn(x, 60, 168, 252, 6, BK); pxMtn(x, 344, 176, 252, 6, BK);
@@ -570,7 +558,6 @@
   }
   function m24(x, now) { // Thành phố pixel
     pxTime(x, 200 - 102, 24, now, 12, BK);
-    pxSpark(x, 44, 44, 4, RED); pxSpark(x, 356, 44, 4, RED);
     x.fillStyle = '#fff'; x.fillRect(116, 102, 168, 40);
     x.strokeStyle = BK; x.strokeRect(116.5, 102.5, 168, 40); x.strokeRect(119.5, 105.5, 162, 34);
     font(x, 13, 0); center(x, pad2(now.getDate()) + '-' + pad2(now.getMonth() + 1) + '-' + now.getFullYear(), 200, 128, BK);
