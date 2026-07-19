@@ -516,25 +516,57 @@
     pxDither(x, 0, 284, 400, 8, 4, '#fff');
     pxHearts(x, 8, 8, 3, 2, '#fff');
   }
-  function m23(x, now) { // Chiến thắng 8-bit
-    pxHearts(x, 10, 10, 4, 2);
-    pxSpark(x, 96, 64, 4, RED); pxSpark(x, 306, 52, 4, RED); pxSpark(x, 330, 96, 3, BK); pxSpark(x, 72, 110, 3, BK);
-    font(x, 22, 1); center(x, WD_FULL[now.getDay()], 200, 60, RED);
-    pxDate.col = RED; pxDate.dot = BK; pxDate(x, 200 - 93, 78, now, 11);
-    pxStar(x, 200 - 36, 148, 8, RED);
-    for (let xx = 0; xx < 400; xx += 40) {
-      pxMtn(x, xx + 20, 204, 240, 10, '#fff');
+  function m23(x, now) { // Khủng long 8-bit (Chrome "No internet")
+    const DINO = [0x00FE, 0x017F, 0x01FF, 0x01FF, 0x01F8, 0x81E0, 0xC3E0, 0xE7E0,
+                  0xFFF0, 0x7FE4, 0x3FE0, 0x1FC0, 0x0FC0, 0x0660, 0x0420, 0x0630];
+    const cactus = (cx, base, s, h) => {
       x.fillStyle = BK;
-      for (let yy = 204, half = 10; yy < 240; yy += 10, half += 10) {
-        x.fillRect(xx + 20 - half, yy, 10, 1); x.fillRect(xx + 20 + half - 10, yy, 10, 1);
-      }
+      x.fillRect(cx - s, base - h, 2 * s, h);
+      x.fillRect(cx - 3 * s, base - h + 2 * s, s, 3 * s); x.fillRect(cx - 3 * s, base - h + 4 * s, 2 * s, s);
+      x.fillRect(cx + 2 * s, base - h + s, s, 3 * s); x.fillRect(cx + s, base - h + 3 * s, 2 * s, s);
+    };
+    const cloud = (cx, cy) => {
+      x.strokeStyle = BK; x.lineWidth = 1;
+      x.strokeRect(cx + 0.5, cy + 8.5, 46, 10); x.strokeRect(cx + 10.5, cy + 0.5, 20, 10);
+      x.fillStyle = '#fff'; x.fillRect(cx + 11, cy + 8, 18, 2);
+    };
+    pxHearts(x, 8, 8, 3, 2);
+    // "HI DD.MM.YYYY" chữ số pixel góc phải
+    {
+      const s = 3, dw = 12, X0 = 400 - 10 - (8 * dw + 12), Y0 = 10, yr = now.getFullYear();
+      font(x, 10, 0); x.fillStyle = BK; x.fillText('HI', X0 - 18, Y0 + 12);
+      pxDigit(x, X0, Y0, (now.getDate() / 10) | 0, s, BK); pxDigit(x, X0 + dw, Y0, now.getDate() % 10, s, BK);
+      x.fillStyle = BK; x.fillRect(X0 + 2 * dw, Y0 + 12, 3, 3);
+      pxDigit(x, X0 + 2 * dw + 6, Y0, ((now.getMonth() + 1) / 10) | 0, s, BK);
+      pxDigit(x, X0 + 3 * dw + 6, Y0, (now.getMonth() + 1) % 10, s, BK);
+      x.fillRect(X0 + 4 * dw + 6, Y0 + 12, 3, 3);
+      pxDigit(x, X0 + 4 * dw + 12, Y0, ((yr / 1000) | 0) % 10, s, BK);
+      pxDigit(x, X0 + 5 * dw + 12, Y0, ((yr / 100) | 0) % 10, s, BK);
+      pxDigit(x, X0 + 6 * dw + 12, Y0, ((yr / 10) | 0) % 10, s, BK);
+      pxDigit(x, X0 + 7 * dw + 12, Y0, yr % 10, s, BK);
     }
-    [28, 78, 128, 272, 322, 372].forEach(t => pxTree(x, t, 246, 4, RED));
-    font(x, 12, 0); center(x, 'Tháng ' + (now.getMonth() + 1) + ' - ' + now.getFullYear() + ' · ÂL 15/6', 200, 258, BK);
-    x.fillStyle = BK; x.fillRect(0, 272, 400, 8);
-    for (let xx = 0; xx < 400; xx += 16) x.fillRect(xx, 266, 8, 6);
-    x.fillStyle = RED; x.fillRect(0, 280, 400, 20);
-    pxDither(x, 0, 280, 400, 6, 3, BK);
+    // mặt trời đỏ + mây + chim
+    x.fillStyle = RED; x.fillRect(330, 44, 24, 6); x.fillRect(324, 50, 36, 24); x.fillRect(330, 74, 24, 6);
+    cloud(56, 54); cloud(172, 38); cloud(258, 84);
+    x.fillStyle = BK;
+    const PT = [0x10, 0x18, 0xFE, 0x3C, 0x10];
+    for (let r = 0; r < 5; r++) for (let c = 0; c < 8; c++)
+      if (PT[r] & (0x80 >> c)) x.fillRect(248 + c * 4, 180 + r * 4, 4, 4);
+    // màn "game over": thứ + tháng/năm/âm lịch + dòng lỗi
+    font(x, 22, 1); center(x, WD_FULL[now.getDay()], 200, 116, BK);
+    font(x, 12, 0); center(x, 'Tháng ' + (now.getMonth() + 1) + ' - ' + now.getFullYear() + ' · ÂL 15/6', 200, 140, BK);
+    font(x, 10, 0); center(x, 'ERR_NO_INTERNET - 32*C', 230, 162, BK);
+    // T-Rex
+    x.fillStyle = BK;
+    for (let r = 0; r < 16; r++) for (let c = 0; c < 16; c++)
+      if (DINO[r] & (0x8000 >> c)) x.fillRect(36 + c * 6, 142 + r * 6, 6, 6);
+    // xương rồng + đường đất
+    cactus(210, 238, 5, 44); cactus(268, 238, 4, 30); cactus(336, 238, 5, 40); cactus(358, 238, 3, 24);
+    x.fillStyle = BK; x.fillRect(0, 238, 400, 2);
+    [24, 88, 140, 196, 240, 300, 344, 380].forEach((gx, i) => {
+      x.fillRect(gx, 248 + (i % 3) * 6, 14, 1);
+      x.fillRect(gx + 26, 254 + ((i + 1) % 3) * 5, 2, 2);
+    });
   }
   function m24(x, now) { // Thành phố pixel
     pxTime(x, 200 - 102, 24, now, 12, BK);
@@ -596,7 +628,7 @@
     { mode: 20, name: 'Tự thiết kế', tick: 'Làm mới mỗi phút', id: 'custommodebutton', draw: m20 },
     { mode: 21, name: 'Núi tuyết 8-bit', tick: 'Cập nhật lúc 0h', id: 'retromtnmodebutton', draw: m21 },
     { mode: 22, name: 'Hoàng hôn 8-bit', tick: 'Làm mới mỗi phút', id: 'retrosunsetmodebutton', draw: m22 },
-    { mode: 23, name: 'Chiến thắng 8-bit', tick: 'Cập nhật lúc 0h', id: 'retrowinmodebutton', draw: m23 },
+    { mode: 23, name: 'Khủng long 8-bit', tick: 'Cập nhật lúc 0h', id: 'retrowinmodebutton', draw: m23 },
     { mode: 24, name: 'Thành phố pixel', tick: 'Làm mới mỗi phút', id: 'retrocitymodebutton', draw: m24 },
   ];
 
