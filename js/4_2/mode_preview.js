@@ -468,7 +468,7 @@
     }
   }
   function m21(x, now) { // Núi tuyết 8-bit
-    pxDither(x, 0, 8, 400, 8, 4, BK); pxDither(x, 0, 132, 400, 8, 4, BK);
+    pxDither(x, 0, 8, 400, 8, 4, BK);
     pxMtn(x, 60, 168, 252, 6, BK); pxMtn(x, 344, 176, 252, 6, BK);
     pxMtn(x, 200, 128, 252, 8, BK); pxMtn(x, 200, 128, 176, 8, '#fff');
     [28, 76, 128, 236, 288, 336, 380].forEach(t => pxTree(x, t, 258, 4, BK));
@@ -536,7 +536,7 @@
     }
     // mặt trời đỏ + mây + chim
     x.fillStyle = RED; x.fillRect(330, 44, 24, 6); x.fillRect(324, 50, 36, 24); x.fillRect(330, 74, 24, 6);
-    cloud(56, 54); cloud(172, 38); cloud(258, 84);
+    cloud(56, 54); cloud(172, 38);
     x.fillStyle = BK;
     const PT = [0x10, 0x18, 0xFE, 0x3C, 0x10];
     for (let r = 0; r < 5; r++) for (let c = 0; c < 8; c++)
@@ -554,7 +554,6 @@
     x.fillStyle = BK; x.fillRect(0, 238, 400, 2);
     [24, 88, 140, 196, 240, 300, 344, 380].forEach((gx, i) => {
       x.fillRect(gx, 248 + (i % 3) * 6, 14, 1);
-      x.fillRect(gx + 26, 254 + ((i + 1) % 3) * 5, 2, 2);
     });
   }
   function m24(x, now) { // Thành phố pixel
@@ -573,7 +572,7 @@
     x.fillStyle = RED; x.fillRect(0, 244, 400, 22);
     x.fillStyle = BK; x.fillRect(0, 250, 400, 1); x.fillRect(0, 258, 400, 1);
     x.fillRect(0, 266, 400, 34);
-    x.fillStyle = '#fff'; x.fillRect(24, 276, 64, 2); x.fillRect(150, 284, 100, 2); x.fillRect(310, 274, 60, 2);
+    x.fillStyle = '#fff'; x.fillRect(24, 276, 64, 2); x.fillRect(150, 284, 100, 2);
     const body = [0x3C, 0x3C, 0x18, 0x3C, 0x5A, 0x5A, 0x24, 0x66];
     [60, 316].forEach((px, i) => {
       const py = 242;
