@@ -155,29 +155,45 @@ async function write(cmd, data, withResponse = true) {
   return true;
 }
 
+// đợi thiết bị báo 'mtu=…' (notify sau lệnh INIT). Sửa race cũ: bắt đầu
+// truyền khi ô MTU còn giá trị mặc định 20 -> gói chỉ 18 byte, ~1700 gói
+// cho một tấm ảnh (nguyên nhân chính truyền rùa rồi rớt kết nối).
+let mtuNotifyResolve = null;
+function waitMtuNotify(timeoutMs) {
+  return new Promise(resolve => {
+    const t = setTimeout(() => { mtuNotifyResolve = null; resolve(false); }, timeoutMs);
+    mtuNotifyResolve = () => { clearTimeout(t); resolve(true); };
+  });
+}
+
 async function writeImage(data, step = 'bw') {
   const chunkSize = document.getElementById('mtusize').value - 2;
   const interleavedCount = document.getElementById('interleavedcount').value;
-  const count = Math.round(data.length / chunkSize);
+  const count = Math.ceil(data.length / chunkSize);
   let chunkIdx = 0;
   let noReplyCount = interleavedCount;
 
   for (let i = 0; i < data.length; i += chunkSize) {
-    let currentTime = (new Date().getTime() - startTime) / 1000.0;
-    setStatus(`Khối ${step == 'bw' ? 'đen trắng' : 'màu'}: ${chunkIdx + 1}/${count + 1}, thời gian: ${currentTime}s`);
+    const currentTime = (new Date().getTime() - startTime) / 1000.0;
+    const pct = ((100 * i) / data.length) >> 0;
+    setStatus(`Khối ${step == 'bw' ? 'đen trắng' : 'màu'}: ${chunkIdx + 1}/${count} (${pct}%), thời gian: ${currentTime}s`);
     const payload = [
       (step == 'bw' ? 0x0F : 0x00) | (i == 0 ? 0x00 : 0xF0),
       ...data.slice(i, i + chunkSize),
     ];
-    if (noReplyCount > 0) {
-      await write(EpdCmd.WRITE_IMG, payload, false);
-      noReplyCount--;
-    } else {
-      await write(EpdCmd.WRITE_IMG, payload, true);
-      noReplyCount = interleavedCount;
+    const useReply = noReplyCount <= 0;
+    // gói lỗi: thử lại MỘT lần bằng gói có xác nhận rồi mới bỏ cuộc — trước
+    // đây một gói rơi là ảnh hỏng trong im lặng
+    let ok = await write(EpdCmd.WRITE_IMG, payload, useReply);
+    if (!ok) ok = await write(EpdCmd.WRITE_IMG, payload, true);
+    if (!ok) {
+      addLog(`Truyền ảnh thất bại ở khối ${chunkIdx + 1}/${count} — hãy bấm gửi lại.`);
+      return false;
     }
+    noReplyCount = useReply ? interleavedCount : noReplyCount - 1;
     chunkIdx++;
   }
+  return true;
 }
 
 async function setDriver() {
@@ -327,29 +343,41 @@ async function sendimg() {
 
   updateButtonStatus(true);
 
+  // chờ thiết bị báo 'mtu=…' sau INIT rồi mới chọn cỡ gói (hết cảnh gói 18B)
+  const mtuReady = waitMtuNotify(1500);
   await write(EpdCmd.INIT);
+  await mtuReady;
 
+  let ok = true;
   if (ditherMode === 'threeColor') {
     const halfLength = Math.floor(processedData.length / 2);
     const blackWhiteData = processedData.slice(0, halfLength);
     const redWhiteData = processedData.slice(halfLength);
     if (epdDriverSelect.value === '08' || epdDriverSelect.value === '09') {
-      await writeImage(convertUC8159(blackWhiteData, redWhiteData), 'bw');
+      ok = await writeImage(convertUC8159(blackWhiteData, redWhiteData), 'bw');
     } else {
-      await writeImage(blackWhiteData, 'bw');
-      await writeImage(redWhiteData, 'red');
+      ok = await writeImage(blackWhiteData, 'bw');
+      if (ok) ok = await writeImage(redWhiteData, 'red');
     }
   } else if (ditherMode === 'blackWhiteColor') {
     if (epdDriverSelect.value === '08' || epdDriverSelect.value === '09') {
       const emptyData = new Uint8Array(processedData.length).fill(0xFF);
-      await writeImage(convertUC8159(processedData, emptyData), 'bw');
+      ok = await writeImage(convertUC8159(processedData, emptyData), 'bw');
     } else {
-      await writeImage(processedData, 'bw');
+      ok = await writeImage(processedData, 'bw');
     }
   } else if (ditherMode === 'fourColor' || ditherMode === 'sixColor') {
-    await writeImage(processedData, 'bw');
+    ok = await writeImage(processedData, 'bw');
   } else {
     addLog("Firmware không hỗ trợ chế độ màu này.");
+    updateButtonStatus();
+    return;
+  }
+
+  if (!ok) {
+    // KHÔNG refresh ảnh dở dang; thiết bị tự mở lại minute tick khi mất kết
+    // nối hoặc khi lần gửi sau thành công
+    setStatus('Truyền ảnh thất bại — chưa làm mới màn hình.');
     updateButtonStatus();
     return;
   }
@@ -439,6 +467,10 @@ function updateButtonStatus(forceDisabled = false) {
   document.getElementById("moonmodebutton").disabled = modeStatus;
   document.getElementById("notemodebutton").disabled = modeStatus;
   document.getElementById("custommodebutton").disabled = modeStatus;
+  document.getElementById("retromtnmodebutton").disabled = modeStatus;
+  document.getElementById("retrosunsetmodebutton").disabled = modeStatus;
+  document.getElementById("retrowinmodebutton").disabled = modeStatus;
+  document.getElementById("retrocitymodebutton").disabled = modeStatus;
   document.getElementById("uploadlayoutbutton").disabled = status;
   document.getElementById("sendnotebutton").disabled = status;
   document.getElementById("clearscreenbutton").disabled = status;
@@ -539,6 +571,7 @@ function handleNotify(value, idx) {
       const mtuSize = parseInt(msg.substring(4));
       document.getElementById('mtusize').value = mtuSize;
       addLog(`MTU cập nhật: ${mtuSize}`);
+      if (mtuNotifyResolve) { mtuNotifyResolve(); mtuNotifyResolve = null; }
     } else if (msg.startsWith('t=') && msg.length > 2) {
       const deviceEpoch = parseInt(msg.substring(2));
       const t = deviceEpoch + new Date().getTimezoneOffset() * 60;

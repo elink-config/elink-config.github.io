@@ -422,6 +422,172 @@
     center(x, 'Chưa có giao diện tự thiết kế', 200, 140, BK);
     center(x, 'Tạo trong mục «Thiết kế màn hình»', 200, 168, BK);
   }
+  // ---- chế độ 21-24: chủ đề game 8-bit (mô phỏng theo firmware) ----
+  function pxDigit(x, X, Y, d, s, col) {
+    const M = [0x7B6F, 0x2C97, 0x73E7, 0x73CF, 0x5BC9, 0x79CF, 0x79EF, 0x7292, 0x7BEF, 0x7BCF];
+    const b = M[d % 10];
+    x.fillStyle = col;
+    for (let r = 0; r < 5; r++) for (let c = 0; c < 3; c++)
+      if (b & (1 << (14 - (r * 3 + c)))) x.fillRect(X + c * s, Y + r * s, s, s);
+  }
+  function pxTime(x, X, Y, now, s, col) {
+    const h = now.getHours(), m = now.getMinutes();
+    pxDigit(x, X, Y, (h / 10) | 0, s, col); pxDigit(x, X + 4 * s, Y, h % 10, s, col);
+    x.fillStyle = col; x.fillRect(X + 8 * s, Y + s, s, s); x.fillRect(X + 8 * s, Y + 3 * s, s, s);
+    pxDigit(x, X + 10 * s, Y, (m / 10) | 0, s, col); pxDigit(x, X + 14 * s, Y, m % 10, s, col);
+  }
+  function pxDate(x, X, Y, now, s) {  // DD.MM: số đen/đỏ tùy mode gọi qua col
+    pxDigit(x, X, Y, (now.getDate() / 10) | 0, s, pxDate.col); pxDigit(x, X + 4 * s, Y, now.getDate() % 10, s, pxDate.col);
+    x.fillStyle = pxDate.dot; x.fillRect(X + 8 * s - (s >> 1), Y + 4 * s, s, s);
+    pxDigit(x, X + 10 * s, Y, ((now.getMonth() + 1) / 10) | 0, s, pxDate.col);
+    pxDigit(x, X + 14 * s, Y, (now.getMonth() + 1) % 10, s, pxDate.col);
+  }
+  function pxMtn(x, cx, top, base, s, col) {
+    x.fillStyle = col;
+    for (let y = top, half = s; y < base; y += s, half += s) x.fillRect(cx - half, y, 2 * half, Math.min(s, base - y));
+  }
+  function pxTree(x, cx, base, s, col) {
+    x.fillStyle = col;
+    x.fillRect(cx - s, base - 7 * s, 2 * s, 2 * s);
+    x.fillRect(cx - 2 * s, base - 5 * s, 4 * s, 2 * s);
+    x.fillRect(cx - 3 * s, base - 3 * s, 6 * s, 2 * s);
+    x.fillRect(cx - (s >> 1), base - s, s, s);
+  }
+  function pxDither(x, X, Y, w, h, s, col) {
+    x.fillStyle = col;
+    for (let yy = 0; yy < h; yy += s)
+      for (let xx = ((yy / s) & 1) * s; xx < w; xx += 2 * s) x.fillRect(X + xx, Y + yy, s, s);
+  }
+  function pxHearts(x, X, Y, s, n, line) {
+    const F = [0x36, 0x7F, 0x7F, 0x3E, 0x1C, 0x08], E = [0x36, 0x49, 0x41, 0x22, 0x14, 0x08];
+    for (let i = 0; i < 3; i++) {
+      const rows = i < n ? F : E;
+      x.fillStyle = i < n ? RED : (line || BK);
+      for (let r = 0; r < 6; r++) for (let c = 0; c < 7; c++)
+        if (rows[r] & (0x40 >> c)) x.fillRect(X + i * 9 * s + c * s, Y + r * s, s, s);
+    }
+  }
+  function m21(x, now) { // Núi tuyết 8-bit
+    pxDither(x, 0, 8, 400, 8, 4, BK);
+    pxMtn(x, 60, 168, 252, 6, BK); pxMtn(x, 344, 176, 252, 6, BK);
+    pxMtn(x, 200, 128, 252, 8, BK); pxMtn(x, 200, 128, 176, 8, '#fff');
+    [28, 76, 128, 236, 288, 336, 380].forEach(t => pxTree(x, t, 258, 4, BK));
+    x.fillStyle = BK; x.fillRect(0, 258, 400, 1);
+    x.fillStyle = RED; x.fillRect(0, 266, 400, 34);
+    x.fillStyle = BK;
+    for (let yy = 278; yy < 300; yy += 12) x.fillRect(0, yy, 400, 1);
+    for (let xx = 0; xx < 400; xx += 40) { x.fillRect(xx + 8, 266, 1, 12); x.fillRect(xx + 28, 278, 1, 12); }
+    x.fillStyle = '#fff'; for (let xx = 12; xx < 400; xx += 56) x.fillRect(xx, 260, 24, 8);
+    x.fillStyle = '#fff'; x.fillRect(104, 22, 192, 100);
+    x.strokeStyle = BK; x.lineWidth = 1; x.strokeRect(104.5, 22.5, 192, 100); x.strokeRect(108.5, 26.5, 184, 92);
+    font(x, 13, 0); center(x, WD_FULL[now.getDay()], 200, 50, RED);
+    pxDate.col = BK; pxDate.dot = RED; pxDate(x, 200 - 68, 56, now, 8);
+    font(x, 12, 0); center(x, now.getFullYear() + ' - ÂL 15/6', 200, 114, BK);
+    pxHearts(x, 8, 20, 3, 2);
+    font(x, 12, 0); x.textAlign = 'right'; x.fillStyle = BK; x.fillText('32°C', 390, 34); x.textAlign = 'left';
+  }
+  function m22(x, now) { // Hoàng hôn 8-bit
+    x.fillStyle = BK; x.fillRect(0, 0, 400, 156);
+    x.fillStyle = '#fff'; x.fillRect(0, 118, 400, 4); x.fillRect(0, 140, 400, 3);
+    x.fillRect(24, 24, 40, 8); x.fillRect(32, 16, 20, 8); x.fillRect(318, 36, 30, 6); x.fillRect(324, 30, 15, 6);
+    x.fillStyle = '#fff'; x.fillRect(96, 20, 208, 92);
+    x.strokeStyle = BK; x.strokeRect(96.5, 20.5, 208, 92); x.strokeRect(100.5, 24.5, 200, 84);
+    pxTime(x, 200 - 76, 32, now, 9, BK);
+    font(x, 11, 0); center(x, pad2(now.getDate()) + '/' + pad2(now.getMonth() + 1) + ' - ÂL 15/6 - 32°C', 200, 104, BK);
+    pxMtn(x, 84, 172, 250, 7, RED); pxMtn(x, 322, 182, 250, 7, RED);
+    pxMtn(x, 208, 148, 250, 8, RED); pxMtn(x, 208, 148, 180, 8, '#fff'); pxMtn(x, 84, 172, 194, 7, '#fff');
+    [20, 64, 110, 154, 200, 246, 292, 338, 382].forEach(t => pxTree(x, t, 262, 4, BK));
+    x.fillStyle = BK; x.fillRect(0, 262, 400, 38);
+    x.fillStyle = '#fff';
+    for (let xx = 0; xx < 400; xx += 24) { x.fillRect(xx, 262, 12, 8); x.fillRect(xx + 12, 266, 12, 8); }
+    x.fillRect(0, 274, 400, 6);
+    pxDither(x, 0, 284, 400, 8, 4, '#fff');
+    pxHearts(x, 8, 8, 3, 2, '#fff');
+  }
+  function m23(x, now) { // Khủng long 8-bit (Chrome "No internet")
+    const DINO = [0x00FE, 0x017F, 0x01FF, 0x01FF, 0x01F8, 0x81E0, 0xC3E0, 0xE7E0,
+                  0xFFF0, 0x7FE4, 0x3FE0, 0x1FC0, 0x0FC0, 0x0660, 0x0420, 0x0630];
+    const cactus = (cx, base, s, h) => {  // thân + 2 nhánh chữ U (bản đầu)
+      x.fillStyle = BK;
+      x.fillRect(cx - s, base - h, 2 * s, h);
+      x.fillRect(cx - 3 * s, base - h + 2 * s, s, 3 * s); x.fillRect(cx - 3 * s, base - h + 4 * s, 2 * s, s);
+      x.fillRect(cx + 2 * s, base - h + s, s, 3 * s); x.fillRect(cx + s, base - h + 3 * s, 2 * s, s);
+    };
+    const cloud = (cx, cy) => {  // viền mây Chrome: đáy phẳng + hai bướu bậc thang
+      const seg = [[0, 12, 46, 0], [-1, 8, 5, 1], [0, 7, 7, 0], [7, 4, 3, 1], [8, 3, 8, 0], [16, 1, 3, 1],
+                   [17, 0, 12, 0], [29, 1, 4, 1], [30, 5, 9, 0], [39, 6, 3, 1], [40, 9, 5, 0], [45, 10, 2, 1]];
+      x.fillStyle = BK;
+      seg.forEach(g => { if (g[3]) x.fillRect(cx + g[0], cy + g[1], 1, g[2]); else x.fillRect(cx + g[0], cy + g[1], g[2], 1); });
+    };
+    pxHearts(x, 8, 8, 3, 2);
+    // "HI DD.MM.YYYY" chữ số pixel góc phải
+    {
+      const s = 3, dw = 12, X0 = 400 - 10 - (8 * dw + 12), Y0 = 10, yr = now.getFullYear();
+      font(x, 10, 0); x.fillStyle = BK; x.fillText('HI', X0 - 18, Y0 + 12);
+      pxDigit(x, X0, Y0, (now.getDate() / 10) | 0, s, BK); pxDigit(x, X0 + dw, Y0, now.getDate() % 10, s, BK);
+      x.fillStyle = BK; x.fillRect(X0 + 2 * dw, Y0 + 12, 3, 3);
+      pxDigit(x, X0 + 2 * dw + 6, Y0, ((now.getMonth() + 1) / 10) | 0, s, BK);
+      pxDigit(x, X0 + 3 * dw + 6, Y0, (now.getMonth() + 1) % 10, s, BK);
+      x.fillRect(X0 + 4 * dw + 6, Y0 + 12, 3, 3);
+      pxDigit(x, X0 + 4 * dw + 12, Y0, ((yr / 1000) | 0) % 10, s, BK);
+      pxDigit(x, X0 + 5 * dw + 12, Y0, ((yr / 100) | 0) % 10, s, BK);
+      pxDigit(x, X0 + 6 * dw + 12, Y0, ((yr / 10) | 0) % 10, s, BK);
+      pxDigit(x, X0 + 7 * dw + 12, Y0, yr % 10, s, BK);
+    }
+    // mặt trời đỏ + mây + chim
+    x.fillStyle = RED; x.fillRect(330, 44, 24, 6); x.fillRect(324, 50, 36, 24); x.fillRect(330, 74, 24, 6);
+    cloud(56, 54); cloud(172, 38);
+    x.fillStyle = BK;
+    const PT = [0x10, 0x18, 0xFE, 0x3C, 0x10];
+    for (let r = 0; r < 5; r++) for (let c = 0; c < 8; c++)
+      if (PT[r] & (0x80 >> c)) x.fillRect(248 + c * 4, 180 + r * 4, 4, 4);
+    // màn "game over": thứ giãn cách ký tự kiểu "G A M E  O V E R"
+    font(x, 22, 1); center(x, WD_FULL[now.getDay()].split('').join(' '), 200, 116, BK);
+    font(x, 12, 0); center(x, 'Tháng ' + (now.getMonth() + 1) + ' - ' + now.getFullYear() + ' · ÂL 15/6', 200, 140, BK);
+    font(x, 10, 0); center(x, 'ERR_NO_INTERNET - 32*C', 230, 162, BK);
+    // T-Rex
+    x.fillStyle = BK;
+    for (let r = 0; r < 16; r++) for (let c = 0; c < 16; c++)
+      if (DINO[r] & (0x8000 >> c)) x.fillRect(36 + c * 6, 142 + r * 6, 6, 6);
+    // xương rồng + đường đất
+    cactus(210, 238, 5, 44); cactus(268, 238, 4, 30); cactus(336, 238, 5, 40); cactus(358, 238, 3, 24);
+    x.fillStyle = BK; x.fillRect(0, 238, 400, 2);
+    [24, 88, 140, 196, 240, 300, 344, 380].forEach((gx, i) => {
+      x.fillRect(gx, 248 + (i % 3) * 6, 14, 1);
+    });
+  }
+  function m24(x, now) { // Thành phố pixel
+    pxTime(x, 200 - 102, 24, now, 12, BK);
+    x.fillStyle = '#fff'; x.fillRect(116, 102, 168, 40);
+    x.strokeStyle = BK; x.strokeRect(116.5, 102.5, 168, 40); x.strokeRect(119.5, 105.5, 162, 34);
+    font(x, 13, 0); center(x, pad2(now.getDate()) + '-' + pad2(now.getMonth() + 1) + '-' + now.getFullYear(), 200, 128, BK);
+    font(x, 12, 0); center(x, 'Âm lịch 15/6', 200, 162, BK);
+    const bh = [36, 58, 44, 70, 30, 62, 50, 74, 40, 56, 66, 34, 48];
+    for (let i = 0; i < 13; i++) {
+      const bx = i * 31, top = 244 - bh[i];
+      x.fillStyle = BK; x.fillRect(bx, top, 28, bh[i]);
+      x.fillStyle = '#fff';
+      for (let wy = top + 6; wy < 238; wy += 10) { x.fillRect(bx + 5, wy, 4, 4); x.fillRect(bx + 13, wy, 4, 4); x.fillRect(bx + 21, wy, 4, 4); }
+    }
+    x.fillStyle = RED; x.fillRect(0, 244, 400, 22);
+    x.fillStyle = BK; x.fillRect(0, 250, 400, 1); x.fillRect(0, 258, 400, 1);
+    x.fillRect(0, 266, 400, 34);
+    x.fillStyle = '#fff'; x.fillRect(24, 276, 64, 2); x.fillRect(150, 284, 100, 2);
+    const body = [0x3C, 0x3C, 0x18, 0x3C, 0x5A, 0x5A, 0x24, 0x66];
+    [60, 316].forEach((px, i) => {
+      const py = 242;
+      x.fillStyle = '#fff';
+      for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++)
+        if (body[r] & (0x80 >> c)) x.fillRect(px + c * 3, py + r * 3, 3, 3);
+      // bong bóng thoại: trái = nhiệt độ, phải = điện áp
+      x.fillRect(px + 20, py - 26, 34, 22); x.strokeStyle = BK; x.strokeRect(px + 20.5, py - 25.5, 34, 22);
+      font(x, 10, 0); x.fillStyle = BK; x.textAlign = 'center';
+      x.fillText(i === 0 ? '32°C' : '3.2V', px + 37, py - 11);
+      x.textAlign = 'left';
+    });
+    pxHearts(x, 400 - 8 - 81, 8, 3, 2);
+  }
+
   // shared drawing helpers for the mode-20 designer (designer.js)
   window.__pv = { font, center, multi, seg7, segStr, battery, analogClock, monthGrid, pad2, lunarish,
                   RED, BK, WH, WD_SHORT, WD_FULL };
@@ -447,6 +613,10 @@
     { mode: 18, name: 'Trăng', tick: 'Cập nhật lúc 0h', id: 'moonmodebutton', draw: m18 },
     { mode: 19, name: 'Ghi chú', tick: 'Làm mới mỗi phút', id: 'notemodebutton', draw: m19 },
     { mode: 20, name: 'Tự thiết kế', tick: 'Làm mới mỗi phút', id: 'custommodebutton', draw: m20 },
+    { mode: 21, name: 'Núi tuyết 8-bit', tick: 'Cập nhật lúc 0h', id: 'retromtnmodebutton', draw: m21 },
+    { mode: 22, name: 'Hoàng hôn 8-bit', tick: 'Làm mới mỗi phút', id: 'retrosunsetmodebutton', draw: m22 },
+    { mode: 23, name: 'Khủng long 8-bit', tick: 'Cập nhật lúc 0h', id: 'retrowinmodebutton', draw: m23 },
+    { mode: 24, name: 'Thành phố pixel', tick: 'Làm mới mỗi phút', id: 'retrocitymodebutton', draw: m24 },
   ];
 
   // highlight the mode the device reports (config byte 11) or was just set to
