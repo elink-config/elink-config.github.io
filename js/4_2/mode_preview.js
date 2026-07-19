@@ -505,13 +505,13 @@
     pxHearts(x, 8, 8, 3, 2, '#fff');
   }
   function m23(x, now) { // Khủng long 8-bit (Chrome "No internet")
-    const DINO = [0x03FC, 0x02FC, 0x03FC, 0x03FC, 0x03F0, 0x03C0, 0x81C0, 0xC3C0,
-                  0xE7E0, 0xFFE0, 0x7FF0, 0x3FC0, 0x1FC0, 0x0D80, 0x0C80, 0x0CC0];
-    const cactus = (cx, base, s, h) => {  // dáng ψ: nhánh dọc vươn lên gần đỉnh
+    const DINO = [0x00FE, 0x017F, 0x01FF, 0x01FF, 0x01F8, 0x81E0, 0xC3E0, 0xE7E0,
+                  0xFFF0, 0x7FE4, 0x3FE0, 0x1FC0, 0x0FC0, 0x0660, 0x0420, 0x0630];
+    const cactus = (cx, base, s, h) => {  // thân + 2 nhánh chữ U (bản đầu)
       x.fillStyle = BK;
       x.fillRect(cx - s, base - h, 2 * s, h);
-      x.fillRect(cx - 3 * s, base - h + s, s, h / 2); x.fillRect(cx - 3 * s, base - h / 2, 2 * s, s);
-      x.fillRect(cx + 2 * s, base - h + s, s, h / 2); x.fillRect(cx + s, base - h / 2, 2 * s, s);
+      x.fillRect(cx - 3 * s, base - h + 2 * s, s, 3 * s); x.fillRect(cx - 3 * s, base - h + 4 * s, 2 * s, s);
+      x.fillRect(cx + 2 * s, base - h + s, s, 3 * s); x.fillRect(cx + s, base - h + 3 * s, 2 * s, s);
     };
     const cloud = (cx, cy) => {  // viền mây Chrome: đáy phẳng + hai bướu bậc thang
       const seg = [[0, 12, 46, 0], [-1, 8, 5, 1], [0, 7, 7, 0], [7, 4, 3, 1], [8, 3, 8, 0], [16, 1, 3, 1],
