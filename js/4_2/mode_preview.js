@@ -483,8 +483,8 @@
     font(x, 13, 0); center(x, WD_FULL[now.getDay()], 200, 50, RED);
     pxDate.col = BK; pxDate.dot = RED; pxDate(x, 200 - 68, 56, now, 8);
     font(x, 12, 0); center(x, now.getFullYear() + ' - ÂL 15/6', 200, 114, BK);
-    pxHearts(x, 8, 8, 3, 2);
-    font(x, 12, 0); x.textAlign = 'right'; x.fillStyle = BK; x.fillText('32°C', 390, 22); x.textAlign = 'left';
+    pxHearts(x, 8, 20, 3, 2);
+    font(x, 12, 0); x.textAlign = 'right'; x.fillStyle = BK; x.fillText('32°C', 390, 34); x.textAlign = 'left';
   }
   function m22(x, now) { // Hoàng hôn 8-bit
     x.fillStyle = BK; x.fillRect(0, 0, 400, 156);
@@ -505,18 +505,19 @@
     pxHearts(x, 8, 8, 3, 2, '#fff');
   }
   function m23(x, now) { // Khủng long 8-bit (Chrome "No internet")
-    const DINO = [0x00FE, 0x017F, 0x01FF, 0x01FF, 0x01F8, 0x81E0, 0xC3E0, 0xE7E0,
-                  0xFFF0, 0x7FE4, 0x3FE0, 0x1FC0, 0x0FC0, 0x0660, 0x0420, 0x0630];
-    const cactus = (cx, base, s, h) => {
+    const DINO = [0x03FC, 0x02FC, 0x03FC, 0x03FC, 0x03F0, 0x03C0, 0x81C0, 0xC3C0,
+                  0xE7E0, 0xFFE0, 0x7FF0, 0x3FC0, 0x1FC0, 0x0D80, 0x0C80, 0x0CC0];
+    const cactus = (cx, base, s, h) => {  // dáng ψ: nhánh dọc vươn lên gần đỉnh
       x.fillStyle = BK;
       x.fillRect(cx - s, base - h, 2 * s, h);
-      x.fillRect(cx - 3 * s, base - h + 2 * s, s, 3 * s); x.fillRect(cx - 3 * s, base - h + 4 * s, 2 * s, s);
-      x.fillRect(cx + 2 * s, base - h + s, s, 3 * s); x.fillRect(cx + s, base - h + 3 * s, 2 * s, s);
+      x.fillRect(cx - 3 * s, base - h + s, s, h / 2); x.fillRect(cx - 3 * s, base - h / 2, 2 * s, s);
+      x.fillRect(cx + 2 * s, base - h + s, s, h / 2); x.fillRect(cx + s, base - h / 2, 2 * s, s);
     };
-    const cloud = (cx, cy) => {
-      x.strokeStyle = BK; x.lineWidth = 1;
-      x.strokeRect(cx + 0.5, cy + 8.5, 46, 10); x.strokeRect(cx + 10.5, cy + 0.5, 20, 10);
-      x.fillStyle = '#fff'; x.fillRect(cx + 11, cy + 8, 18, 2);
+    const cloud = (cx, cy) => {  // viền mây Chrome: đáy phẳng + hai bướu bậc thang
+      const seg = [[0, 12, 46, 0], [-1, 8, 5, 1], [0, 7, 7, 0], [7, 4, 3, 1], [8, 3, 8, 0], [16, 1, 3, 1],
+                   [17, 0, 12, 0], [29, 1, 4, 1], [30, 5, 9, 0], [39, 6, 3, 1], [40, 9, 5, 0], [45, 10, 2, 1]];
+      x.fillStyle = BK;
+      seg.forEach(g => { if (g[3]) x.fillRect(cx + g[0], cy + g[1], 1, g[2]); else x.fillRect(cx + g[0], cy + g[1], g[2], 1); });
     };
     pxHearts(x, 8, 8, 3, 2);
     // "HI DD.MM.YYYY" chữ số pixel góc phải
@@ -540,8 +541,8 @@
     const PT = [0x10, 0x18, 0xFE, 0x3C, 0x10];
     for (let r = 0; r < 5; r++) for (let c = 0; c < 8; c++)
       if (PT[r] & (0x80 >> c)) x.fillRect(248 + c * 4, 180 + r * 4, 4, 4);
-    // màn "game over": thứ + tháng/năm/âm lịch + dòng lỗi
-    font(x, 22, 1); center(x, WD_FULL[now.getDay()], 200, 116, BK);
+    // màn "game over": thứ giãn cách ký tự kiểu "G A M E  O V E R"
+    font(x, 22, 1); center(x, WD_FULL[now.getDay()].split('').join(' '), 200, 116, BK);
     font(x, 12, 0); center(x, 'Tháng ' + (now.getMonth() + 1) + ' - ' + now.getFullYear() + ' · ÂL 15/6', 200, 140, BK);
     font(x, 10, 0); center(x, 'ERR_NO_INTERNET - 32*C', 230, 162, BK);
     // T-Rex
@@ -561,7 +562,7 @@
     x.fillStyle = '#fff'; x.fillRect(116, 102, 168, 40);
     x.strokeStyle = BK; x.strokeRect(116.5, 102.5, 168, 40); x.strokeRect(119.5, 105.5, 162, 34);
     font(x, 13, 0); center(x, pad2(now.getDate()) + '-' + pad2(now.getMonth() + 1) + '-' + now.getFullYear(), 200, 128, BK);
-    font(x, 12, 0); center(x, 'ÂL 15/6 · 32°C', 200, 162, BK);
+    font(x, 12, 0); center(x, 'Âm lịch 15/6', 200, 162, BK);
     const bh = [36, 58, 44, 70, 30, 62, 50, 74, 40, 56, 66, 34, 48];
     for (let i = 0; i < 13; i++) {
       const bx = i * 31, top = 244 - bh[i];
@@ -574,16 +575,16 @@
     x.fillRect(0, 266, 400, 34);
     x.fillStyle = '#fff'; x.fillRect(24, 276, 64, 2); x.fillRect(150, 284, 100, 2); x.fillRect(310, 274, 60, 2);
     const body = [0x3C, 0x3C, 0x18, 0x3C, 0x5A, 0x5A, 0x24, 0x66];
-    [60, 316].forEach(px => {
+    [60, 316].forEach((px, i) => {
       const py = 242;
       x.fillStyle = '#fff';
       for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++)
         if (body[r] & (0x80 >> c)) x.fillRect(px + c * 3, py + r * 3, 3, 3);
-      x.fillRect(px + 20, py - 26, 30, 22); x.strokeStyle = BK; x.strokeRect(px + 20.5, py - 25.5, 30, 22);
-      const F = [0x36, 0x7F, 0x7F, 0x3E, 0x1C, 0x08];
-      x.fillStyle = RED;
-      for (let r = 0; r < 6; r++) for (let c = 0; c < 7; c++)
-        if (F[r] & (0x40 >> c)) x.fillRect(px + 25 + c * 2, py - 21 + r * 2, 2, 2);
+      // bong bóng thoại: trái = nhiệt độ, phải = điện áp
+      x.fillRect(px + 20, py - 26, 34, 22); x.strokeStyle = BK; x.strokeRect(px + 20.5, py - 25.5, 34, 22);
+      font(x, 10, 0); x.fillStyle = BK; x.textAlign = 'center';
+      x.fillText(i === 0 ? '32°C' : '3.2V', px + 37, py - 11);
+      x.textAlign = 'left';
     });
     pxHearts(x, 400 - 8 - 81, 8, 3, 2);
   }
