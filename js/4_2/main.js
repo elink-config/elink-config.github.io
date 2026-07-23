@@ -24,6 +24,7 @@ const EpdCmd = {
   SET_HOURLY_FULL: 0x23, // clock cleanup cadence: 1 = full refresh hourly, 0 = only at 00:00
   SET_LAYOUT: 0x24, // MODE_CUSTOM (mode 20) widget layout from the designer
   SET_ICON: 0x25, // MODE_CUSTOM 1-bit icon, chunked: [0x00,w,h,data...] then [0x01,data...]
+  SET_DOB: 0x27, // sinh nhật [d,m,yLo,yHi]; không payload = xóa (fw >= 1.5)
 
   WRITE_IMG: 0x30, // v1.6
 
@@ -249,6 +250,27 @@ async function manualSyncTime() {
 // timestamp inside the same command, so the device time stays fresh)
 async function syncTime(mode) {
   await sendTimeSync(mode);
+}
+
+// ---- Sinh nhật (fw >= 1.5): lưu trong flash thiết bị, sống qua mất nguồn.
+// Lưới tháng khuyên đỏ ngày sinh; đúng hôm sinh nhật các mode có giờ hiện
+// «Chúc mừng sinh nhật» ở mép dưới màn hình. ----
+async function sendDob() {
+  const v = document.getElementById('dobInput').value;  // "YYYY-MM-DD"
+  if (!v) { addLog('Chưa chọn ngày sinh nhật.'); return; }
+  const p = v.split('-');
+  const y = parseInt(p[0]), m = parseInt(p[1]), d = parseInt(p[2]);
+  if (!(d >= 1 && d <= 31 && m >= 1 && m <= 12)) { addLog('Ngày sinh nhật không hợp lệ.'); return; }
+  if (await write(EpdCmd.SET_DOB, [d, m, y & 0xFF, (y >> 8) & 0xFF])) {
+    addLog(`Đã lưu sinh nhật ${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')}/${y} vào thiết bị.`);
+    addLog('Lịch tháng sẽ khuyên đỏ ngày sinh; đúng hôm đó màn hình giờ hiện «Chúc mừng sinh nhật».');
+  }
+}
+async function clearDob() {
+  if (await write(EpdCmd.SET_DOB, null)) {
+    document.getElementById('dobInput').value = '';
+    addLog('Đã xóa sinh nhật khỏi thiết bị.');
+  }
 }
 
 async function sendNote() {
@@ -496,6 +518,7 @@ function disconnect() {
   resetVariables();
   addLog('Đã ngắt kết nối.');
   document.getElementById("connectbutton").innerHTML = 'Kết nối';
+  document.getElementById('dobRow').style.display = 'none';  // gate lại theo fw
 }
 
 async function preConnect() {
@@ -566,6 +589,18 @@ function handleNotify(value, idx) {
     if (hf !== null) {
       document.getElementById('hourlyFullCHK').checked = hf !== 0;
     }
+    // sinh nhật đã lưu trên thiết bị (fw >= 1.5): day/month/year(u16 LE) tại
+    // offset 212/213/214 (sau u32 activation ở 208 — struct căn 4 byte)
+    if (data.length >= 216) {
+      const dd = data[212], dm = data[213], dy = data[214] | (data[215] << 8);
+      if (dd >= 1 && dd <= 31 && dm >= 1 && dm <= 12) {
+        const y = (dy >= 1900 && dy <= 2100) ? dy : 2000;
+        document.getElementById('dobInput').value =
+          y + '-' + String(dm).padStart(2, '0') + '-' + String(dd).padStart(2, '0');
+      } else {
+        document.getElementById('dobInput').value = '';
+      }
+    }
   } else {
     if (textDecoder == null) textDecoder = new TextDecoder();
     const msg = textDecoder.decode(data);
@@ -593,6 +628,8 @@ function handleNotify(value, idx) {
       updateButtonStatus();
     } else if (msg.startsWith('fw=') && msg.length > 3) {
       FwCheck.report(msg.substring(3));
+      // ô «Ngày sinh nhật» chỉ hiện khi firmware hỗ trợ (>= 1.5)
+      if (FwCheck.atLeast('1.5')) document.getElementById('dobRow').style.display = '';
     }
   }
 }

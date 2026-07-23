@@ -139,6 +139,13 @@
 						Làm mới toàn màn hình mỗi giờ (chế độ đồng hồ) — nếu tắt, chỉ làm mới toàn màn lúc 00:00 (ít chớp hơn nhưng bóng mờ tích tụ nhiều hơn)
 					</label>
 				</div>
+				<!-- Sinh nhật: chỉ hiện khi thiết bị chạy firmware >= 1.5 (fw= notify) -->
+				<div class="flex-group" id="dobRow" style="display:none">
+					<label for="dobInput">Ngày sinh nhật:</label>
+					<input type="date" id="dobInput">
+					<button id="senddobbutton" type="button" class="primary" onclick="sendDob()">Lưu sinh nhật</button>
+					<button id="cleardobbutton" type="button" class="secondary" onclick="clearDob()">Xóa</button>
+				</div>
 				<div class="flex-group">
 					<button id="clearscreenbutton" type="button" class="secondary" onclick="clearScreen()">Xóa màn hình</button>
 				</div>
@@ -1541,8 +1548,8 @@
 			</span>
 		</div>
 	</div>
-	<script type="text/javascript" src="js/fw_check.js?v=20260723b"></script>
-	<script type="text/javascript" src="js/connector.js?v=20260723b"></script>
+	<script type="text/javascript" src="js/fw_check.js?v=20260724a"></script>
+	<script type="text/javascript" src="js/connector.js?v=20260724a"></script>
 	<script>
 		var _hmt = _hmt || [];
 		(function () {

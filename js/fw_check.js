@@ -55,6 +55,9 @@ window.FwCheck = (function () {
     }
   }
   return {
+    // thiết bị ĐÃ TỰ KHAI phiên bản và >= s? (dùng gate tính năng theo fw,
+    // vd ô «Ngày sinh nhật» chỉ hiện với fw >= 1.5)
+    atLeast: function (s) { return !!deviceVer && cmp(deviceVer, parse(s)) >= 0; },
     reset: function (floorStr) {
       deviceVer = null;
       floor = floorStr ? parse(floorStr) : null;
