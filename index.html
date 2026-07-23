@@ -223,7 +223,7 @@
 						<option value="7.3E6_800_480">7.3E6 (800x480)</option>
 					</select>
 				</div>
-				<div class="flex-group">
+				<div class="flex-group debug">
 					<label for="ditherMode">Chế độ màu:</label>
 					<select id="ditherMode" onchange="applyDither()">
 						<option value="blackWhiteColor">2 màu (đen trắng)</option>
@@ -397,6 +397,35 @@
 							<td>Bản dựng đầu tiên với 20 chế độ hình ảnh</td>
 							<td>13/07/2026</td>
 							<td><a href="OTA firmware/fw_4_2inch_v1.0.bin" download>Tải về</a></td>
+						</tr>
+                        <tr>
+							<td>2</td>
+							<td>1.1</td>
+							<td>Cập nhật icon pin hiển thị % theo giá trị hiện tại, căn chỉnh lại giao diện các chế độ khác</td>
+							<td>18/07/2026</td>
+							<td><a href="OTA firmware/fw_4_2inch_v1.1.bin" download>Tải về</a></td>
+						</tr>
+                        <tr>
+							<td>3</td>
+							<td>1.2</td>
+							<td>Fix lỗi upload ảnh mất quá nhiều thời gian dẫn đến thiết bị tự ngắt kết nối và không hiển thị ảnh đã upload</td>
+							<td>19/07/2026</td>
+							<td><a href="OTA firmware/fw_4_2inch_v1.2.bin" download>Tải về</a></td>
+						</tr>
+                        <tr>
+							<td>4</td>
+							<td>1.3</td>
+							<td>Thêm 4 giao diện 8-bit mới</td>
+							<td>19/07/2026</td>
+							<td><a href="OTA firmware/fw_4_2inch_v1.3.bin" download>Tải về</a></td>
+						</tr>
+                        <tr>
+							<td>5</td>
+							<td>1.4</td>
+							<td>Thêm chế độ slide mới cho phép tự chuyển đổi giữa 3 ảnh đã upload trước đó</td>
+							<td>19/07/2026</td>
+                            <td>🚧</td>
+							<!-- <td><a href="OTA firmware/fw_4_2inch_v1.3.bin" download>Tải về</a></td> -->
 						</tr>
 					</tbody>
 				</table>
@@ -1044,6 +1073,13 @@
 							<td><a href="OTA firmware/fw_2_9inch_v0.1.bin" download>Tải về</a></td>
 						</tr>
 						-->
+                        <tr>
+							<td>1</td>
+							<td>1.0</td>
+							<td>Bản dựng đầu tiên với 24 chế độ hình ảnh</td>
+							<td>14/07/2026</td>
+							<td><a href="OTA firmware/fw_2_9inch_v1.0.bin" download>Tải về</a></td>
+						</tr>
 					</tbody>
 				</table>
 			</div>
@@ -1381,7 +1417,7 @@
 						</div>
 						<button id="update-text" type="button" class="secondary">Cập nhật chữ</button>
 						<div class="qrcode-controls">
-							<textarea id="qrcode-content" placeholder="Nhập nội dung tạo mã QR (chữ, URL, liên hệ...)">https://elink-config.github.io/da14585-webtool/</textarea>
+							<textarea id="qrcode-content" placeholder="Nhập nội dung tạo mã QR (chữ, URL, liên hệ...)">https://elink-config.github.io/</textarea>
 							<button id="generate-qrcode" type="button" class="secondary">Tạo mã QR</button>
 						</div>
 					</div>
@@ -1492,9 +1528,16 @@
 		<div class="footer">
 			<span class="copy">&copy; 2026 doantruonglam</span>
 			<span class="links">
-				<a href="https://github.com/elink-config/elink-config.github.io">Github</a>
-				<a href="https://vn.shp.ee/ZX4DY1pi" target="_blank" rel="noopener">Link mua hàng</a>
-				<a href="?debug=true" id="debug-toggle">Chế độ dev</a>
+				<!-- <a href="https://github.com/elink-config/elink-config.github.io">Github</a> -->
+				<a href="https://vn.shp.ee/M9ts8TgM" target="_blank" rel="noopener">Link mua bản 2.13 inch</a>
+				<a href="https://vn.shp.ee/yjmTrdsL" target="_blank" rel="noopener">Link mua bản 2.9 inch</a>
+				<a href="https://vn.shp.ee/7qxzasoF" target="_blank" rel="noopener">Link mua bản 4.2 inch</a>
+				<a href="https://vn.shp.ee/Zuh8CVWy" target="_blank" rel="noopener">Link mua bản hoàn thiện</a>
+				<!-- ẩn với khách nhưng PHẢI giữ trong DOM: connector.js (hubInit) và
+				     main.js của các app (checkDebugMode) đều truy cập #debug-toggle —
+				     xóa hẳn là trang lỗi «Cannot set properties of null» khi kết nối.
+				     Dev vẫn vào được bằng cách gõ ?debug=true trên URL. -->
+				<a href="?debug=true" id="debug-toggle" style="display:none">Chế độ dev</a>
 			</span>
 		</div>
 	</div>

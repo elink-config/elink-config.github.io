@@ -902,43 +902,77 @@
   const CAN = ['Giáp', 'Ất', 'Bính', 'Đinh', 'Mậu', 'Kỷ', 'Canh', 'Tân', 'Nhâm', 'Quý'];
   const CHI = ['Tý', 'Sửu', 'Dần', 'Mão', 'Thìn', 'Tỵ', 'Ngọ', 'Mùi', 'Thân', 'Dậu', 'Tuất', 'Hợi'];
   const LMON = ['Giêng', 'Hai', 'Ba', 'Tư', 'Năm', 'Sáu', 'Bảy', 'Tám', 'Chín', 'Mười', 'M.Một', 'Chạp'];
-  function m32(x, now, W, H) {
-    let l = { year: 2026, month: 6, day: 28 };
-    try { l = lunarToday(now); } catch (e) { }
-    x.fillStyle = RD; x.fillRect(0, 0, W, 20);
-    font(x, 11, 1);
-    center(x, 'Âm lịch - Năm ' + CAN[(l.year + 6) % 10] + ' ' + CHI[(l.year + 8) % 12], W / 2, 14, WH);
-    serif(x, 46, 1);
-    center(x, l.day, 64, 74, BK);
-    font(x, 11, 1);
-    center(x, 'tháng ' + LMON[(((l.month & 0x7f) - 1) + 12) % 12] + ((l.month & 0x80) ? ' nhuận' : ''), 64, 102, RD);
-    line(x, 128, 26, 128, H - 8, BK);
-    font(x, 11, 1); x.fillStyle = BK; x.fillText(WD_FULL[now.getDay()], 140, 42);
-    font(x, 9, 0); x.fillStyle = BK;
-    x.fillText(pad2(now.getDate()) + '/' + pad2(now.getMonth() + 1) + '/' + now.getFullYear(), 140, 60);
-    x.fillStyle = RD; x.fillText('Đông chí', 140, 76);
-    font(x, 21, 1); x.fillStyle = BK;
-    x.fillText(pad2(now.getHours()) + ':' + pad2(now.getMinutes()), 140, H - 12);
+  // ---- đồ họa 8-bit dùng chung (mode 32/33) — khớp firmware pix35/sprite8 ----
+  const PIX35 = [0x7B6F, 0x2C97, 0x73E7, 0x73CF, 0x5BC9, 0x79CF, 0x79EF, 0x7252, 0x7BEF, 0x7BCF];
+  function pixDigit(x, px, py, d, sc, col) {
+    x.fillStyle = col;
+    for (let r = 0; r < 5; r++)
+      for (let c = 0; c < 3; c++)
+        if (PIX35[d] & (1 << (14 - r * 3 - c)))
+          x.fillRect(px + c * sc, py + r * sc, sc - 1, sc - 1);
   }
-  // mode 33: Thẻ lịch đỏ — kiểu lịch để bàn của bản 4.2" (DrawComboRed)
+  function pixTime(x, now, cx, y, sc, col, ccol) {
+    const dw = 4 * sc, hh = now.getHours(), mm = now.getMinutes();
+    let px = cx - 9 * sc;
+    pixDigit(x, px, y, (hh / 10) | 0, sc, col); px += dw;
+    pixDigit(x, px, y, hh % 10, sc, col); px += dw;
+    x.fillStyle = ccol;
+    x.fillRect(px, y + sc, sc - 1, sc - 1);
+    x.fillRect(px, y + 3 * sc, sc - 1, sc - 1);
+    px += 2 * sc;
+    pixDigit(x, px, y, (mm / 10) | 0, sc, col); px += dw;
+    pixDigit(x, px, y, mm % 10, sc, col);
+  }
+  const SPR8 = {
+    alien: [0x18, 0x3C, 0x7E, 0xDB, 0xFF, 0x24, 0x5A, 0xA5],
+    heart: [0x00, 0x66, 0xFF, 0xFF, 0x7E, 0x3C, 0x18, 0x00],
+    sun:   [0x3C, 0x7E, 0xFF, 0xFF, 0xFF, 0xFF, 0x7E, 0x3C],
+    cloud: [0x00, 0x0C, 0x3E, 0x7F, 0xFF, 0xFE, 0x00, 0x00],
+  };
+  function sprite8(x, px, py, sp, sc, col) {
+    x.fillStyle = col;
+    for (let r = 0; r < 8; r++)
+      for (let c = 0; c < 8; c++)
+        if (sp[r] & (0x80 >> c)) x.fillRect(px + c * sc, py + r * sc, sc, sc);
+  }
+  function pixGround(x, W, H, y) {
+    for (let r = 0; y + r * 8 < H; r++) {
+      line(x, 0, y + r * 8, W, y + r * 8, BK);
+      for (let px = (r & 1) ? 8 : 0; px < W; px += 16)
+        line(x, px, y + r * 8, px, y + r * 8 + 7, BK);
+    }
+  }
+  // mode 32: Trò chơi 8-bit — Space Invaders (tim đỏ = mạng, điểm = ngày tháng)
+  function m32(x, now, W, H) {
+    for (let i = 0; i < 3; i++) sprite8(x, 6 + i * 20, 2, SPR8.heart, 2, RD);
+    font(x, 11, 1);
+    center(x, 'Điểm ' + pad2(now.getDate()) + pad2(now.getMonth() + 1), W / 2, 12, BK);
+    x.fillStyle = BK; x.textAlign = 'right';
+    x.fillText(panelTempVal() + '°C', W - 6, 12); x.textAlign = 'left';
+    for (let i = 0; i < 5; i++) sprite8(x, 30 + i * 52, 22, SPR8.alien, 2, (i & 1) ? BK : RD);
+    pixTime(x, now, W / 2, 44, 10, BK, RD);
+    font(x, 9, 0);
+    center(x, WD_FULL[now.getDay()] + ' ' + pad2(now.getDate()) + '/' + pad2(now.getMonth() + 1) + '/' + now.getFullYear() + '   ' + lunarStr(now), W / 2, 102, BK);
+    pixGround(x, W, H, H - 16);
+  }
+  // mode 33: Phiêu lưu 8-bit — platformer (mặt trời đỏ, cờ đích mang số ngày)
   function m33(x, now, W, H) {
-    statusBatt(x, W);
-    x.fillStyle = RD;
-    x.beginPath();
-    if (x.roundRect) { x.roundRect(4, 4, 114, H - 9, 6); x.fill(); }
-    else x.fillRect(4, 4, 114, H - 9);
+    const gy = H - 24;
+    sprite8(x, 10, 6, SPR8.sun, 3, RD);
+    sprite8(x, 64, 8, SPR8.cloud, 2, BK);
+    sprite8(x, 190, 4, SPR8.cloud, 2, BK);
+    pixTime(x, now, W / 2 - 10, 26, 9, BK, RD);
+    line(x, W - 18, 14, W - 18, gy - 1, BK);
+    x.fillStyle = RD; x.fillRect(W - 58, 14, 40, 21);
     font(x, 11, 1);
-    center(x, WD_FULL[now.getDay()], 61, 22, WH);
-    font(x, 52, 1);
-    center(x, now.getDate(), 61, 84, WH);
-    font(x, 11, 1);
-    center(x, 'Tháng ' + (now.getMonth() + 1), 61, H - 12, WH);
-    font(x, 26, 1); x.fillStyle = BK;
-    x.fillText(pad2(now.getHours()) + ':' + pad2(now.getMinutes()), 134, 48);
+    center(x, now.getDate(), W - 38, 29, WH);
+    x.strokeStyle = BK; x.strokeRect(30.5, gy - 46.5, 18, 18);
+    center(x, '?', 40, gy - 33, RD);
     font(x, 9, 0); x.fillStyle = BK;
-    x.fillText(pad2(now.getDate()) + '/' + pad2(now.getMonth() + 1) + '/' + now.getFullYear(), 134, 72);
-    x.fillStyle = RD; x.fillText(lunarStr(now), 134, 88);
-    x.fillStyle = BK; x.fillText(panelTempVal() + '°C', 134, 104);
+    x.fillText(WD_FULL[now.getDay()] + ' ' + pad2(now.getDate()) + '/' + pad2(now.getMonth() + 1) + '/' + now.getFullYear(), 8, gy - 8);
+    x.fillStyle = RD; x.textAlign = 'right';
+    x.fillText(lunarStr(now), W - 12, gy - 8); x.textAlign = 'left';
+    pixGround(x, W, H, gy);
   }
 
   // «Ảnh đã lưu» LUÔN đứng cuối — chế độ mới thêm vào TRƯỚC nó.
@@ -958,8 +992,8 @@
     // 4 giao diện MỚI riêng 2.9" (số mode 30-33 — từ đây số != vị trí thẻ)
     { mode: 30, name: 'Đồng hồ chữ', tick: 'Giờ bằng chữ tiếng Việt — làm mới mỗi phút', draw: m30 },
     { mode: 31, name: 'Tiến trình ngày', tick: 'Ngày (đen) / tháng / năm (đỏ) — làm mới mỗi phút', draw: m31 },
-    { mode: 32, name: 'Lịch âm', tick: 'Âm lịch là chính, năm can chi — làm mới mỗi phút', draw: m32 },
-    { mode: 33, name: 'Thẻ lịch đỏ', tick: 'Lịch để bàn kiểu 4.2" — làm mới mỗi phút', draw: m33 },
+    { mode: 32, name: 'Trò chơi 8-bit', tick: 'Space Invaders — làm mới mỗi phút', draw: m32 },
+    { mode: 33, name: 'Phiêu lưu 8-bit', tick: 'Platformer — làm mới mỗi phút', draw: m33 },
     // thu tu nhom DOC theo nguoi dung chon (13,20,15,14,16,19,17,18 theo vi tri cu)
     { mode: 13, name: 'Dọc: đồng hồ', tick: 'Dựng dọc — làm mới mỗi phút', draw: m17, vert: true },
     { mode: 14, name: 'Dọc: giờ nổi 3D', tick: 'Dựng dọc — làm mới mỗi phút', draw: m24, vert: true },
