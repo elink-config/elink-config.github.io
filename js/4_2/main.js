@@ -4,6 +4,10 @@ let startTime, msgIndex, appVersion;
 let canvas, ctx, textDecoder;
 let paintManager, cropManager;
 let deviceMode = null;      // display mode reported by the device config
+// ---- Nhắc cập nhật firmware: thiết bị gửi 'fw=v1.x.y' khi bật notify (từ
+// bản sau 1.3.1); so với cột «Phiên bản» trong bảng «Danh sách firmware» ----
+let deviceFwVer = null;     // chuỗi "1.4" từ notify 'fw=' (null = firmware cũ)
+let fwPopupShown = false;   // chỉ nhắc một lần mỗi phiên kết nối
 let timeSynced = false;     // device clock is valid (reported or just synced);
                             // gates the mode gallery in [Điều khiển thiết bị]
 
@@ -588,12 +592,61 @@ function handleNotify(value, idx) {
         addLog("Đồng hồ thiết bị chưa được đồng bộ — bấm «Sync time» để gửi ngày giờ trước khi chọn giao diện.");
       }
       updateButtonStatus();
+    } else if (msg.startsWith('fw=') && msg.length > 3) {
+      deviceFwVer = msg.substring(3).trim().replace(/^v/i, '');
+      checkFwUpdatePopup();
     }
+  }
+}
+
+// "v1.3.1" / "1.4" -> [1,3,1]; so sánh từng phần dạng số
+function parseVer(s) {
+  return String(s).trim().replace(/^v/i, '').split('.').map(n => parseInt(n) || 0);
+}
+function cmpVer(a, b) {
+  for (let i = 0; i < Math.max(a.length, b.length); i++) {
+    const d = (a[i] || 0) - (b[i] || 0);
+    if (d) return d;
+  }
+  return 0;
+}
+// bản mới nhất trong bảng «Danh sách firmware» (cột 2 = Phiên bản) — bảng là
+// nguồn duy nhất: thêm dòng firmware mới là popup tự biết, không cần sửa js
+function latestFwRow() {
+  let best = null;
+  document.querySelectorAll('.fw-table tbody tr').forEach(tr => {
+    if (tr.cells && tr.cells.length > 1) {
+      const v = parseVer(tr.cells[1].textContent);
+      if (v.some(x => x > 0) && (!best || cmpVer(v, best.ver) > 0)) {
+        best = { ver: v, text: tr.cells[1].textContent.trim() };
+      }
+    }
+  });
+  return best;
+}
+function checkFwUpdatePopup() {
+  if (fwPopupShown || epdCharacteristic == null) return;
+  const latest = latestFwRow();
+  if (!latest) return;
+  // chưa nhận 'fw=' = firmware <= 1.3.1 (trước khi có notify phiên bản):
+  // chỉ nhắc khi bảng đã có bản mới hơn nhóm đó, tránh nhắc oan
+  const cur = deviceFwVer ? parseVer(deviceFwVer) : [1, 3, 1];
+  if (cmpVer(cur, latest.ver) >= 0) return;
+  fwPopupShown = true;
+  const curTxt = deviceFwVer || 'cũ (≤ 1.3.1)';
+  addLog(`Firmware thiết bị: ${curTxt} — đã có bản mới ${latest.text}.`);
+  if (confirm(`Đã có firmware mới ${latest.text} (thiết bị đang chạy bản ${curTxt}).\n` +
+              `Tải file .bin ở mục «Danh sách firmware» rồi nạp ở mục «Cập nhật firmware (OTA)».\n\n` +
+              `Cuộn tới khu vực cập nhật ngay?`)) {
+    const el = document.getElementById('otaFieldset');
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 }
 
 async function connect() {
   if (bleDevice == null || epdCharacteristic != null) return;
+  deviceFwVer = null;
+  fwPopupShown = false;
 
   try {
     addLog("Đang kết nối: " + bleDevice.name);
@@ -640,6 +693,9 @@ async function connect() {
   }
 
   await write(EpdCmd.INIT);
+
+  // firmware <= 1.3.1 không gửi 'fw=' — sau 3s vẫn nhắc nếu bảng có bản mới
+  setTimeout(checkFwUpdatePopup, 3000);
 
   document.getElementById("connectbutton").innerHTML = 'Ngắt kết nối';
   updateButtonStatus();
