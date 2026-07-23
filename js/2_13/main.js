@@ -829,6 +829,10 @@ async function reConnect() {
 
 async function connect() {
   if (bleDevice == null || longValueChar != null) return;
+  // nhắc cập nhật firmware (logic chung js/fw_check.js): firmware 2.13 hiện
+  // chưa tự khai phiên bản -> coi như bản mới nhất đã phát hành (1.3); khi
+  // bảng «Danh sách firmware» có bản mới hơn sẽ popup sau khi kết nối
+  FwCheck.reset('1.3');
 
   try {
     addLog("Đang kết nối: " + bleDevice.name);
@@ -863,6 +867,7 @@ async function connect() {
   if (!timeSynced) {
     addLog('Bấm «Sync time» để đồng bộ giờ trước khi chọn giao diện.');
   }
+  FwCheck.schedule(1500);  // popup nếu bảng firmware có bản mới hơn
 }
 
 function setStatus(statusText) {
