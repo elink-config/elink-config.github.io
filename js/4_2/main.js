@@ -717,10 +717,18 @@ async function connect() {
   }
 
   try {
-    await epdCharacteristic.startNotifications();
+    // Gắn listener TRƯỚC khi bật notify: thiết bị bắn loạt mở màn (config,
+    // mac=, act=, fw=) ngay khi CCCD được ghi — gắn sau là thua cuộc đua,
+    // mất cả loạt (fw= mất -> popup nhắc cập nhật dù máy đã chạy bản mới).
     epdCharacteristic.addEventListener('characteristicvaluechanged', (event) => {
       handleNotify(event.target.value, msgIndex++);
     });
+    // stop -> start: ép ghi lại CCCD để firmware GỬI LẠI loạt mở màn kể cả
+    // khi notify đã được bật từ trước (hub/connector); standalone thì stop
+    // đầu tiên chỉ là no-op vô hại
+    try { await epdCharacteristic.stopNotifications(); } catch (e) {}
+    msgIndex = 0;  // loạt gửi lại bắt đầu bằng config (idx 0)
+    await epdCharacteristic.startNotifications();
   } catch (e) {
     console.error(e);
     if (e.message) addLog("startNotifications: " + e.message);
