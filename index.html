@@ -139,13 +139,6 @@
 						Làm mới toàn màn hình mỗi giờ (chế độ đồng hồ) — nếu tắt, chỉ làm mới toàn màn lúc 00:00 (ít chớp hơn nhưng bóng mờ tích tụ nhiều hơn)
 					</label>
 				</div>
-				<!-- Sinh nhật: chỉ hiện khi thiết bị chạy firmware >= 1.5 (fw= notify) -->
-				<div class="flex-group" id="dobRow" style="display:none">
-					<label for="dobInput">Ngày sinh nhật:</label>
-					<input type="date" id="dobInput">
-					<button id="senddobbutton" type="button" class="primary" onclick="sendDob()">Lưu sinh nhật</button>
-					<button id="cleardobbutton" type="button" class="secondary" onclick="clearDob()">Xóa</button>
-				</div>
 				<div class="flex-group">
 					<button id="clearscreenbutton" type="button" class="secondary" onclick="clearScreen()">Xóa màn hình</button>
 				</div>
@@ -275,7 +268,22 @@
 					<button type="button" class="secondary debug" onclick="rotateCanvas()">Xoay canvas</button>
 					<button type="button" class="secondary" onclick="clearCanvas()">Xóa canvas</button>
 					<button type="button" class="secondary debug" onclick="downloadDataArray()">Tải mảng dữ liệu</button>
-					<button id="sendimgbutton" type="button" class="primary" onclick="sendimg()">Gửi hình ảnh</button>
+					<button id="sendimgbutton" type="button" class="primary" onclick="sendimg(0)">Gửi ảnh khe 1</button>
+					<button id="sendimgbutton2" type="button" class="primary" onclick="sendimg(1)">Gửi ảnh khe 2</button>
+					<button id="sendimgbutton3" type="button" class="primary" onclick="sendimg(2)">Gửi ảnh khe 3</button>
+				</div>
+			</div>
+			<!-- Tự đổi ảnh (fw >= 1.5): bật được khi đã có >= 2 khe ảnh trên thiết bị -->
+			<div class="flex-container" id="imgAutoRow" style="display:none">
+				<div class="flex-group">
+					<label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+						<input type="checkbox" id="imgAutoCHK" onchange="setImgAuto()">
+						Tự động đổi ảnh đã tải
+					</label>
+					<label><input type="radio" name="imgInterval" value="1" onchange="setImgAuto()"> 1 giờ</label>
+					<label><input type="radio" name="imgInterval" value="12" onchange="setImgAuto()"> 12 giờ</label>
+					<label><input type="radio" name="imgInterval" value="24" checked onchange="setImgAuto()"> 24 giờ</label>
+					<span class="mode-gallery-hint" style="margin:0" id="imgAutoHint">Cần gửi ảnh vào ít nhất 2 khe để bật tự đổi ảnh (khe 1 → 2 → 3 → 1).</span>
 				</div>
 			</div>
 			<div class="flex-container">
@@ -1548,8 +1556,8 @@
 			</span>
 		</div>
 	</div>
-	<script type="text/javascript" src="js/fw_check.js?v=20260724a"></script>
-	<script type="text/javascript" src="js/connector.js?v=20260724a"></script>
+	<script type="text/javascript" src="js/fw_check.js?v=20260725a"></script>
+	<script type="text/javascript" src="js/connector.js?v=20260725a"></script>
 	<script>
 		var _hmt = _hmt || [];
 		(function () {

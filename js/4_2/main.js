@@ -7,6 +7,9 @@ let deviceMode = null;      // display mode reported by the device config
 // Nhắc cập nhật firmware: logic DÙNG CHUNG nằm ở js/fw_check.js (FwCheck) —
 // thiết bị gửi 'fw=v1.x.y' khi bật notify (từ bản sau 1.3.1), so với bảng
 // «Danh sách firmware»; đời cũ không gửi thì coi như 1.3.1
+// 3 khe ảnh (fw >= 1.5): mask bit0..2 = khe đã có ảnh trên thiết bị (đọc từ
+// config blob byte 214); cần >= 2 khe mới bật được «Tự động đổi ảnh»
+let imgSlotMask = 0;
 let timeSynced = false;     // device clock is valid (reported or just synced);
                             // gates the mode gallery in [Điều khiển thiết bị]
 
@@ -24,7 +27,7 @@ const EpdCmd = {
   SET_HOURLY_FULL: 0x23, // clock cleanup cadence: 1 = full refresh hourly, 0 = only at 00:00
   SET_LAYOUT: 0x24, // MODE_CUSTOM (mode 20) widget layout from the designer
   SET_ICON: 0x25, // MODE_CUSTOM 1-bit icon, chunked: [0x00,w,h,data...] then [0x01,data...]
-  SET_DOB: 0x27, // sinh nhật [d,m,yLo,yHi]; không payload = xóa (fw >= 1.5)
+  IMG_SLOT: 0x27, // 3 khe ảnh (fw >= 1.5): [01 slot] mở khe / [02] chốt / [03 auto interval]
 
   WRITE_IMG: 0x30, // v1.6
 
@@ -252,27 +255,6 @@ async function syncTime(mode) {
   await sendTimeSync(mode);
 }
 
-// ---- Sinh nhật (fw >= 1.5): lưu trong flash thiết bị, sống qua mất nguồn.
-// Lưới tháng khuyên đỏ ngày sinh; đúng hôm sinh nhật các mode có giờ hiện
-// «Chúc mừng sinh nhật» ở mép dưới màn hình. ----
-async function sendDob() {
-  const v = document.getElementById('dobInput').value;  // "YYYY-MM-DD"
-  if (!v) { addLog('Chưa chọn ngày sinh nhật.'); return; }
-  const p = v.split('-');
-  const y = parseInt(p[0]), m = parseInt(p[1]), d = parseInt(p[2]);
-  if (!(d >= 1 && d <= 31 && m >= 1 && m <= 12)) { addLog('Ngày sinh nhật không hợp lệ.'); return; }
-  if (await write(EpdCmd.SET_DOB, [d, m, y & 0xFF, (y >> 8) & 0xFF])) {
-    addLog(`Đã lưu sinh nhật ${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')}/${y} vào thiết bị.`);
-    addLog('Lịch tháng sẽ khuyên đỏ ngày sinh; đúng hôm đó màn hình giờ hiện «Chúc mừng sinh nhật».');
-  }
-}
-async function clearDob() {
-  if (await write(EpdCmd.SET_DOB, null)) {
-    document.getElementById('dobInput').value = '';
-    addLog('Đã xóa sinh nhật khỏi thiết bị.');
-  }
-}
-
 async function sendNote() {
   const text = document.getElementById('noteTXT').value.trim();
   const bytes = new TextEncoder().encode(text);
@@ -341,10 +323,16 @@ function convertUC8159(blackWhiteData, redWhiteData) {
   return payloadData;
 }
 
-async function sendimg() {
+async function sendimg(slot = 0) {
   if (cropManager.isCropMode()) {
     alert("Vui lòng hoàn tất cắt ảnh trước! Đã hủy gửi.");
     return;
+  }
+
+  // 3 khe ảnh cần firmware >= 1.5; đời cũ chỉ hiển thị được (không lưu khe)
+  const slotCapable = FwCheck.atLeast('1.5');
+  if (!slotCapable && slot > 0) {
+    if (!confirm('Firmware của thiết bị chưa hỗ trợ 3 khe ảnh (cần v1.5). Ảnh sẽ chỉ hiển thị, không lưu vào khe. Tiếp tục?')) return;
   }
 
   const canvasSize = document.getElementById('canvasSize').value;
@@ -372,6 +360,16 @@ async function sendimg() {
   const mtuReady = waitMtuNotify(1500);
   await write(EpdCmd.INIT);
   await mtuReady;
+
+  // mở khe: thiết bị xóa 32KB flash của khe (~1s) rồi tee ảnh vào đó
+  if (slotCapable) {
+    setStatus(`Đang chuẩn bị khe ${slot + 1} (xóa flash)…`);
+    if (!await write(EpdCmd.IMG_SLOT, [0x01, slot])) {
+      setStatus('Không mở được khe ảnh — thử lại.');
+      updateButtonStatus();
+      return;
+    }
+  }
 
   let ok = true;
   if (ditherMode === 'threeColor') {
@@ -405,6 +403,15 @@ async function sendimg() {
     setStatus('Truyền ảnh thất bại — chưa làm mới màn hình.');
     updateButtonStatus();
     return;
+  }
+
+  // chốt khe (ghi trailer hợp lệ) TRƯỚC khi làm mới màn
+  if (slotCapable) {
+    if (await write(EpdCmd.IMG_SLOT, [0x02])) {
+      imgSlotMask |= (1 << slot);
+      updateImgAutoUI();
+      addLog(`Đã lưu ảnh vào khe ${slot + 1} trên thiết bị.`);
+    }
   }
 
   await write(EpdCmd.REFRESH);
@@ -500,6 +507,8 @@ function updateButtonStatus(forceDisabled = false) {
   document.getElementById("sendnotebutton").disabled = status;
   document.getElementById("clearscreenbutton").disabled = status;
   document.getElementById("sendimgbutton").disabled = status;
+  document.getElementById("sendimgbutton2").disabled = status;
+  document.getElementById("sendimgbutton3").disabled = status;
   document.getElementById("setDriverbutton").disabled = status;
   document.getElementById("otabutton").disabled = status;
 }
@@ -518,7 +527,9 @@ function disconnect() {
   resetVariables();
   addLog('Đã ngắt kết nối.');
   document.getElementById("connectbutton").innerHTML = 'Kết nối';
-  document.getElementById('dobRow').style.display = 'none';  // gate lại theo fw
+  // gate lại theo firmware của thiết bị kế tiếp
+  document.getElementById('imgAutoRow').style.display = 'none';
+  imgSlotMask = 0;
 }
 
 async function preConnect() {
@@ -589,17 +600,15 @@ function handleNotify(value, idx) {
     if (hf !== null) {
       document.getElementById('hourlyFullCHK').checked = hf !== 0;
     }
-    // sinh nhật đã lưu trên thiết bị (fw >= 1.5): day/month/year(u16 LE) tại
-    // offset 212/213/214 (sau u32 activation ở 208 — struct căn 4 byte)
+    // 3 khe ảnh (fw >= 1.5): auto/interval/mask tại offset 212/213/214 (sau
+    // u32 activation ở 208 — struct căn 4 byte)
     if (data.length >= 216) {
-      const dd = data[212], dm = data[213], dy = data[214] | (data[215] << 8);
-      if (dd >= 1 && dd <= 31 && dm >= 1 && dm <= 12) {
-        const y = (dy >= 1900 && dy <= 2100) ? dy : 2000;
-        document.getElementById('dobInput').value =
-          y + '-' + String(dm).padStart(2, '0') + '-' + String(dd).padStart(2, '0');
-      } else {
-        document.getElementById('dobInput').value = '';
-      }
+      const auto = data[212], itv = data[213];
+      imgSlotMask = (data[214] <= 7) ? data[214] : 0;
+      document.getElementById('imgAutoCHK').checked = auto === 1;
+      const r = document.querySelector(`input[name="imgInterval"][value="${itv}"]`);
+      if (r) r.checked = true;
+      updateImgAutoUI();
     }
   } else {
     if (textDecoder == null) textDecoder = new TextDecoder();
@@ -628,9 +637,44 @@ function handleNotify(value, idx) {
       updateButtonStatus();
     } else if (msg.startsWith('fw=') && msg.length > 3) {
       FwCheck.report(msg.substring(3));
-      // ô «Ngày sinh nhật» chỉ hiện khi firmware hỗ trợ (>= 1.5)
-      if (FwCheck.atLeast('1.5')) document.getElementById('dobRow').style.display = '';
+      // khu «Tự động đổi ảnh» chỉ hiện khi firmware hỗ trợ 3 khe (>= 1.5)
+      if (FwCheck.atLeast('1.5')) {
+        document.getElementById('imgAutoRow').style.display = '';
+        updateImgAutoUI();
+      }
     }
+  }
+}
+
+// ---- Tự động đổi ảnh giữa các khe (1 -> 2 -> 3 -> 1) ----
+// checkbox + radio chỉ dùng được khi thiết bị đã có >= 2 khe ảnh; radio chỉ
+// dùng được khi checkbox bật (yêu cầu tính năng v1.5)
+function slotCount(mask) {
+  let n = 0;
+  for (let i = 0; i < 3; i++) if (mask & (1 << i)) n++;
+  return n;
+}
+function updateImgAutoUI() {
+  const enough = slotCount(imgSlotMask) >= 2;
+  const chk = document.getElementById('imgAutoCHK');
+  chk.disabled = !enough;
+  if (!enough) chk.checked = false;
+  document.querySelectorAll('input[name="imgInterval"]').forEach(r => {
+    r.disabled = !enough || !chk.checked;
+  });
+  document.getElementById('imgAutoHint').textContent = enough
+    ? `Đã có ảnh ở ${slotCount(imgSlotMask)} khe — thiết bị sẽ tự chuyển khe theo chu kỳ đã chọn (mốc tính theo 00:00).`
+    : 'Cần gửi ảnh vào ít nhất 2 khe để bật tự đổi ảnh (khe 1 → 2 → 3 → 1).';
+}
+async function setImgAuto() {
+  const auto = document.getElementById('imgAutoCHK').checked ? 1 : 0;
+  const sel = document.querySelector('input[name="imgInterval"]:checked');
+  const hours = sel ? parseInt(sel.value) : 24;
+  updateImgAutoUI();
+  if (await write(EpdCmd.IMG_SLOT, [0x03, auto, hours])) {
+    addLog(auto
+      ? `Đã bật tự động đổi ảnh mỗi ${hours} giờ (khe 1 → 2 → 3 → 1).`
+      : 'Đã tắt tự động đổi ảnh.');
   }
 }
 
