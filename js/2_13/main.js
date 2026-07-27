@@ -492,7 +492,12 @@ async function otaUpdate() {
     const buf = new Uint8Array(136);
     const dv = new DataView(buf.buffer);
     buf[0] = 0xa0; buf[1] = 0x00;
-    dv.setUint16(2, firmSize, true);
+    // size u32 (trước là u16): firmware > 64KB bị cắt 16 bit thấp -> thiết bị
+    // chỉ xoá 1 sector, các trang sau ghi vào flash CHƯA XOÁ -> bank hỏng
+    // nhưng header hợp lệ -> BRICK (mất BLE, chỉ cứu được bằng nạp dây).
+    // Tương thích ngược: fw cũ đọc u16 (2 byte thấp) vẫn đúng khi firmware
+    // đích < 64KB (vd bản "temp" cầu nối v1.0.2).
+    dv.setUint32(2, firmSize, true);
     show('Đang xoá flash…');
     await write(buf, true);
 
