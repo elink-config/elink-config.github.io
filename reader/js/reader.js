@@ -177,6 +177,14 @@ function handleNotify(value, idx) {
     const n = parseInt(msg.substring(4)) || 0;
     setStatus(`Máy đang phân trang sách chữ... ${n}${idxEstPages ? '/~' + idxEstPages : ''} trang`);
     if (idxEstPages) setProgress(80 + 19 * Math.min(1, n / idxEstPages));
+  } else if (msg.startsWith('flash=')) {
+    // JEDEC ID chip SPI flash: [hãng][loại][dung lượng 2^n byte]
+    const id = msg.substring(6);
+    const vendors = { EF: 'Winbond', C8: 'GigaDevice', '85': 'Puya', C2: 'Macronix', '0B': 'XTX', '68': 'Boya', A1: 'Fudan', '1C': 'EON', BF: 'SST', '20': 'XMC/Micron' };
+    const v = vendors[id.substring(0, 2).toUpperCase()] || ('hãng 0x' + id.substring(0, 2));
+    const cap = parseInt(id.substring(4, 6), 16);
+    const kb = cap > 10 && cap < 32 ? (1 << cap) / 1024 : 0;
+    addLog(`Chip flash: ${v}, ${kb >= 1024 ? (kb / 1024) + 'MB' : kb + 'KB'} (JEDEC ${id})`);
   } else if (msg === 'locked') {
     addLog('⚠ Thiết bị chưa kích hoạt — liên hệ nhà cung cấp.');
   }
