@@ -53,6 +53,19 @@ function addLog(txt, action = '') {
 function clearLog() { document.getElementById('log').innerHTML = ''; }
 function setStatus(s) { document.getElementById('status').textContent = s; }
 
+// thanh tiến độ tổng của phiên gửi sách (null = ẩn)
+function setProgress(pct) {
+  const el = document.getElementById('sendProgress');
+  if (!el) return;
+  if (pct === null) {
+    el.style.display = 'none';
+    el.value = 0;
+    return;
+  }
+  el.style.display = '';
+  el.value = Math.max(0, Math.min(100, pct));
+}
+
 function bytes2hex(data) {
   return new Uint8Array(data).reduce((m, i) => m + ('0' + i.toString(16)).slice(-2), '');
 }
@@ -159,7 +172,11 @@ function handleNotify(value, idx) {
       addLog('⚠ Hãy nạp firmware fw_reader_4_2inch_rX.Y.bin (mục OTA bên dưới) trước khi gửi sách.');
     }
   } else if (msg.startsWith('bki=')) {
-    setStatus('Máy đang phân trang sách chữ... ' + msg.substring(4) + ' trang');
+    // máy đang phân trang sách chữ: ánh xạ số trang đã chốt vào 80..99% của
+    // thanh tiến độ (idxEstPages ước lượng từ dung lượng chữ, ~1KB/trang)
+    const n = parseInt(msg.substring(4)) || 0;
+    setStatus(`Máy đang phân trang sách chữ... ${n}${idxEstPages ? '/~' + idxEstPages : ''} trang`);
+    if (idxEstPages) setProgress(80 + 19 * Math.min(1, n / idxEstPages));
   } else if (msg === 'locked') {
     addLog('⚠ Thiết bị chưa kích hoạt — liên hệ nhà cung cấp.');
   }
@@ -348,6 +365,7 @@ let book = null;
 let comicPages = [];   // ImageBitmap của từng trang truyện (toàn bộ file)
 let previewPage = 0;   // trang đang xem trước (trong phần đang chọn)
 let previewTextPages = null; // cache phân trang ước lượng của phần chữ đang chọn
+let idxEstPages = 0;   // ước lượng số trang khi máy phân trang (progress bki=)
 
 function fmtKB(n) { return (n / 1024).toFixed(1) + 'KB'; }
 
@@ -813,14 +831,16 @@ function rleEncode(data) {
 
 /* ================= Gửi sách ================= */
 
-async function sendChunks(bytes, areaOff, label) {
+async function sendChunks(bytes, areaOff, label, pctBase = 0, pctSpan = 100) {
   // gói: [0x28, 0x02, off u32 LE, data...]; gói chạm sector 4KB mới dùng
-  // write-có-xác-nhận để chờ thiết bị xóa sector xong (điều tiết luồng)
+  // write-có-xác-nhận để chờ thiết bị xóa sector xong (điều tiết luồng).
+  // pctBase/pctSpan: dải của giai đoạn này trên thanh tiến độ tổng.
   const mtu = parseInt(document.getElementById('mtusize').value) || 20;
   const chunk = Math.max(32, mtu - 6);
   const interleaved = parseInt(document.getElementById('interleavedcount').value) || 16;
   let noReply = 0;
   let lastSector = -1;
+  const t0 = Date.now();
   for (let i = 0; i < bytes.length; i += chunk) {
     const off = areaOff + i;
     const n = Math.min(chunk, bytes.length - i);
@@ -838,8 +858,15 @@ async function sendChunks(bytes, areaOff, label) {
     let ok = await write(EpdCmd.BOOK, payload, !useReply ? false : true);
     if (!ok) ok = await write(EpdCmd.BOOK, payload, true);
     if (!ok) throw new Error('gửi dữ liệu thất bại tại ' + label + ' +' + i);
-    const pct = ((100 * (i + n)) / bytes.length) >> 0;
-    setStatus(`Đang gửi ${label}: ${pct}% (${fmtKB(i + n)}/${fmtKB(bytes.length)})`);
+    // tiến độ + tốc độ + thời gian còn lại của giai đoạn
+    const done = i + n;
+    const frac = done / bytes.length;
+    const secs = Math.max(0.05, (Date.now() - t0) / 1000);
+    const kbs = done / 1024 / secs;
+    const eta = Math.ceil((bytes.length - done) / 1024 / Math.max(0.05, kbs));
+    setProgress(pctBase + pctSpan * frac);
+    setStatus(`Đang gửi ${label}: ${(frac * 100) >> 0}% (${fmtKB(done)}/${fmtKB(bytes.length)} - ` +
+      `${kbs.toFixed(1)}KB/s${done < bytes.length ? `, còn ~${eta}s` : ''})`);
   }
 }
 
@@ -851,6 +878,8 @@ async function sendBook() {
   const titleBytes = new TextEncoder().encode((title + partLabel).slice(0, 60)).slice(0, 63);
   startTime = Date.now();
   updateButtonStatus(true);
+  setProgress(0);
+  idxEstPages = 0;
   try {
     // MTU trước đã (tránh gửi gói 18 byte)
     const mtuReady = waitMtuNotify(1500);
@@ -862,18 +891,21 @@ async function sendBook() {
     const ack = waitNotify(m => (m === 'book=rx') ? m : (m === 'book=err' ? new Error('thiết bị từ chối (book=err)') : null), 8000);
     await write(EpdCmd.BOOK, [0x01, type]);
     await ack;
+    setProgress(2);
 
     let pages = 0, dataLen = 0;
     if (type === 1) {
-      await sendChunks(part.bytes, BOOK_DATA_OFF, 'nội dung');
+      // sách chữ: gửi nội dung chiếm 2..80%, máy phân trang 80..99%
+      await sendChunks(part.bytes, BOOK_DATA_OFF, 'nội dung', 2, 78);
       dataLen = part.bytes.length;
+      idxEstPages = Math.max(1, Math.round(dataLen / 1000)); // ~1KB chữ/trang
     } else {
-      // nén từng trang, dựng mục lục rồi gửi: mục lục trước (offset 0x1000),
-      // dữ liệu sau (offset 0x3000) — thiết bị yêu cầu offset tăng dần
+      // truyện tranh: nén 2..30%, mục lục 30..34%, dữ liệu 34..95%
       const blobs = [];
       let total = 0;
       for (const pi of part.pages) {
-        setStatus(`Đang nén trang ${blobs.length + 1}/${part.pages.length}...`);
+        setStatus(`Đang nén trang ${blobs.length + 1}/${part.pages.length}... (${fmtKB(total)}/${fmtKB(MAX_DATA)} kho)`);
+        setProgress(2 + 28 * (blobs.length / part.pages.length));
         await sleep(1); // nhả UI
         const blob = rleEncode(comicRenderPlane(pi));
         if (total + blob.length > MAX_DATA) {
@@ -891,13 +923,14 @@ async function sendBook() {
       let off = BOOK_DATA_OFF;
       blobs.forEach((b, i) => { dvI.setUint32(4 * i, off, true); off += b.length; });
       dvI.setUint32(4 * pages, off, true);
-      await sendChunks(idx, BOOK_IDX_OFF, 'mục lục');
+      await sendChunks(idx, BOOK_IDX_OFF, 'mục lục', 30, 4);
       const all = new Uint8Array(total);
       let p = 0;
       blobs.forEach(b => { all.set(b, p); p += b.length; });
-      await sendChunks(all, BOOK_DATA_OFF, 'trang truyện');
+      await sendChunks(all, BOOK_DATA_OFF, 'trang truyện', 34, 61);
     }
 
+    setProgress(type === 1 ? 80 : 95);
     setStatus(type === 1 ? 'Chốt sách — máy đang phân trang (~5-10s)...' : 'Chốt sách...');
     const done = waitNotify(m => {
       if (m === 'book=err') return new Error('thiết bị báo lỗi khi chốt sách');
@@ -920,15 +953,19 @@ async function sendBook() {
     await write(EpdCmd.BOOK, finalize);
     const totalPages = await done;
 
+    setProgress(100);
     const secs = ((Date.now() - startTime) / 1000).toFixed(1);
     setStatus(`Xong! Sách ${totalPages} trang trên máy (${secs}s). Máy đang hiển thị trang 1.`);
     addLog(`Gửi sách thành công: ${totalPages} trang, ${secs}s.`);
     addLog('Dùng nút bấm trên máy hoặc khung «Điều khiển đọc sách» để lật trang.');
+    setTimeout(() => setProgress(null), 4000);
   } catch (e) {
     console.error(e);
+    setProgress(null);
     setStatus('Lỗi: ' + (e.message || e));
     addLog('Gửi sách thất bại: ' + (e.message || e));
   }
+  idxEstPages = 0;
   updateButtonStatus();
 }
 
