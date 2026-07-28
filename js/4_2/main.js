@@ -491,7 +491,6 @@ function updateButtonStatus(forceDisabled = false) {
   document.getElementById("digitalcalmodebutton").disabled = modeStatus;
   document.getElementById("analogdaymodebutton").disabled = modeStatus;
   document.getElementById("minimalmodebutton").disabled = modeStatus;
-  document.getElementById("vanniemodebutton").disabled = modeStatus;
   document.getElementById("countdownmodebutton").disabled = modeStatus;
   document.getElementById("twomonthmodebutton").disabled = modeStatus;
   document.getElementById("yearmodebutton").disabled = modeStatus;

@@ -308,31 +308,6 @@
       center(x, d, cx, cy + 1, d === today ? '#fff' : ((col === 0 || col === 6) ? RED : BK));
     }
   }
-  function m13(x, now) { // Lịch vạn niên
-    x.fillStyle = RED; x.fillRect(0, 0, 180, 46);
-    font(x, 15, 1); center(x, 'Tháng ' + (now.getMonth() + 1) + ' - ' + now.getFullYear(), 90, 29, '#fff');
-    font(x, 84, 1); center(x, now.getDate(), 90, 158, RED);
-    font(x, 15, 1); center(x, WD_FULL[now.getDay()], 90, 192, BK);
-    font(x, 13, 0); multi(x, [['Âm Lịch 21/5', RED]], 90, 218);
-    font(x, 12, 0); center(x, 'Tiết Tiểu Thử', 90, 242, BK);
-    x.fillStyle = BK; x.beginPath(); x.arc(90, 270, 13, 0, 7); x.fill();
-    x.fillStyle = WH; x.beginPath(); x.arc(97, 265, 11, 0, 7); x.fill();
-    line(x, 180, 8, 180, 292, BK, 2);
-    font(x, 14, 1); x.fillStyle = BK; x.fillText('Ngày Canh Thìn', 196, 32); battery(x, 362, 20, BK);
-    font(x, 13, 1); x.fillStyle = RED; x.fillText('Giờ hoàng đạo', 196, 62);
-    const gio = [['Dần', '3-5h'], ['Thìn', '7-9h'], ['Tỵ', '9-11h'], ['Thân', '15-17h'], ['Dậu', '17-19h'], ['Hợi', '21-23h']];
-    font(x, 12, 0);
-    for (let i = 0; i < 6; i++) {
-      const gx = 196 + (i % 2) * 96, gy = 88 + ((i - i % 2) / 2) * 28;
-      x.fillStyle = RED; x.beginPath(); x.arc(gx + 4, gy - 4, 3, 0, 7); x.fill();
-      x.fillStyle = BK; x.fillText(gio[i][0] + ' ' + gio[i][1], gx + 12, gy);
-    }
-    line(x, 196, 178, 384, 178);
-    font(x, 13, 1); x.fillStyle = RED; x.fillText('Giờ hắc đạo', 196, 202);
-    font(x, 12, 0); x.fillStyle = BK; x.fillText('Tý, Sửu, Mão,', 196, 224); x.fillText('Ngọ, Mùi, Tuất', 196, 242);
-    const nf = nextSolarFest(now);
-    font(x, 12, 0); x.fillStyle = RED; x.fillText(nf.name, 196, 270); x.fillText('còn ' + nf.days + ' ngày', 196, 290);
-  }
   function m14(x, now) { // Đếm ngược
     font(x, 14, 0); x.fillStyle = BK;
     x.fillText(WD_FULL[now.getDay()] + ', ' + pad2(now.getDate()) + '/' + pad2(now.getMonth() + 1) + '/' + now.getFullYear(), 14, 30);
@@ -608,7 +583,7 @@
     // thương hiệu giữa
     font(x, 16, 1); center(x, 'VạnPhúc', 240, 28, RED);
     x.fillStyle = BK; x.fillRect(198, 34, 84, 1);
-    font(x, 11, 1); center(x, 'LỊCH VẠN NIÊN', 240, 56, BK);
+    font(x, 11, 1); center(x, 'Lịch Vạn Niên', 240, 56, BK);
     // hộp pin + đồng hồ 7 thanh
     x.strokeStyle = BK; x.lineWidth = 1.5; x.strokeRect(298.5, 2.5, 100, 64);
     battery(x, 368, 6, BK, (3 + (now.getMinutes() % 3) / 10).toFixed(1) + 'V');
@@ -631,7 +606,7 @@
     x.fillStyle = RED; x.fillText('7.Tiểu Thử  23.Đại Thử', 84, 288);
     // cột phải: NĂM-THÁNG-NGÀY
     x.fillStyle = RED; x.fillRect(268, 70, 130, 22);
-    font(x, 11, 1); center(x, 'NĂM-THÁNG-NGÀY', 333, 85, '#fff');
+    font(x, 11, 1); center(x, 'Năm - Tháng - Ngày', 333, 85, '#fff');
     font(x, 12, 0);
     [['Năm', yc], ['Tháng', mc], ['Ngày', dc]].forEach((r, i) => {
       const ry = 108 + i * 18;
@@ -641,7 +616,7 @@
     });
     // 3 CON GIÁP
     x.fillStyle = BK; x.fillRect(268, 154, 130, 22);
-    font(x, 11, 1); center(x, '3 CON GIÁP', 333, 169, '#fff');
+    font(x, 11, 1); center(x, '3 Con Giáp', 333, 169, '#fff');
     [yc, mc, dc].forEach((s, i) => {
       const bx = 268 + i * 44;
       x.strokeStyle = RED; x.lineWidth = 1.5; x.strokeRect(bx + 0.5, 182.5, 42, 24);
@@ -649,7 +624,7 @@
     });
     // GIỜ HOÀNG ĐẠO
     x.fillStyle = BK; x.fillRect(268, 212, 130, 22);
-    font(x, 11, 1); center(x, 'GIỜ HOÀNG ĐẠO', 333, 227, '#fff');
+    font(x, 11, 1); center(x, 'Giờ hoàng đạo', 333, 227, '#fff');
     font(x, 12, 0); x.fillStyle = BK;
     x.fillText('Dần  Thìn  Tỵ', 272, 252);
     x.fillText('Thân  Dậu  Hợi', 272, 272);
@@ -672,7 +647,6 @@
     { mode: 10, name: 'Giờ + lịch tháng', tick: 'Làm mới mỗi phút', id: 'digitalcalmodebutton', draw: m10 },
     { mode: 11, name: 'Kim + thẻ ngày', tick: 'Làm mới mỗi phút', id: 'analogdaymodebutton', draw: m11 },
     { mode: 12, name: 'Tối giản', tick: 'Cập nhật lúc 0h', id: 'minimalmodebutton', draw: m12 },
-    { mode: 13, name: 'Lịch vạn niên', tick: 'Cập nhật lúc 0h', id: 'vanniemodebutton', draw: m13 },
     { mode: 14, name: 'Đếm ngược sự kiện', tick: 'Cập nhật lúc 0h', id: 'countdownmodebutton', draw: m14 },
     { mode: 15, name: 'Hai tháng', tick: 'Cập nhật lúc 0h', id: 'twomonthmodebutton', draw: m15 },
     { mode: 16, name: 'Lịch cả năm', tick: 'Cập nhật lúc 0h', id: 'yearmodebutton', draw: m16 },
