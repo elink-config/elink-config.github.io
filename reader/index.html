@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="vi">
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Máy đọc sách E-Ink 4.2" (DA14585)</title>
+	<link rel="shortcut icon" type="image/png" href="favicon.png">
+	<link rel="stylesheet" href="css/main.css?v=20260728a">
+	<script>
+		// apply the saved theme before first paint to avoid a flash
+		(function () {
+			const t = localStorage.getItem('theme');
+			if (t === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+		})();
+	</script>
+</head>
+
+<body>
+	<div class="main">
+		<div class="app-header">
+			<div class="app-header-icon"><span class="material-symbols-outlined">menu_book</span></div>
+			<div class="app-header-text">
+				<h1>Máy đọc sách E-Ink 4.2"</h1>
+				<p>Gửi sách chữ / truyện tranh xuống thiết bị qua Bluetooth (firmware r1.x)</p>
+			</div>
+			<button type="button" class="theme-toggle-btn" id="theme-toggle" title="Đổi giao diện sáng/tối"
+				onclick="(function(){const h=document.documentElement;const dark=h.getAttribute('data-theme')==='dark';if(dark){h.removeAttribute('data-theme');localStorage.setItem('theme','light');}else{h.setAttribute('data-theme','dark');localStorage.setItem('theme','dark');}document.getElementById('theme-toggle-icon').textContent=dark?'dark_mode':'light_mode';})()">
+				<span class="material-symbols-outlined" id="theme-toggle-icon">dark_mode</span>
+			</button>
+		</div>
+		<script>
+			if (document.documentElement.getAttribute('data-theme') === 'dark')
+				document.getElementById('theme-toggle-icon').textContent = 'light_mode';
+		</script>
+
+		<fieldset>
+			<legend>Kết nối Bluetooth</legend>
+			<div class="flex-container">
+				<div class="flex-group">
+					<button id="connectbutton" type="button" class="primary" onclick="preConnect()">Kết nối</button>
+					<button id="reconnectbutton" type="button" class="secondary" onclick="reConnect()">Kết nối lại</button>
+					<button type="button" class="secondary" onclick="clearLog()">Xóa nhật ký</button>
+					<span class="mode-gallery-hint" style="margin:0">Thiết bị tên <b>DIY-4_2R-xxxx</b> (firmware máy đọc sách). Dùng Chrome/Edge; iOS dùng Bluefy.</span>
+				</div>
+				<div class="flex-group debug">
+					<label for="mtusize">MTU:</label>
+					<input type="number" id="mtusize" value="20" min="0" max="255">
+					<label for="interleavedcount">Khoảng xác nhận:</label>
+					<input type="number" id="interleavedcount" value="16" min="0" max="500">
+					<label for="cmdTXT">Gửi lệnh</label>
+					<input type="text" id="cmdTXT" value="">
+					<button id="sendcmdbutton" type="button" class="primary" onclick="sendcmd()">Gửi lệnh</button>
+				</div>
+			</div>
+			<div class="log-container" id="log"></div>
+		</fieldset>
+
+		<fieldset>
+			<legend>Gửi sách xuống máy</legend>
+			<p class="mode-gallery-hint">
+				Chọn file sách: <b>.txt</b>, <b>.epub</b> (sách chữ) — <b>.cbz/.zip</b> hoặc nhiều file ảnh (truyện tranh) —
+				<b>.mobi/.azw3</b> không DRM (thử đọc, nếu không được hãy chuyển sang epub/txt bằng Calibre).
+				Kho sách trong máy chứa ~100KB: sách dài sẽ được chia thành nhiều <b>phần</b>, mỗi lần gửi một phần
+				(gửi phần mới sẽ thay phần cũ; máy tự lưu trang đang đọc của phần hiện tại).
+			</p>
+			<div class="flex-container">
+				<input type="file" id="bookFile" accept=".txt,.epub,.zip,.cbz,.mobi,.azw,.azw3,.png,.jpg,.jpeg,.webp,.bmp" multiple onchange="bookFileChange()">
+			</div>
+			<div class="flex-container" id="bookInfoRow" style="display:none">
+				<div class="flex-group" style="flex:1 1 100%">
+					<label for="bookTitle">Tên sách:</label>
+					<input type="text" id="bookTitle" maxlength="60" style="flex:1">
+				</div>
+				<div class="flex-group" style="flex:1 1 100%">
+					<span id="bookSummary" class="mode-gallery-hint" style="margin:0"></span>
+				</div>
+				<div class="flex-group" id="bookPartRow" style="display:none">
+					<label for="bookPart">Phần:</label>
+					<select id="bookPart" onchange="bookPartChange()"></select>
+					<span id="bookPartHint" class="mode-gallery-hint" style="margin:0"></span>
+				</div>
+				<div class="flex-group" id="comicOptsRow" style="display:none">
+					<label for="ditherAlg">Dithering:</label>
+					<select id="ditherAlg" onchange="comicRepreview()">
+						<option value="floydSteinberg">Floyd-Steinberg</option>
+						<option value="atkinson">Atkinson</option>
+						<option value="bayer">Bayer</option>
+						<option value="stucki">Stucki</option>
+						<option value="none">Không (ngưỡng)</option>
+					</select>
+					<label for="ditherStrength">Cường độ:</label>
+					<input type="range" min="0" max="2" step="0.1" value="1.0" id="ditherStrength" onchange="comicRepreview()">
+					<label for="ditherContrast">Tương phản:</label>
+					<input type="range" min="0.5" max="2" step="0.1" value="1.2" id="ditherContrast" onchange="comicRepreview()">
+					<label style="display:flex;align-items:center;gap:4px;cursor:pointer">
+						<input type="checkbox" id="comicRotate" onchange="comicRepreview()"> Xoay ngang trang
+					</label>
+				</div>
+			</div>
+			<div class="canvas-container">
+				<div class="canvas-title" id="previewTitle" style="display:none"></div>
+				<canvas id="canvas" width="400" height="300"></canvas>
+				<div class="flex-container canvas-tools">
+					<div class="flex-group">
+						<button type="button" class="secondary" onclick="previewStep(-1)">◀ Trang trước</button>
+						<span id="previewPageLabel" class="system-time">—</span>
+						<button type="button" class="secondary" onclick="previewStep(1)">Trang sau ▶</button>
+					</div>
+				</div>
+			</div>
+			<div class="status-bar"><b>Trạng thái: </b><span id="status"></span></div>
+			<div class="flex-container">
+				<div class="flex-group">
+					<button id="sendbookbutton" type="button" class="primary" onclick="sendBook()" disabled>Gửi sách xuống máy</button>
+					<span class="mode-gallery-hint" style="margin:0">Sách chữ: sau khi gửi, máy tự phân trang ~5-10 giây rồi hiện trang 1.</span>
+				</div>
+			</div>
+		</fieldset>
+
+		<fieldset>
+			<legend>Điều khiển đọc sách</legend>
+			<div class="flex-container">
+				<div class="flex-group">
+					<button id="rprevbutton" type="button" class="secondary" onclick="readerCmd(0x12)" disabled>◀ Trang trước</button>
+					<button id="rnextbutton" type="button" class="secondary" onclick="readerCmd(0x11)" disabled>Trang sau ▶</button>
+					<button id="rhomebutton" type="button" class="secondary" onclick="readerCmd(0x13)" disabled>Trang chủ</button>
+					<label for="gotoPage">Tới trang:</label>
+					<input type="number" id="gotoPage" value="1" min="1" style="width:70px">
+					<button id="rgotobutton" type="button" class="primary" onclick="readerGoto()" disabled>Đi</button>
+				</div>
+				<div class="flex-group">
+					<label for="fullEvery">Làm mới đầy đủ sau mỗi</label>
+					<select id="fullEvery">
+						<option value="5">5 trang</option>
+						<option value="10" selected>10 trang</option>
+						<option value="20">20 trang</option>
+						<option value="30">30 trang</option>
+					</select>
+					<button id="fullEverybutton" type="button" class="secondary" onclick="setFullEvery()" disabled>Áp dụng</button>
+					<span class="mode-gallery-hint" style="margin:0">Lật trang dùng cập nhật nhanh không chớp; thi thoảng làm mới đầy đủ để xóa bóng mờ.</span>
+				</div>
+			</div>
+		</fieldset>
+
+		<fieldset>
+			<legend>Nút bấm vật lý (4 nút)</legend>
+			<p class="mode-gallery-hint">
+				Hàn 4 nút từ các điểm test xuống <b>GND</b> (nhấn = nối đất, nên nối tiếp điện trở ~1kΩ).
+				Mặc định: trang sau = <b>TX (P0_4)</b>, trang trước = <b>SCL (P0_2)</b>, trang chủ = <b>SDA (P0_1)</b>,
+				nguồn (bật/tắt BLE) = <b>RX (P0_5)</b>. Chân trùng với chân màn hình sẽ bị firmware <b>tự tắt</b>
+				(board kiểu dây A: nút nguồn RX bị tắt vì P0_5 là chân DC — chọn chân khác như P1_0 nếu cần).
+			</p>
+			<div class="flex-container">
+				<div class="flex-group">
+					<label>Trang sau:</label><select id="btnNext" class="btnsel"></select>
+					<label>Trang trước:</label><select id="btnPrev" class="btnsel"></select>
+					<label>Trang chủ:</label><select id="btnSel" class="btnsel"></select>
+					<label>Nguồn:</label><select id="btnPwr" class="btnsel"></select>
+					<button id="btnApply" type="button" class="primary" onclick="applyButtons()" disabled>Lưu chân nút</button>
+				</div>
+				<div class="flex-group">
+					<span id="btnHint" class="mode-gallery-hint" style="margin:0"></span>
+				</div>
+			</div>
+		</fieldset>
+
+		<fieldset id="otaFieldset">
+			<legend>Cập nhật firmware (OTA)</legend>
+			<div class="flex-container">
+				<div class="flex-group">
+					<input type="file" id="otaFile" accept=".bin">
+					<button id="otabutton" type="button" class="secondary" onclick="otaUpdate()" disabled>Cập nhật firmware</button>
+					<span id="otaProgress" class="system-time"></span>
+				</div>
+			</div>
+			<p class="mode-gallery-hint">Chỉ nạp firmware dòng <b>máy đọc sách</b> (fw_reader_4_2inch_rX.Y.bin).
+				<b>Chú ý:</b> cập nhật firmware sẽ xóa sách trong máy — gửi lại sách sau khi cập nhật.</p>
+			<div style="overflow-x:auto">
+				<table class="fw-table">
+					<thead>
+						<tr><th>No</th><th>Version</th><th>Description</th><th>Release Date</th><th>Download Link</th></tr>
+					</thead>
+					<tbody>
+						<!-- Thêm firmware: file .bin đặt trong "OTA firmware/", ví dụ:
+						<tr><td>1</td><td>r1.0</td><td>Bản đầu tiên</td><td>28/07/2026</td>
+							<td><a href="OTA firmware/fw_reader_4_2inch_r1.0.bin" download>Tải về</a></td></tr>
+						-->
+					</tbody>
+				</table>
+			</div>
+		</fieldset>
+
+		<div class="footer">
+			<span class="copy">&copy; 2026 doantruonglam</span>
+			<span class="links">
+				<a href="../" >Trang chủ webtool</a>
+				<a href="?debug=true" id="debug-toggle">Chế độ dev</a>
+			</span>
+		</div>
+	</div>
+	<script type="text/javascript" src="js/dithering.js?v=20260728a"></script>
+	<script type="text/javascript" src="js/reader.js?v=20260728a"></script>
+</body>
+
+</html>
