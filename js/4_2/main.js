@@ -503,6 +503,7 @@ function updateButtonStatus(forceDisabled = false) {
   document.getElementById("retrosunsetmodebutton").disabled = modeStatus;
   document.getElementById("retrowinmodebutton").disabled = modeStatus;
   document.getElementById("retrocitymodebutton").disabled = modeStatus;
+  document.getElementById("vanphucmodebutton").disabled = modeStatus;
   document.getElementById("uploadlayoutbutton").disabled = status;
   document.getElementById("sendnotebutton").disabled = status;
   document.getElementById("clearscreenbutton").disabled = status;

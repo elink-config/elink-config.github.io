@@ -588,6 +588,73 @@
     pxHearts(x, 400 - 8 - 81, 8, 3, 2);
   }
 
+  function m25(x, now) { // Vạn niên "VanPhuc" (can chi trong preview là minh họa — thiết bị tự tính đúng)
+    const CANL = ['Giáp', 'Ất', 'Bính', 'Đinh', 'Mậu', 'Kỷ', 'Canh', 'Tân', 'Nhâm', 'Quý'];
+    const CHIL = ['Tý', 'Sửu', 'Dần', 'Mão', 'Thìn', 'Tỵ', 'Ngọ', 'Mùi', 'Thân', 'Dậu', 'Tuất', 'Hợi'];
+    const yr = now.getFullYear();
+    const yc = CANL[(yr - 4) % 10] + ' ' + CHIL[(yr - 4) % 12];
+    const mc = CANL[(yr * 12 + now.getMonth() + 13) % 10] + ' ' + CHIL[(now.getMonth() + 2) % 12];
+    const dn = Math.floor(now.getTime() / 86400000);
+    const dc = CANL[(dn + 7) % 10] + ' ' + CHIL[(dn + 9) % 12];
+    // header trái: ngày dương đỏ + trụ Ngày/Tháng
+    font(x, 24, 1); x.fillStyle = RED; x.textAlign = 'left';
+    x.fillText(pad2(now.getDate()) + '-' + pad2(now.getMonth() + 1) + '-' + yr, 10, 28);
+    x.fillRect(10, 36, 3, 30);
+    font(x, 13, 0);
+    x.fillStyle = BK; x.fillText('Ngày ', 19, 50);
+    x.fillStyle = RED; x.fillText(dc, 19 + x.measureText('Ngày ').width, 50);
+    x.fillStyle = BK; x.fillText('Tháng ', 19, 66);
+    x.fillStyle = RED; x.fillText(mc, 19 + x.measureText('Tháng ').width, 66);
+    // thương hiệu giữa
+    font(x, 16, 1); center(x, 'VạnPhúc', 240, 28, RED);
+    x.fillStyle = BK; x.fillRect(198, 34, 84, 1);
+    font(x, 11, 1); center(x, 'LỊCH VẠN NIÊN', 240, 56, BK);
+    // hộp pin + đồng hồ 7 thanh
+    x.strokeStyle = BK; x.lineWidth = 1.5; x.strokeRect(298.5, 2.5, 100, 64);
+    battery(x, 368, 6, BK, (3 + (now.getMinutes() % 3) / 10).toFixed(1) + 'V');
+    segStr(x, 306, 26, 3.2, pad2(now.getHours()) + ':' + pad2(now.getMinutes()), BK, BK);
+    // hàng thứ: ô đầu chip đen, T7/CN đỏ
+    font(x, 12, 1);
+    for (let i = 0; i < 7; i++) {
+      const d = (1 + i) % 7, cx = 2 + i * 37 + 18;
+      if (i === 0) {
+        x.fillStyle = BK; x.fillRect(4, 72, 33, 20);
+        center(x, WD_SHORT[d], cx, 87, '#fff');
+      } else {
+        center(x, WD_SHORT[d], cx, 87, (d === 0 || d === 6) ? RED : BK);
+      }
+    }
+    // lưới tháng + chân tiết khí
+    monthGrid(x, 2, 94, 259, 168, now, { lunar: true, dayPx: 12 });
+    x.fillStyle = RED; x.beginPath(); x.arc(10, 284, 4, 0, 7); x.fill();
+    font(x, 11, 0); x.fillStyle = BK; x.fillText('Hôm nay', 19, 288);
+    x.fillStyle = RED; x.fillText('7.Tiểu Thử  23.Đại Thử', 84, 288);
+    // cột phải: NĂM-THÁNG-NGÀY
+    x.fillStyle = RED; x.fillRect(268, 70, 130, 22);
+    font(x, 11, 1); center(x, 'NĂM-THÁNG-NGÀY', 333, 85, '#fff');
+    font(x, 12, 0);
+    [['Năm', yc], ['Tháng', mc], ['Ngày', dc]].forEach((r, i) => {
+      const ry = 108 + i * 18;
+      x.fillStyle = BK; x.textAlign = 'left'; x.fillText(r[0], 272, ry);
+      x.fillStyle = RED; x.textAlign = 'right'; x.fillText(r[1], 396, ry);
+      x.textAlign = 'left';
+    });
+    // 3 CON GIÁP
+    x.fillStyle = BK; x.fillRect(268, 154, 130, 22);
+    font(x, 11, 1); center(x, '3 CON GIÁP', 333, 169, '#fff');
+    [yc, mc, dc].forEach((s, i) => {
+      const bx = 268 + i * 44;
+      x.strokeStyle = RED; x.lineWidth = 1.5; x.strokeRect(bx + 0.5, 182.5, 42, 24);
+      font(x, 11, 1); center(x, s.split(' ')[1], bx + 21, 199, RED);
+    });
+    // GIỜ HOÀNG ĐẠO
+    x.fillStyle = BK; x.fillRect(268, 212, 130, 22);
+    font(x, 11, 1); center(x, 'GIỜ HOÀNG ĐẠO', 333, 227, '#fff');
+    font(x, 12, 0); x.fillStyle = BK;
+    x.fillText('Dần  Thìn  Tỵ', 272, 252);
+    x.fillText('Thân  Dậu  Hợi', 272, 272);
+  }
+
   // shared drawing helpers for the mode-20 designer (designer.js)
   window.__pv = { font, center, multi, seg7, segStr, battery, analogClock, monthGrid, pad2, lunarish,
                   RED, BK, WH, WD_SHORT, WD_FULL };
@@ -617,6 +684,7 @@
     { mode: 22, name: 'Hoàng hôn 8-bit', tick: 'Làm mới mỗi phút', id: 'retrosunsetmodebutton', draw: m22 },
     { mode: 23, name: 'Khủng long 8-bit', tick: 'Cập nhật lúc 0h', id: 'retrowinmodebutton', draw: m23 },
     { mode: 24, name: 'Thành phố pixel', tick: 'Làm mới mỗi phút', id: 'retrocitymodebutton', draw: m24 },
+    { mode: 25, name: 'Vạn niên VanPhuc', tick: 'Làm mới mỗi phút', id: 'vanphucmodebutton', draw: m25 },
   ];
 
   // highlight the mode the device reports (config byte 11) or was just set to
