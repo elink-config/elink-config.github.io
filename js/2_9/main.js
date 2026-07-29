@@ -880,7 +880,7 @@ async function connect() {
   // nhắc cập nhật firmware (logic chung js/fw_check.js): firmware 2.9 hiện
   // chưa tự khai phiên bản -> coi như 0.1; bảng «Danh sách firmware» có bản
   // mới hơn sẽ popup sau khi kết nối
-  FwCheck.reset('0.1');
+  FwCheck.reset('0.1', bleDevice && bleDevice.name);
 
   try {
     addLog("Đang kết nối: " + bleDevice.name);

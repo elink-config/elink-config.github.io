@@ -308,6 +308,31 @@
       center(x, d, cx, cy + 1, d === today ? '#fff' : ((col === 0 || col === 6) ? RED : BK));
     }
   }
+  function m13(x, now) { // Lịch vạn niên
+    x.fillStyle = RED; x.fillRect(0, 0, 180, 46);
+    font(x, 15, 1); center(x, 'Tháng ' + (now.getMonth() + 1) + ' - ' + now.getFullYear(), 90, 29, '#fff');
+    font(x, 84, 1); center(x, now.getDate(), 90, 158, RED);
+    font(x, 15, 1); center(x, WD_FULL[now.getDay()], 90, 192, BK);
+    font(x, 13, 0); multi(x, [['Âm Lịch 21/5', RED]], 90, 218);
+    font(x, 12, 0); center(x, 'Tiết Tiểu Thử', 90, 242, BK);
+    x.fillStyle = BK; x.beginPath(); x.arc(90, 270, 13, 0, 7); x.fill();
+    x.fillStyle = WH; x.beginPath(); x.arc(97, 265, 11, 0, 7); x.fill();
+    line(x, 180, 8, 180, 292, BK, 2);
+    font(x, 14, 1); x.fillStyle = BK; x.fillText('Ngày Canh Thìn', 196, 32); battery(x, 362, 20, BK);
+    font(x, 13, 1); x.fillStyle = RED; x.fillText('Giờ hoàng đạo', 196, 62);
+    const gio = [['Dần', '3-5h'], ['Thìn', '7-9h'], ['Tỵ', '9-11h'], ['Thân', '15-17h'], ['Dậu', '17-19h'], ['Hợi', '21-23h']];
+    font(x, 12, 0);
+    for (let i = 0; i < 6; i++) {
+      const gx = 196 + (i % 2) * 96, gy = 88 + ((i - i % 2) / 2) * 28;
+      x.fillStyle = RED; x.beginPath(); x.arc(gx + 4, gy - 4, 3, 0, 7); x.fill();
+      x.fillStyle = BK; x.fillText(gio[i][0] + ' ' + gio[i][1], gx + 12, gy);
+    }
+    line(x, 196, 178, 384, 178);
+    font(x, 13, 1); x.fillStyle = RED; x.fillText('Giờ hắc đạo', 196, 202);
+    font(x, 12, 0); x.fillStyle = BK; x.fillText('Tý, Sửu, Mão,', 196, 224); x.fillText('Ngọ, Mùi, Tuất', 196, 242);
+    const nf = nextSolarFest(now);
+    font(x, 12, 0); x.fillStyle = RED; x.fillText(nf.name, 196, 270); x.fillText('còn ' + nf.days + ' ngày', 196, 290);
+  }
   function m14(x, now) { // Đếm ngược
     font(x, 14, 0); x.fillStyle = BK;
     x.fillText(WD_FULL[now.getDay()] + ', ' + pad2(now.getDate()) + '/' + pad2(now.getMonth() + 1) + '/' + now.getFullYear(), 14, 30);
@@ -563,73 +588,6 @@
     pxHearts(x, 400 - 8 - 81, 8, 3, 2);
   }
 
-  function m25(x, now) { // Vạn niên "VanPhuc" (can chi trong preview là minh họa — thiết bị tự tính đúng)
-    const CANL = ['Giáp', 'Ất', 'Bính', 'Đinh', 'Mậu', 'Kỷ', 'Canh', 'Tân', 'Nhâm', 'Quý'];
-    const CHIL = ['Tý', 'Sửu', 'Dần', 'Mão', 'Thìn', 'Tỵ', 'Ngọ', 'Mùi', 'Thân', 'Dậu', 'Tuất', 'Hợi'];
-    const yr = now.getFullYear();
-    const yc = CANL[(yr - 4) % 10] + ' ' + CHIL[(yr - 4) % 12];
-    const mc = CANL[(yr * 12 + now.getMonth() + 13) % 10] + ' ' + CHIL[(now.getMonth() + 2) % 12];
-    const dn = Math.floor(now.getTime() / 86400000);
-    const dc = CANL[(dn + 7) % 10] + ' ' + CHIL[(dn + 9) % 12];
-    // header trái: ngày dương đỏ + trụ Ngày/Tháng
-    font(x, 24, 1); x.fillStyle = RED; x.textAlign = 'left';
-    x.fillText(pad2(now.getDate()) + '-' + pad2(now.getMonth() + 1) + '-' + yr, 10, 28);
-    x.fillRect(10, 36, 3, 30);
-    font(x, 13, 0);
-    x.fillStyle = BK; x.fillText('Ngày ', 19, 50);
-    x.fillStyle = RED; x.fillText(dc, 19 + x.measureText('Ngày ').width, 50);
-    x.fillStyle = BK; x.fillText('Tháng ', 19, 66);
-    x.fillStyle = RED; x.fillText(mc, 19 + x.measureText('Tháng ').width, 66);
-    // thương hiệu giữa
-    font(x, 16, 1); center(x, 'VạnPhúc', 240, 28, RED);
-    x.fillStyle = BK; x.fillRect(198, 34, 84, 1);
-    font(x, 11, 1); center(x, 'Lịch Vạn Niên', 240, 56, BK);
-    // hộp pin + đồng hồ 7 thanh
-    x.strokeStyle = BK; x.lineWidth = 1.5; x.strokeRect(298.5, 2.5, 100, 64);
-    battery(x, 368, 6, BK, (3 + (now.getMinutes() % 3) / 10).toFixed(1) + 'V');
-    segStr(x, 306, 26, 3.2, pad2(now.getHours()) + ':' + pad2(now.getMinutes()), BK, BK);
-    // hàng thứ: ô đầu chip đen, T7/CN đỏ
-    font(x, 12, 1);
-    for (let i = 0; i < 7; i++) {
-      const d = (1 + i) % 7, cx = 2 + i * 37 + 18;
-      if (i === 0) {
-        x.fillStyle = BK; x.fillRect(4, 72, 33, 20);
-        center(x, WD_SHORT[d], cx, 87, '#fff');
-      } else {
-        center(x, WD_SHORT[d], cx, 87, (d === 0 || d === 6) ? RED : BK);
-      }
-    }
-    // lưới tháng + chân tiết khí
-    monthGrid(x, 2, 94, 259, 168, now, { lunar: true, dayPx: 12 });
-    x.fillStyle = RED; x.beginPath(); x.arc(10, 284, 4, 0, 7); x.fill();
-    font(x, 11, 0); x.fillStyle = BK; x.fillText('Hôm nay', 19, 288);
-    x.fillStyle = RED; x.fillText('7.Tiểu Thử  23.Đại Thử', 84, 288);
-    // cột phải: NĂM-THÁNG-NGÀY
-    x.fillStyle = RED; x.fillRect(268, 70, 130, 22);
-    font(x, 11, 1); center(x, 'Năm - Tháng - Ngày', 333, 85, '#fff');
-    font(x, 12, 0);
-    [['Năm', yc], ['Tháng', mc], ['Ngày', dc]].forEach((r, i) => {
-      const ry = 108 + i * 18;
-      x.fillStyle = BK; x.textAlign = 'left'; x.fillText(r[0], 272, ry);
-      x.fillStyle = RED; x.textAlign = 'right'; x.fillText(r[1], 396, ry);
-      x.textAlign = 'left';
-    });
-    // 3 CON GIÁP
-    x.fillStyle = BK; x.fillRect(268, 154, 130, 22);
-    font(x, 11, 1); center(x, '3 Con Giáp', 333, 169, '#fff');
-    [yc, mc, dc].forEach((s, i) => {
-      const bx = 268 + i * 44;
-      x.strokeStyle = RED; x.lineWidth = 1.5; x.strokeRect(bx + 0.5, 182.5, 42, 24);
-      font(x, 11, 1); center(x, s.split(' ')[1], bx + 21, 199, RED);
-    });
-    // GIỜ HOÀNG ĐẠO
-    x.fillStyle = BK; x.fillRect(268, 212, 130, 22);
-    font(x, 11, 1); center(x, 'Giờ hoàng đạo', 333, 227, '#fff');
-    font(x, 12, 0); x.fillStyle = BK;
-    x.fillText('Dần  Thìn  Tỵ', 272, 252);
-    x.fillText('Thân  Dậu  Hợi', 272, 272);
-  }
-
   // shared drawing helpers for the mode-20 designer (designer.js)
   window.__pv = { font, center, multi, seg7, segStr, battery, analogClock, monthGrid, pad2, lunarish,
                   RED, BK, WH, WD_SHORT, WD_FULL };
@@ -647,6 +605,7 @@
     { mode: 10, name: 'Giờ + lịch tháng', tick: 'Làm mới mỗi phút', id: 'digitalcalmodebutton', draw: m10 },
     { mode: 11, name: 'Kim + thẻ ngày', tick: 'Làm mới mỗi phút', id: 'analogdaymodebutton', draw: m11 },
     { mode: 12, name: 'Tối giản', tick: 'Cập nhật lúc 0h', id: 'minimalmodebutton', draw: m12 },
+    { mode: 13, name: 'Lịch vạn niên', tick: 'Cập nhật lúc 0h', id: 'vanniemodebutton', draw: m13 },
     { mode: 14, name: 'Đếm ngược sự kiện', tick: 'Cập nhật lúc 0h', id: 'countdownmodebutton', draw: m14 },
     { mode: 15, name: 'Hai tháng', tick: 'Cập nhật lúc 0h', id: 'twomonthmodebutton', draw: m15 },
     { mode: 16, name: 'Lịch cả năm', tick: 'Cập nhật lúc 0h', id: 'yearmodebutton', draw: m16 },
@@ -658,7 +617,6 @@
     { mode: 22, name: 'Hoàng hôn 8-bit', tick: 'Làm mới mỗi phút', id: 'retrosunsetmodebutton', draw: m22 },
     { mode: 23, name: 'Khủng long 8-bit', tick: 'Cập nhật lúc 0h', id: 'retrowinmodebutton', draw: m23 },
     { mode: 24, name: 'Thành phố pixel', tick: 'Làm mới mỗi phút', id: 'retrocitymodebutton', draw: m24 },
-    { mode: 25, name: 'Vạn niên VanPhuc', tick: 'Làm mới mỗi phút', id: 'vanphucmodebutton', draw: m25 },
   ];
 
   // highlight the mode the device reports (config byte 11) or was just set to

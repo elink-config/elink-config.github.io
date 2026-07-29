@@ -491,6 +491,7 @@ function updateButtonStatus(forceDisabled = false) {
   document.getElementById("digitalcalmodebutton").disabled = modeStatus;
   document.getElementById("analogdaymodebutton").disabled = modeStatus;
   document.getElementById("minimalmodebutton").disabled = modeStatus;
+  document.getElementById("vanniemodebutton").disabled = modeStatus;
   document.getElementById("countdownmodebutton").disabled = modeStatus;
   document.getElementById("twomonthmodebutton").disabled = modeStatus;
   document.getElementById("yearmodebutton").disabled = modeStatus;
@@ -502,7 +503,6 @@ function updateButtonStatus(forceDisabled = false) {
   document.getElementById("retrosunsetmodebutton").disabled = modeStatus;
   document.getElementById("retrowinmodebutton").disabled = modeStatus;
   document.getElementById("retrocitymodebutton").disabled = modeStatus;
-  document.getElementById("vanphucmodebutton").disabled = modeStatus;
   document.getElementById("uploadlayoutbutton").disabled = status;
   document.getElementById("sendnotebutton").disabled = status;
   document.getElementById("clearscreenbutton").disabled = status;
@@ -680,7 +680,9 @@ async function setImgAuto() {
 
 async function connect() {
   if (bleDevice == null || epdCharacteristic != null) return;
-  FwCheck.reset('1.3.1');  // đời cũ không tự khai coi như 1.3.1
+  // đời cũ không tự khai coi như 1.3.1; kèm tên thiết bị để popup nhắc
+  // tối đa 1 lần/ngày cho mỗi máy
+  FwCheck.reset('1.3.1', bleDevice && bleDevice.name);
 
   try {
     addLog("Đang kết nối: " + bleDevice.name);
