@@ -167,11 +167,11 @@ async function readStatus(quiet = false) {
       deviceMode = st.mode;                 // SO MODE = VI TRI THE (28 = ảnh, thẻ 'img')
       if (typeof highlightMode === 'function') highlightMode(st.mode === 28 ? 'img' : st.mode);
     }
-    // thiết bị tự khai phiên bản (fw >= 1.5) → hết nhắc cập nhật sai;
-    // bản cũ không có 2 byte này thì giữ mốc FwCheck.reset() ở connect()
+    // thiết bị tự khai phiên bản (fw >= 1.5) → ghi log; KHÔNG gọi
+    // FwCheck.report vì popup nhắc firmware đang TẮT (xem ghi chú ở connect)
     if (st.fwVer !== null) {
       if (!quiet) addLog('Firmware thiết bị: v' + st.fwVer, '⇓');
-      if (typeof FwCheck !== 'undefined') FwCheck.report(st.fwVer);
+      // if (typeof FwCheck !== 'undefined') FwCheck.report(st.fwVer);
     }
     updateButtonStatus();
     return st;
@@ -842,10 +842,10 @@ async function reConnect() {
 
 async function connect() {
   if (bleDevice == null || longValueChar != null) return;
-  // nhắc cập nhật firmware (logic chung js/fw_check.js): firmware 2.13 hiện
-  // chưa tự khai phiên bản -> coi như bản mới nhất đã phát hành (1.3); khi
-  // bảng «Danh sách firmware» có bản mới hơn sẽ popup sau khi kết nối
-  FwCheck.reset('1.3', bleDevice && bleDevice.name);
+  // TAT nhac cap nhat firmware cho 2.13 (2026-07-29): ban <= v1.4 khong tu
+  // khai phien ban nen popup nhac ca may DA chay ban moi nhat — phien phuc.
+  // Muon bat lai: bo comment 2 dong FwCheck.reset / FwCheck.schedule.
+  // FwCheck.reset('1.3', bleDevice && bleDevice.name);
 
   try {
     addLog("Đang kết nối: " + bleDevice.name);
@@ -880,7 +880,7 @@ async function connect() {
   if (!timeSynced) {
     addLog('Bấm «Sync time» để đồng bộ giờ trước khi chọn giao diện.');
   }
-  FwCheck.schedule(1500);  // popup nếu bảng firmware có bản mới hơn
+  // FwCheck.schedule(1500);  // TAT popup nhac firmware (xem ghi chu o connect)
 }
 
 function setStatus(statusText) {
