@@ -139,6 +139,12 @@
 						Làm mới toàn màn hình mỗi giờ (chế độ đồng hồ) — nếu tắt, chỉ làm mới toàn màn lúc 00:00 (ít chớp hơn nhưng bóng mờ tích tụ nhiều hơn)
 					</label>
 				</div>
+				<div class="flex-group" style="flex:1 1 100%">
+					<label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+						<input type="checkbox" id="darkBoostCHK" onchange="setDarkBoost()">
+						Chữ đậm hơn — dành cho màn in mực đen nhạt (chữ đen xám mờ); làm mới toàn màn sẽ chậm hơn một chút
+					</label>
+				</div>
 				<div class="flex-group">
 					<button id="clearscreenbutton" type="button" class="secondary" onclick="clearScreen()">Xóa màn hình</button>
 				</div>
@@ -1564,7 +1570,7 @@
 		</div>
 	</div>
 	<script type="text/javascript" src="js/fw_check.js?v=20260729a"></script>
-	<script type="text/javascript" src="js/connector.js?v=20260729a"></script>
+	<script type="text/javascript" src="js/connector.js?v=20260729b"></script>
 	<script>
 		var _hmt = _hmt || [];
 		(function () {

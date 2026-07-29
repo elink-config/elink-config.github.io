@@ -28,6 +28,7 @@ const EpdCmd = {
   SET_LAYOUT: 0x24, // MODE_CUSTOM (mode 20) widget layout from the designer
   SET_ICON: 0x25, // MODE_CUSTOM 1-bit icon, chunked: [0x00,w,h,data...] then [0x01,data...]
   IMG_SLOT: 0x27, // 3 khe ảnh (fw >= 1.5): [01 slot] mở khe / [02] chốt / [03 auto interval]
+  DARK_BOOST: 0x28, // [0/1] chữ đậm cho màn lô in nhạt (ép 0°C khi làm mới toàn màn)
 
   WRITE_IMG: 0x30, // v1.6
 
@@ -266,6 +267,21 @@ async function sendNote() {
     addLog(text ? "Đã gửi ghi chú! (thiết bị báo lại 'note=<số byte>')" : "Đã xóa ghi chú!");
     addLog("Thiết bị tự chuyển sang màn hình «Ghi chú» và hiển thị nội dung sau ~25 giây.");
     if (typeof highlightMode === 'function') highlightMode(19);
+  }
+}
+
+// «Chữ đậm»: cho MÀN thuộc lô in mực đen nhạt — firmware ép nhiệt độ 0°C khi
+// làm mới toàn màn (waveform khung dài hơn -> đen đậm hơn, làm mới chậm hơn
+// chút). Lưu theo thiết bị; màn bình thường không cần bật.
+async function setDarkBoost() {
+  const chk = document.getElementById('darkBoostCHK');
+  const enabled = chk.checked ? 1 : 0;
+  if (await write(EpdCmd.DARK_BOOST, [enabled])) {
+    addLog(enabled
+      ? 'Đã bật «Chữ đậm» — thiết bị vẽ lại ngay; nét đen sẽ đậm hơn, làm mới chậm hơn một chút.'
+      : 'Đã tắt «Chữ đậm».');
+  } else {
+    chk.checked = !chk.checked;
   }
 }
 
@@ -609,6 +625,10 @@ function handleNotify(value, idx) {
       const r = document.querySelector(`input[name="imgInterval"][value="${itv}"]`);
       if (r) r.checked = true;
       updateImgAutoUI();
+    }
+    // «Chữ đậm» (màn lô in nhạt) tại offset 216
+    if (data.length > 216) {
+      document.getElementById('darkBoostCHK').checked = data[216] === 1;
     }
   } else {
     if (textDecoder == null) textDecoder = new TextDecoder();
