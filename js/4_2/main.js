@@ -680,7 +680,9 @@ async function setImgAuto() {
 
 async function connect() {
   if (bleDevice == null || epdCharacteristic != null) return;
-  FwCheck.reset('1.3.1');  // đời cũ không tự khai coi như 1.3.1
+  // đời cũ không tự khai coi như 1.3.1; kèm tên thiết bị để popup nhắc
+  // tối đa 1 lần/ngày cho mỗi máy
+  FwCheck.reset('1.3.1', bleDevice && bleDevice.name);
 
   try {
     addLog("Đang kết nối: " + bleDevice.name);
