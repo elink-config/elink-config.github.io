@@ -63,14 +63,14 @@
 
   // pin của firmware: khung 15×9, đầu (nub) bên TRÁI, điện áp "X.Xv" chữ NHỎ
   // (6x10) bên trái icon, CĂN GIỮA theo icon. Mức pin theo điện áp tuyến tính:
-  // 3.5V = đầy, 2.5V = cạn. bx = mép trái khung (firmware: x = W-16, tâm y = 7).
+  // 3.1V = đầy (100%), 2.4V = cạn (0%). bx = mép trái khung (firmware: x = W-16, tâm y = 7).
   function battery(x, bx, by, col, label) {
     col = col || BK;
     x.strokeStyle = col; x.lineWidth = 1;
     x.strokeRect(bx + 0.5, by + 0.5, 14, 8);
     x.fillStyle = col;
     x.fillRect(bx - 2, by + 3, 2, 3);           // nub bên trái (icon "xoay 180°")
-    const p = Math.max(0, Math.min(10, Math.round((voltValue() - 2.5) * 10)));
+    const p = Math.max(0, Math.min(10, Math.round((voltValue() - 2.4) * 10 / 0.7)));
     if (p > 0) x.fillRect(bx + 12 - p, by + 2, p + 1, 5);   // đầy từ bên phải
     if (label) { font(x, 8, 0); right(x, label, bx - 4, by + 7.5, col); }
   }
