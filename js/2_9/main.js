@@ -164,14 +164,15 @@ async function readStatus(quiet = false) {
   }
 }
 
-// Đọc điện áp pin (0xff02, uint16 LE mV)
+// Đọc điện áp pin (0xff02, uint16 LE mV) — % pin tuyến tính 2.4V = 0%, 3.1V = 100%
 async function readVoltage() {
   if (!adcChar) return null;
   try {
     const v = await adcChar.readValue();
     const mv = v.getUint16(0, true);
     const el = document.getElementById('battVolt');
-    if (el) el.textContent = (mv / 1000).toFixed(2) + ' V';
+    const pct = Math.max(0, Math.min(100, Math.round((mv - 2400) / 7)));
+    if (el) el.textContent = (mv / 1000).toFixed(2) + ' V · ' + pct + '%';
     return mv;
   } catch (e) {
     console.error(e);
