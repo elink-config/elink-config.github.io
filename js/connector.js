@@ -13,7 +13,7 @@
 (function () {
   'use strict';
 
-  const VER = '20260729a'; // cache-buster, keep in sync with index.html
+  const VER = '20260731a'; // cache-buster, keep in sync with index.html
 
   const EPD42_SERVICE = '62750001-d828-918d-fb46-b6c11c675aec';
   const HM213_SERVICE = '0000ff00-0000-1000-8000-00805f9b34fb';
@@ -26,8 +26,8 @@
 
   const APPS = {
     '4_2': {
-      label: '4.2" (400×300)',
-      sub: 'DA14585 — 4.2" (400×300): kết nối, cấu hình và truyền hình ảnh',
+      label: '4.2" / 7.5"',
+      sub: 'Màn 4.2" (400×300, DA14585) / 7.5" (800×480, CC2640): kết nối, cấu hình và truyền hình ảnh',
       template: 'tpl-4_2',
       scripts: ['js/dithering.js', 'js/paint.js', 'js/crop.js',
         'js/4_2/mode_preview.js', 'js/4_2/designer.js', 'js/4_2/main.js'],
@@ -64,6 +64,7 @@
   }
 
   // DIY-2_13-xxxx → 2.13", DIY-2_9-xxxx → 2.9", DIY-4_2-xxxx → 4.2",
+  // DIY-7_5-xxxx → 7.5" (CC2640, cùng giao thức + app với 4.2"),
   // DLG-CLOCK-xxxx → đồng hồ DLG.
   // Plain DIY-xxxx = 4.2" board on older firmware without the size tag.
   function detectType(name) {
@@ -72,6 +73,7 @@
     if (name.startsWith('DIY-2_13-')) return '2_13';
     if (name.startsWith('DIY-2_9-')) return '2_9';
     if (name.startsWith('DIY-4_2-')) return '4_2';
+    if (name.startsWith('DIY-7_5-')) return '4_2';  // firmware CC2640 7.5" nói giao thức 4.2"
     if (name.startsWith('DIY-')) return '4_2';
     return null;
   }
@@ -394,7 +396,7 @@
     } catch (e) {
       console.error(e);
       if (e.name === 'NotFoundError') {
-        addLog('Không tìm thấy thiết bị E-Ink (DIY-4_2-xxxx / DIY-2_13-xxxx / DIY-2_9-xxxx / DLG-CLOCK-xxxx)');
+        addLog('Không tìm thấy thiết bị E-Ink (DIY-4_2-xxxx / DIY-7_5-xxxx / DIY-2_13-xxxx / DIY-2_9-xxxx / DLG-CLOCK-xxxx)');
       } else if (e.message) {
         addLog('requestDevice: ' + e.message);
       }
@@ -430,7 +432,7 @@
       }
     }
     if (!type) {
-      addLog('Thiết bị "' + (device.name || '?') + '" không phải DIY-4_2-xxxx / DIY-2_13-xxxx / DIY-2_9-xxxx / DLG-CLOCK-xxxx.');
+      addLog('Thiết bị "' + (device.name || '?') + '" không phải DIY-4_2-xxxx / DIY-7_5-xxxx / DIY-2_13-xxxx / DIY-2_9-xxxx / DLG-CLOCK-xxxx.');
       return;
     }
 

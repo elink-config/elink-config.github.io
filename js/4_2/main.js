@@ -681,8 +681,10 @@ async function setImgAuto() {
 async function connect() {
   if (bleDevice == null || epdCharacteristic != null) return;
   // đời cũ không tự khai coi như 1.3.1; kèm tên thiết bị để popup nhắc
-  // tối đa 1 lần/ngày cho mỗi máy
-  FwCheck.reset('1.3.1', bleDevice && bleDevice.name);
+  // tối đa 1 lần/ngày cho mỗi máy. Bản 7.5" (CC2640, fw r0.x, nạp J-Link
+  // chưa có OTA) không so với bảng firmware 4.2" — khỏi nhắc cập nhật nhầm.
+  const is75 = bleDevice && bleDevice.name && bleDevice.name.startsWith('DIY-7_5-');
+  if (!is75) FwCheck.reset('1.3.1', bleDevice && bleDevice.name);
 
   try {
     addLog("Đang kết nối: " + bleDevice.name);
@@ -739,7 +741,7 @@ async function connect() {
   await write(EpdCmd.INIT);
 
   // firmware <= 1.3.1 không gửi 'fw=' — sau 3s vẫn nhắc nếu bảng có bản mới
-  FwCheck.schedule(3000);
+  if (!is75) FwCheck.schedule(3000);
 
   document.getElementById("connectbutton").innerHTML = 'Ngắt kết nối';
   updateButtonStatus();
