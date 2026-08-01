@@ -291,6 +291,7 @@
   }
   function m10(x, now) { // Giờ + lịch tháng
     segStr(x, 16, 12, 6, pad2(now.getHours()) + ':' + pad2(now.getMinutes()), BK, RED);
+    battery(x, 260, 14, BK, '3.2V'); // giữa đồng hồ và cột chữ phải (khớp firmware v1.6)
     font(x, 14, 1); x.textAlign = 'right'; x.fillStyle = RED; x.fillText(WD_FULL[now.getDay()], 388, 28);
     font(x, 16, 1); x.fillStyle = BK;
     x.fillText(pad2(now.getDate()) + '/' + pad2(now.getMonth() + 1) + '/' + now.getFullYear(), 388, 54);
