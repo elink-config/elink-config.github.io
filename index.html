@@ -60,6 +60,7 @@
 						<option value="03" data-color="threeColor" data-size="4.2_400_300">4.2" (Ba màu, UC8176)</option>
 						<option value="04" data-color="blackWhiteColor" data-size="4.2_400_300">4.2" (Đen trắng, SSD1619)</option>
 						<option value="02" data-color="threeColor" data-size="4.2_400_300" selected>4.2" (Ba màu, SSD1619)</option>
+						<option value="05" data-color="fourColor" data-size="4.2_400_300">4.2" (Bốn màu, IST7158)</option>
 					</select>
 				</div>
 				<div class="flex-group debug only-4_2">
@@ -133,18 +134,21 @@
 					<input type="text" id="noteTXT" maxlength="190" style="flex:1" placeholder="Nội dung cho màn hình «Ghi chú» (tối đa 190 byte)">
 					<button id="sendnotebutton" type="button" class="primary" onclick="sendNote()">Gửi ghi chú</button>
 				</div>
-				<div class="flex-group" style="flex:1 1 100%">
+				<div class="flex-group" style="flex:1 1 100%" id="hourlyFullRow">
 					<label style="display:flex;align-items:center;gap:6px;cursor:pointer">
 						<input type="checkbox" id="hourlyFullCHK" checked onchange="setHourlyFull()">
 						Làm mới toàn màn hình mỗi giờ (chế độ đồng hồ) — nếu tắt, chỉ làm mới toàn màn lúc 00:00 (ít chớp hơn nhưng bóng mờ tích tụ nhiều hơn)
 					</label>
 				</div>
-				<div class="flex-group" style="flex:1 1 100%">
+				<div class="flex-group" style="flex:1 1 100%" id="darkBoostRow">
 					<label style="display:flex;align-items:center;gap:6px;cursor:pointer">
 						<input type="checkbox" id="darkBoostCHK" onchange="setDarkBoost()">
 						Chữ đậm hơn — dành cho màn in mực đen nhạt (chữ đen xám mờ); làm mới toàn màn sẽ chậm hơn một chút
 					</label>
 				</div>
+					<div class="flex-group" style="flex:1 1 100%; display:none" id="fourColorHint">
+						<span class="mode-gallery-hint" style="margin:0">Màn 4 màu (IST7158) không có cập nhật cục bộ: các chế độ đồng hồ tự làm mới <b>mỗi giờ</b> (hiển thị HH:00), các chế độ lịch làm mới lúc 00:00. Ảnh dùng chế độ màu «4 màu (đen trắng đỏ vàng)».</span>
+					</div>
 				<div class="flex-group">
 					<button id="clearscreenbutton" type="button" class="secondary" onclick="clearScreen()">Xóa màn hình</button>
 				</div>

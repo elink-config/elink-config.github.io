@@ -1061,6 +1061,17 @@ function updateDitcherOptions() {
   if (colorMode) document.getElementById('ditherMode').value = colorMode;
   if (canvasSize) document.getElementById('canvasSize').value = canvasSize;
 
+  // Màn 4 màu IST7158 (driver 05, firmware epd_4_2inch_4c): không có partial
+  // refresh nên «làm mới mỗi giờ» và «chữ đậm» không áp dụng — ẩn 2 tùy chọn,
+  // hiện ghi chú nhịp cập nhật thay thế
+  const is4c = epdDriverSelect.value === '05';
+  const hfRow = document.getElementById('hourlyFullRow');
+  const dbRow = document.getElementById('darkBoostRow');
+  const hint = document.getElementById('fourColorHint');
+  if (hfRow) hfRow.style.display = is4c ? 'none' : '';
+  if (dbRow) dbRow.style.display = is4c ? 'none' : '';
+  if (hint) hint.style.display = is4c ? '' : 'none';
+
   updateCanvasSize(); // always update image
 }
 
