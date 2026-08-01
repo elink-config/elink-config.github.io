@@ -5,7 +5,13 @@
  * (the device computes the real values itself).
  */
 (function () {
-  const RED = '#C0261F', BK = '#151515', WH = '#f6f4ec';
+  const RED = '#C0261F', BK = '#151515', WH = '#f6f4ec', YE = '#E8B90C';
+  // màn 4 màu BWRY (driver 05 IST7158 / 06 JD79668): preview vẽ thêm các điểm
+  // nhấn VÀNG đúng như firmware epd_4_2inch_4c; gallery vẽ lại khi đổi driver
+  function is4c() {
+    const s = document.getElementById('epddriver');
+    return !!s && (s.value === '05' || s.value === '06');
+  }
   const WD_SHORT = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
   const WD_FULL = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'];
   const WD_BAR = ['CN', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
@@ -54,8 +60,13 @@
   }
   function analogClock(x, cx, cy, r, now, numerals, tickCol, handCol) {
     tickCol = tickCol || BK; handCol = handCol || BK;
+    if (!numerals && is4c()) {  // BWRY: vành «mạ vàng» quanh mặt số tick-only
+      x.strokeStyle = YE; x.lineWidth = 2.5; x.beginPath(); x.arc(cx, cy, r - 1, 0, 7); x.stroke();
+    }
     if (numerals) {
-      x.strokeStyle = tickCol; x.lineWidth = 4; x.beginPath(); x.arc(cx, cy, r, 0, 7); x.stroke();
+      // BWRY: vành ngoài VÀNG (firmware vẽ vành vàng 2px thay viền đen)
+      x.strokeStyle = is4c() ? YE : tickCol; x.lineWidth = 4; x.beginPath(); x.arc(cx, cy, r, 0, 7); x.stroke();
+      x.strokeStyle = tickCol;
       for (let i = 0; i < 60; i++) {
         const a = i * Math.PI / 30, big = i % 5 === 0, r1 = r - (big ? 10 : 5);
         x.lineWidth = big ? 2.5 : 1; x.beginPath();
@@ -99,12 +110,21 @@
       const idx = first + d - 1, col = idx % 7, row = (idx - col) / 7;
       const cx = gx + col * cw + cw / 2, cy = gy + row * rh + rh / 2;
       const weekend = col === 0 || col === 6;
+      // BWRY: đĩa đen «hôm nay» (mode Combo) thành đĩa VÀNG chữ đen; đĩa đỏ
+      // thêm viền vàng — đúng firmware
+      const comboYellow = is4c() && (opt.todayCol || RED) === BK;
       if (d === today) {
-        x.fillStyle = opt.todayCol || RED; x.beginPath();
-        x.arc(cx, cy - (opt.lunar ? 2 : 0), Math.min(cw, rh) / 2 - 1, 0, 7); x.fill();
+        const rr = Math.min(cw, rh) / 2 - 1, ty = cy - (opt.lunar ? 2 : 0);
+        x.fillStyle = comboYellow ? YE : (opt.todayCol || RED); x.beginPath();
+        x.arc(cx, ty, rr, 0, 7); x.fill();
+        if (is4c()) {
+          x.strokeStyle = comboYellow ? BK : YE; x.lineWidth = 2;
+          x.beginPath(); x.arc(cx, ty, rr, 0, 7); x.stroke();
+        }
       }
       font(x, opt.dayPx || 13, 1);
-      center(x, d, cx, cy + (opt.lunar ? 2 : 5), d === today ? '#fff' : (weekend && !opt.noWeekendRed ? RED : BK));
+      center(x, d, cx, cy + (opt.lunar ? 2 : 5),
+             d === today ? (comboYellow ? BK : '#fff') : (weekend && !opt.noWeekendRed ? RED : BK));
       if (opt.lunar) {
         font(x, 9, 0);
         center(x, lunarish(d), cx, cy + rh / 2 - 3, d === today ? '#fff' : '#555');
@@ -116,9 +136,11 @@
     const w = gw / 7;
     font(x, px || 13, 1);
     for (let i = 0; i < 7; i++) {
-      x.fillStyle = (i === 0 || i === 6) ? RED : BK;
+      // BWRY: T7 nền VÀNG chữ đen (CN vẫn đỏ) — đúng firmware
+      const yellowSat = is4c() && i === 6;
+      x.fillStyle = i === 0 ? RED : (yellowSat ? YE : (i === 6 ? RED : BK));
       x.fillRect(gx + i * w, gy, w - 1, h);
-      center(x, labels[i], gx + i * w + w / 2, gy + h / 2 + 5, '#fff');
+      center(x, labels[i], gx + i * w + w / 2, gy + h / 2 + 5, yellowSat ? BK : '#fff');
     }
   }
   function pad2(n) { return String(n).padStart(2, '0'); }
@@ -140,8 +162,10 @@
     font(x, 14, 0); x.fillStyle = BK; x.fillText(WD_FULL[now.getDay()], 40, 56); x.fillText('Âm Lịch 21/5', 170, 56);
     battery(x, 340, 20, BK, '3.2V');
     line(x, 30, 68, 370, 68);
+    if (is4c()) line(x, 30, 70, 370, 70, YE, 2);  // BWRY: mép vàng
     segStr(x, 104, 100, 7, pad2(now.getHours()) + ':' + pad2(now.getMinutes()), BK, BK);
     line(x, 30, 232, 370, 232);
+    if (is4c()) line(x, 30, 230, 370, 230, YE, 2);
     font(x, 14, 0);
     multi(x, [['Năm Bính Ngọ ', BK], ['(Ngựa)', RED]], 120, 258);
     x.fillStyle = BK; x.fillText('Tuần 27', 40, 280);
@@ -153,11 +177,13 @@
     font(x, 14, 0); x.fillText('Sáng', 178, 34); x.fillText(WD_FULL[now.getDay()], 244, 34);
     battery(x, 362, 16, BK);
     line(x, 7, 48, 393, 48, BK, 2);
+    if (is4c()) line(x, 7, 50, 393, 50, YE, 1.5);  // BWRY: mép vàng
     analogClock(x, 104, 140, 78, now, true);
     font(x, 11, 1);
     for (let i = 0; i < 7; i++) center(x, WD_SHORT[i], 206 + i * 26 + 13, 72, BK);
     monthGrid(x, 206, 80, 182, 144, now, { todayCol: BK, dayPx: 11, noWeekendRed: true });
     line(x, 7, 230, 393, 230, BK, 2);
+    if (is4c()) line(x, 7, 232, 393, 232, YE, 1.5);
     font(x, 13, 0); x.fillStyle = BK;
     x.fillText('Bính Ngọ (Ngựa)', 12, 252); x.fillText('Âm Lịch 21/5', 12, 274);
     x.fillText('Lễ Vu Lan', 148, 252); x.fillText('còn 52 ngày', 148, 274);
@@ -168,18 +194,24 @@
   function m4(x, now) { // Lịch để bàn (đỏ)
     x.fillStyle = BK; x.fillRect(0, 0, 400, 300);
     x.fillStyle = RED; x.beginPath(); x.roundRect(8, 8, 144, 182, 12); x.fill();
+    if (is4c()) {  // BWRY: viền vàng panel đỏ trên nền tối
+      x.strokeStyle = YE; x.lineWidth = 2.5; x.beginPath(); x.roundRect(9, 9, 142, 180, 11); x.stroke();
+    }
     // white dial (matches firmware: hands can only partial-erase on white)
     x.fillStyle = '#fff'; x.beginPath(); x.arc(80, 74, 52, 0, 7); x.fill();
     analogClock(x, 80, 74, 52, now, false, BK, BK);
     x.fillStyle = '#fff'; x.beginPath(); x.roundRect(20, 136, 120, 46, 8); x.fill();
     segStr(x, 32, 140, 2, pad2(now.getHours()) + ':' + pad2(now.getMinutes()), BK, BK);
-    segStr(x, 12, 210, 3, pad2(now.getDate()), '#fff', '#fff');
+    // BWRY: số ngày 7-seg VÀNG trên nền đen
+    segStr(x, 12, 210, 3, pad2(now.getDate()), is4c() ? YE : '#fff', is4c() ? YE : '#fff');
     line(x, 88, 212, 88, 272, '#fff', 2);
     font(x, 14, 0); x.fillStyle = '#fff'; x.fillText('Năm Ngựa', 96, 234);
     battery(x, 96, 240, '#fff'); font(x, 11, 0); x.fillStyle = '#fff';
     x.fillText('3.2V', 124, 262); x.fillText('21/5 AL', 96, 276);
     x.fillStyle = '#fff'; x.beginPath(); x.roundRect(168, 10, 224, 280, 14); x.fill();
-    x.fillStyle = BK; x.beginPath(); x.arc(196, 38, 13, 0, 7); x.fill();
+    // BWRY: trăng lưỡi liềm VÀNG viền đen
+    x.fillStyle = is4c() ? YE : BK; x.beginPath(); x.arc(196, 38, 13, 0, 7); x.fill();
+    if (is4c()) { x.strokeStyle = BK; x.lineWidth = 1.5; x.beginPath(); x.arc(196, 38, 13, 0, 7); x.stroke(); }
     x.fillStyle = '#fff'; x.beginPath(); x.arc(203, 33, 11, 0, 7); x.fill();
     font(x, 17, 1); x.fillStyle = BK; x.textAlign = 'right';
     x.fillText(now.getFullYear() + '-' + pad2(now.getMonth() + 1), 384, 48); x.textAlign = 'left';
@@ -204,6 +236,7 @@
     x.fillText(WD_FULL[now.getDay()] + ', ' + pad2(now.getDate()) + '/' + pad2(now.getMonth() + 1) + '/' + now.getFullYear(), 12, 30);
     battery(x, 362, 14, BK, '3.2V');
     line(x, 10, 46, 390, 46, BK, 2);
+    if (is4c()) line(x, 10, 48, 390, 48, YE, 1.5);  // BWRY: mép vàng
     segStr(x, 104, 92, 8, pad2(now.getHours()) + ':' + pad2(now.getMinutes()), BK, RED);
     font(x, 14, 0);
     multi(x, [['Âm Lịch 21/5', RED], [' - Ngày Canh Thìn - Năm Bính Ngọ', BK]], 200, 216);
@@ -221,6 +254,7 @@
   }
   function m8(x, now) { // Lịch bloc
     x.fillStyle = RED; x.fillRect(0, 0, 400, 46);
+    if (is4c()) { x.fillStyle = YE; x.fillRect(0, 46, 400, 3); }  // BWRY: nẹp vàng
     font(x, 17, 1); center(x, 'Tháng ' + (now.getMonth() + 1) + ' - ' + now.getFullYear(), 200, 30, '#fff');
     battery(x, 358, 18, '#fff');
     font(x, 100, 1); center(x, now.getDate(), 200, 168, RED);
@@ -240,7 +274,12 @@
       const d = new Date(start); d.setDate(start.getDate() + i);
       const bx = 12 + i * 54, today = d.getDate() === now.getDate() && d.getMonth() === now.getMonth();
       x.beginPath(); x.roundRect(bx, 58, 52, 150, 7);
-      if (today) { x.fillStyle = RED; x.fill(); } else { x.strokeStyle = BK; x.lineWidth = 1.5; x.stroke(); }
+      if (today) {
+        x.fillStyle = RED; x.fill();
+        if (is4c()) {  // BWRY: viền vàng quanh ô «hôm nay»
+          x.strokeStyle = YE; x.lineWidth = 2; x.beginPath(); x.roundRect(bx - 1, 57, 54, 152, 8); x.stroke();
+        }
+      } else { x.strokeStyle = BK; x.lineWidth = 1.5; x.stroke(); }
       const wd = d.getDay(), weekend = wd === 0 || wd === 6;
       font(x, 13, 1); center(x, WD_SHORT[wd], bx + 26, 84, today ? '#fff' : (weekend ? RED : BK));
       font(x, 22, 1); center(x, d.getDate(), bx + 26, 146, today ? '#fff' : BK);
@@ -257,6 +296,7 @@
     x.fillText(pad2(now.getDate()) + '/' + pad2(now.getMonth() + 1) + '/' + now.getFullYear(), 388, 54);
     font(x, 12, 0); x.fillText('Âm Lịch 21/5 - 32°C', 388, 76); x.textAlign = 'left';
     line(x, 10, 82, 390, 82, BK, 2);
+    if (is4c()) line(x, 10, 84, 390, 84, YE, 1.5);  // BWRY: mép vàng
     font(x, 12, 1);
     for (let i = 0; i < 7; i++) center(x, WD_SHORT[i], 11 + i * 54 + 27, 102, (i === 0 || i === 6) ? RED : BK);
     monthGrid(x, 11, 110, 378, 186, now, { lunar: true, dayPx: 13 });
@@ -264,6 +304,7 @@
   function m11(x, now) { // Kim + thẻ ngày
     analogClock(x, 112, 150, 96, now, true);
     line(x, 228, 20, 228, 280, BK, 2);
+    if (is4c()) line(x, 230, 20, 230, 280, YE, 1.5);  // BWRY: mép vàng
     font(x, 16, 1); center(x, WD_FULL[now.getDay()], 314, 56, RED);
     font(x, 72, 1); center(x, now.getDate(), 314, 164, BK);
     font(x, 14, 0); center(x, 'Tháng ' + (now.getMonth() + 1) + ' - ' + now.getFullYear(), 314, 196, BK);
@@ -276,6 +317,7 @@
   function m12(x, now) { // Tối giản
     font(x, 24, 1); center(x, WD_FULL[now.getDay()], 200, 70, BK);
     font(x, 84, 1); center(x, pad2(now.getDate()) + '.' + pad2(now.getMonth() + 1), 200, 182, RED);
+    if (is4c()) { x.fillStyle = YE; x.fillRect(140, 194, 120, 4); }  // BWRY: gạch chân vàng
     font(x, 15, 0);
     multi(x, [[now.getFullYear() + ' - ', BK], ['Âm Lịch 21/5', RED], [' - Năm Bính Ngọ', BK]], 200, 228);
     battery(x, 190, 252, BK);
@@ -303,21 +345,29 @@
     for (let d = 1; d <= maxD; d++) {
       const idx = first + d - 1, col = idx % 7, row = (idx - col) / 7;
       const cx = bx + col * cw + cw / 2, cy = by + 8 + row * rh + rh / 2;
-      if (d === today) { x.fillStyle = RED; x.beginPath(); x.arc(cx, cy - 3, Math.min(cw, rh) / 2 - 1, 0, 7); x.fill(); }
+      if (d === today) {
+        const rr = Math.min(cw, rh) / 2 - 1;
+        x.fillStyle = RED; x.beginPath(); x.arc(cx, cy - 3, rr, 0, 7); x.fill();
+        if (is4c()) { x.strokeStyle = YE; x.lineWidth = 1.5; x.beginPath(); x.arc(cx, cy - 3, rr, 0, 7); x.stroke(); }
+      }
       font(x, dayPx, 1);
       center(x, d, cx, cy + 1, d === today ? '#fff' : ((col === 0 || col === 6) ? RED : BK));
     }
   }
   function m13(x, now) { // Lịch vạn niên
     x.fillStyle = RED; x.fillRect(0, 0, 180, 46);
+    if (is4c()) { x.fillStyle = YE; x.fillRect(0, 46, 180, 3); }  // BWRY: nẹp vàng
     font(x, 15, 1); center(x, 'Tháng ' + (now.getMonth() + 1) + ' - ' + now.getFullYear(), 90, 29, '#fff');
     font(x, 84, 1); center(x, now.getDate(), 90, 158, RED);
     font(x, 15, 1); center(x, WD_FULL[now.getDay()], 90, 192, BK);
     font(x, 13, 0); multi(x, [['Âm Lịch 21/5', RED]], 90, 218);
     font(x, 12, 0); center(x, 'Tiết Tiểu Thử', 90, 242, BK);
-    x.fillStyle = BK; x.beginPath(); x.arc(90, 270, 13, 0, 7); x.fill();
+    // BWRY: trăng lưỡi liềm VÀNG viền đen
+    x.fillStyle = is4c() ? YE : BK; x.beginPath(); x.arc(90, 270, 13, 0, 7); x.fill();
+    if (is4c()) { x.strokeStyle = BK; x.lineWidth = 1.5; x.beginPath(); x.arc(90, 270, 13, 0, 7); x.stroke(); }
     x.fillStyle = WH; x.beginPath(); x.arc(97, 265, 11, 0, 7); x.fill();
     line(x, 180, 8, 180, 292, BK, 2);
+    if (is4c()) line(x, 182, 8, 182, 292, YE, 1.5);  // BWRY: mép vàng
     font(x, 14, 1); x.fillStyle = BK; x.fillText('Ngày Canh Thìn', 196, 32); battery(x, 362, 20, BK);
     font(x, 13, 1); x.fillStyle = RED; x.fillText('Giờ hoàng đạo', 196, 62);
     const gio = [['Dần', '3-5h'], ['Thìn', '7-9h'], ['Tỵ', '9-11h'], ['Thân', '15-17h'], ['Dậu', '17-19h'], ['Hợi', '21-23h']];
@@ -344,6 +394,7 @@
     font(x, 14, 0); multi(x, [['ngày nữa đến ', BK], [nf.name, RED]], 200, 208);
     font(x, 13, 0); center(x, WD_FULL[nf.dt.getDay()] + ', ' + pad2(nf.dt.getDate()) + '/' + pad2(nf.dt.getMonth() + 1) + '/' + nf.dt.getFullYear(), 200, 232, BK);
     x.strokeStyle = BK; x.lineWidth = 1.5; x.strokeRect(60, 248, 280, 14);
+    if (is4c()) { x.fillStyle = YE; x.fillRect(62, 250, 276, 10); }  // BWRY: phần còn lại vàng
     x.fillStyle = RED; x.fillRect(62, 250, 276 * Math.max(0.05, Math.min(0.95, 1 - nf.days / 60)), 10);
     font(x, 12, 0); multi(x, [['Sau đó: ', BK], ['... (thiết bị tính cả ngày lễ âm lịch)', RED]], 200, 288);
   }
@@ -364,7 +415,10 @@
     battery(x, 362, 10, BK);
     for (let m = 0; m < 12; m++) {
       const bx = 10 + (m % 4) * 97, by = 44 + ((m - m % 4) / 4) * 85, cur = m === now.getMonth();
-      if (cur) { x.strokeStyle = RED; x.lineWidth = 2; x.beginPath(); x.roundRect(bx - 3, by - 10, 94, 82, 4); x.stroke(); }
+      if (cur) {
+        x.strokeStyle = RED; x.lineWidth = 2; x.beginPath(); x.roundRect(bx - 3, by - 10, 94, 82, 4); x.stroke();
+        if (is4c()) { x.strokeStyle = YE; x.lineWidth = 1.5; x.beginPath(); x.roundRect(bx - 1, by - 8, 90, 78, 3); x.stroke(); }
+      }
       font(x, 10, 1); center(x, 'Tháng ' + (m + 1), bx + 44, by, cur ? RED : BK);
       const first = new Date(y, m, 1).getDay(), maxD = new Date(y, m + 1, 0).getDate();
       for (let d = 1; d <= maxD; d++) {
@@ -385,7 +439,9 @@
     x.strokeStyle = BK; x.lineWidth = 3; x.beginPath(); x.arc(228, 78, 9, 0, 7); x.stroke();
     x.fillStyle = BK; x.fillRect(248, 62, 13, 104); x.fillRect(248, 62, 56, 13); x.fillRect(248, 153, 56, 13);
     x.strokeStyle = BK; x.lineWidth = 2; x.strokeRect(330, 58, 24, 106);
+    if (is4c()) { x.fillStyle = YE; x.fillRect(336, 62, 12, 98); }  // BWRY: lòng ống vàng
     x.fillStyle = RED; x.fillRect(336, 86, 12, 74); x.beginPath(); x.arc(342, 178, 15, 0, 7); x.fill();
+    if (is4c()) { x.strokeStyle = YE; x.lineWidth = 2.5; x.beginPath(); x.arc(342, 178, 16.5, 0, 7); x.stroke(); }
     line(x, 10, 210, 390, 210);
     font(x, 13, 0);
     multi(x, [['Cao nhất hôm nay: ', BK], ['31°C', RED], [' - Thấp nhất: ', BK], ['24°C', RED]], 200, 236);
@@ -397,7 +453,8 @@
     battery(x, 362, 14, BK);
     line(x, 10, 44, 390, 44, BK, 2);
     x.fillStyle = BK; x.beginPath(); x.arc(200, 138, 62, 0, 7); x.fill();
-    x.fillStyle = '#f0ead6'; x.beginPath(); x.arc(200, 138, 60, Math.PI / 2, Math.PI * 1.5); x.fill();
+    // BWRY: phần trăng SÁNG tô VÀNG như firmware
+    x.fillStyle = is4c() ? YE : '#f0ead6'; x.beginPath(); x.arc(200, 138, 60, Math.PI / 2, Math.PI * 1.5); x.fill();
     x.beginPath(); x.ellipse(200, 138, 24, 60, 0, Math.PI / 2, Math.PI * 1.5, true); x.fill();
     x.strokeStyle = BK; x.lineWidth = 2; x.beginPath(); x.arc(200, 138, 62, 0, 7); x.stroke();
     font(x, 15, 1); multi(x, [['Âm Lịch 21/5', RED], [' - Trăng khuyết cuối tháng', BK]], 200, 236);
@@ -411,6 +468,7 @@
     line(x, 10, 44, 390, 44, BK, 2);
     x.fillStyle = RED; x.fillRect(30, 64, 340, 30);
     x.strokeStyle = RED; x.lineWidth = 3; x.strokeRect(31, 65, 338, 168);
+    if (is4c()) { x.strokeStyle = YE; x.lineWidth = 1.5; x.strokeRect(34, 68, 332, 162); }  // BWRY: khung kép đỏ-vàng
     font(x, 14, 1); center(x, 'GHI CHÚ', 200, 85, '#fff');
     font(x, 26, 1); center(x, 'Họp phụ huynh 15:00', 200, 152, BK); center(x, 'thứ Hai tuần sau!', 200, 190, BK);
     font(x, 12, 0); multi(x, [['Âm Lịch 21/5 - Ngày Canh Thìn  -  ', BK], ['Lễ Vu Lan còn 52 ngày', RED]], 200, 266);
@@ -469,6 +527,12 @@
   }
   function m21(x, now) { // Núi tuyết 8-bit
     pxDither(x, 0, 8, 400, 8, 4, BK);
+    if (is4c()) {  // BWRY: mặt trời VÀNG pixel viền đen bên trái
+      x.fillStyle = YE;
+      x.fillRect(30, 44, 24, 6); x.fillRect(24, 50, 36, 24); x.fillRect(30, 74, 24, 6);
+      x.fillStyle = BK;
+      x.fillRect(30, 43, 24, 1); x.fillRect(30, 80, 24, 1); x.fillRect(23, 50, 1, 24); x.fillRect(60, 50, 1, 24);
+    }
     pxMtn(x, 60, 168, 252, 6, BK); pxMtn(x, 344, 176, 252, 6, BK);
     pxMtn(x, 200, 128, 252, 8, BK); pxMtn(x, 200, 128, 176, 8, '#fff');
     [28, 76, 128, 236, 288, 336, 380].forEach(t => pxTree(x, t, 258, 4, BK));
@@ -490,6 +554,10 @@
     x.fillStyle = BK; x.fillRect(0, 0, 400, 156);
     x.fillStyle = '#fff'; x.fillRect(0, 118, 400, 4); x.fillRect(0, 140, 400, 3);
     x.fillRect(24, 24, 40, 8); x.fillRect(32, 16, 20, 8); x.fillRect(318, 36, 30, 6); x.fillRect(324, 30, 15, 6);
+    if (is4c()) {  // BWRY: trăng VÀNG pixel trên trời đêm
+      x.fillStyle = YE;
+      x.fillRect(42, 58, 24, 6); x.fillRect(36, 64, 36, 24); x.fillRect(42, 88, 24, 6);
+    }
     x.fillStyle = '#fff'; x.fillRect(96, 20, 208, 92);
     x.strokeStyle = BK; x.strokeRect(96.5, 20.5, 208, 92); x.strokeRect(100.5, 24.5, 200, 84);
     pxTime(x, 200 - 76, 32, now, 9, BK);
@@ -534,8 +602,9 @@
       pxDigit(x, X0 + 6 * dw + 12, Y0, ((yr / 10) | 0) % 10, s, BK);
       pxDigit(x, X0 + 7 * dw + 12, Y0, yr % 10, s, BK);
     }
-    // mặt trời đỏ + mây + chim
+    // mặt trời pixel — BWRY: vành đỏ lõi VÀNG (hoàng hôn) + mây + chim
     x.fillStyle = RED; x.fillRect(330, 44, 24, 6); x.fillRect(324, 50, 36, 24); x.fillRect(330, 74, 24, 6);
+    if (is4c()) { x.fillStyle = YE; x.fillRect(330, 54, 24, 16); }
     cloud(56, 54); cloud(172, 38);
     x.fillStyle = BK;
     const PT = [0x10, 0x18, 0xFE, 0x3C, 0x10];
@@ -566,8 +635,13 @@
     for (let i = 0; i < 13; i++) {
       const bx = i * 31, top = 244 - bh[i];
       x.fillStyle = BK; x.fillRect(bx, top, 28, bh[i]);
-      x.fillStyle = '#fff';
-      for (let wy = top + 6; wy < 238; wy += 10) { x.fillRect(bx + 5, wy, 4, 4); x.fillRect(bx + 13, wy, 4, 4); x.fillRect(bx + 21, wy, 4, 4); }
+      for (let wy = top + 6; wy < 238; wy += 10) {
+        for (let wx = 5; wx <= 21; wx += 8) {
+          // BWRY: xen kẽ cửa sổ VÀNG «sáng đèn» — cùng công thức firmware
+          x.fillStyle = (is4c() && (((wx >> 3) + ((wy / 10) | 0) + i) & 1)) ? YE : '#fff';
+          x.fillRect(bx + wx, wy, 4, 4);
+        }
+      }
     }
     x.fillStyle = RED; x.fillRect(0, 244, 400, 22);
     x.fillStyle = BK; x.fillRect(0, 250, 400, 1); x.fillRect(0, 258, 400, 1);
@@ -644,13 +718,20 @@
       catch (e) { console.error('preview mode ' + m.mode, e); }
     }
     // redraw thumbnails each minute so the clock previews stay current
-    setInterval(() => {
-      const t = new Date();
-      document.querySelectorAll('.mode-card').forEach((card, i) => {
-        if (MODE_LIST[i]) MODE_LIST[i].draw(ctx2d(card.querySelector('canvas')), t);
-      });
-    }, 60000);
+    setInterval(window.refreshModeGallery, 60000);
   }
+
+  // vẽ lại toàn bộ thumbnail — updateDitcherOptions (main.js) gọi khi đổi
+  // driver để bật/tắt các điểm nhấn VÀNG của màn 4 màu (driver 05/06)
+  window.refreshModeGallery = function () {
+    const t = new Date();
+    document.querySelectorAll('.mode-card').forEach((card, i) => {
+      if (MODE_LIST[i]) {
+        try { MODE_LIST[i].draw(ctx2d(card.querySelector('canvas')), t); }
+        catch (e) { console.error('preview mode ' + MODE_LIST[i].mode, e); }
+      }
+    });
+  };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', build);
   else build();

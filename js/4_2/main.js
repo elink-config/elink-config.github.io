@@ -1072,6 +1072,9 @@ function updateDitcherOptions() {
   if (dbRow) dbRow.style.display = is4c ? 'none' : '';
   if (hint) hint.style.display = is4c ? '' : 'none';
 
+  // gallery preview vẽ điểm nhấn VÀNG khi driver là màn 4 màu — vẽ lại
+  if (window.refreshModeGallery) window.refreshModeGallery();
+
   updateCanvasSize(); // always update image
 }
 
