@@ -38,12 +38,14 @@ const EpdCmd = {
 };
 
 const EPD_SERVICE = '62750001-d828-918d-fb46-b6c11c675aec';
-// Chỉ liệt kê đúng máy 4.2" (DIY-4_2-xxxx): các board 2.13"/2.9" quảng bá
-// DIY-2_13-/DIY-2_9- dùng giao thức khác (service 0xff00), hiện trong hộp
-// chọn chỉ gây nhầm. Board 4.2" chạy firmware quá cũ (tên chưa gắn cỡ màn)
-// vẫn kết nối được bằng chế độ dev (?debug=true).
+// Chỉ liệt kê đúng máy của app này: 4.2" (DIY-4_2-xxxx) và 7.5" (DIY-7_5-xxxx
+// CC2640 / DIY-7_5V-xxxx DA14585 640×384 — prefix 'DIY-7_5' khớp cả hai). Các
+// board 2.13"/2.9" quảng bá DIY-2_13-/DIY-2_9- dùng giao thức khác (service
+// 0xff00), hiện trong hộp chọn chỉ gây nhầm. Board 4.2" chạy firmware quá cũ
+// (tên chưa gắn cỡ màn) vẫn kết nối được bằng chế độ dev (?debug=true).
 const BLE_REQUEST_FILTERS = [
   { namePrefix: 'DIY-4_2' },
+  { namePrefix: 'DIY-7_5' },
 ];
 
 function sleep(ms) {
@@ -53,7 +55,7 @@ function sleep(ms) {
 function logBleConnectHelp(error) {
   addLog(`connect: ${error.name} - ${error.message}`);
   addLog('Gợi ý xử lý khi kết nối thất bại:');
-  addLog('1. Đảm bảo thiết bị đã nạp firmware mới nhất, tên Bluetooth là DIY-4_2-xxxx');
+  addLog('1. Đảm bảo thiết bị đã nạp firmware mới nhất, tên Bluetooth là DIY-4_2-xxxx / DIY-7_5-xxxx / DIY-7_5V-xxxx');
   addLog('2. Đặt thiết bị gần máy tính, màn hình chưa vào chế độ ngủ');
   addLog('3. Windows: xóa ghép nối cũ trong cài đặt Bluetooth rồi thử lại');
   addLog('4. Ngắt kết nối thiết bị khỏi điện thoại/máy tính khác');
@@ -681,9 +683,10 @@ async function setImgAuto() {
 async function connect() {
   if (bleDevice == null || epdCharacteristic != null) return;
   // đời cũ không tự khai coi như 1.3.1; kèm tên thiết bị để popup nhắc
-  // tối đa 1 lần/ngày cho mỗi máy. Bản 7.5" (CC2640, fw r0.x, nạp J-Link
-  // chưa có OTA) không so với bảng firmware 4.2" — khỏi nhắc cập nhật nhầm.
-  const is75 = bleDevice && bleDevice.name && bleDevice.name.startsWith('DIY-7_5-');
+  // tối đa 1 lần/ngày cho mỗi máy. CẢ HAI bản 7.5" (DIY-7_5- CC2640 và
+  // DIY-7_5V- DA14585 640×384) không so với bảng firmware 4.2" — khỏi nhắc
+  // cập nhật nhầm (bảng «Danh sách firmware» hiện chỉ có file 4.2").
+  const is75 = bleDevice && bleDevice.name && /^DIY-7_5V?-/.test(bleDevice.name);
   if (!is75) FwCheck.reset('1.3.1', bleDevice && bleDevice.name);
 
   try {

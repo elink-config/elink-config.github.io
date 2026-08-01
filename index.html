@@ -63,6 +63,10 @@
 						<option value="02" data-color="threeColor" data-size="4.2_400_300" selected>4.2" (Ba màu, SSD1619)</option>
 						<option value="06" data-color="threeColor" data-size="7.5_800_480">7.5" (Ba màu, UC8179)</option>
 						<option value="07" data-color="blackWhiteColor" data-size="7.5_800_480">7.5" (Đen trắng, UC8179)</option>
+						<!-- 7.5" V1 640×384 (HINK-E075A01, board DA14585): panel MỘT luồng dữ liệu,
+						     firmware bỏ mặt đỏ khi nhận ảnh nên ảnh gửi dạng đen trắng (data-color) -->
+						<option value="08" data-color="blackWhiteColor" data-size="7.5_640_384">7.5" V1 640×384 (Ba màu, UC8159 — ảnh đen trắng)</option>
+						<option value="09" data-color="blackWhiteColor" data-size="7.5_640_384">7.5" V1 640×384 (Đen trắng, UC8159)</option>
 					</select>
 				</div>
 				<div class="flex-group debug only-4_2">
@@ -1581,8 +1585,8 @@
 			</span>
 		</div>
 	</div>
-	<script type="text/javascript" src="js/fw_check.js?v=20260731a"></script>
-	<script type="text/javascript" src="js/connector.js?v=20260731a"></script>
+	<script type="text/javascript" src="js/fw_check.js?v=20260802a"></script>
+	<script type="text/javascript" src="js/connector.js?v=20260802a"></script>
 	<script>
 		var _hmt = _hmt || [];
 		(function () {

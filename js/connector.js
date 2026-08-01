@@ -13,7 +13,7 @@
 (function () {
   'use strict';
 
-  const VER = '20260731a'; // cache-buster, keep in sync with index.html
+  const VER = '20260802a'; // cache-buster, keep in sync with index.html
 
   const EPD42_SERVICE = '62750001-d828-918d-fb46-b6c11c675aec';
   const HM213_SERVICE = '0000ff00-0000-1000-8000-00805f9b34fb';
@@ -27,7 +27,7 @@
   const APPS = {
     '4_2': {
       label: '4.2" / 7.5"',
-      sub: 'Màn 4.2" (400×300, DA14585) / 7.5" (800×480, CC2640): kết nối, cấu hình và truyền hình ảnh',
+      sub: 'Màn 4.2" (400×300, DA14585) / 7.5" (800×480, CC2640) / 7.5" V1 (640×384, DA14585): kết nối, cấu hình và truyền hình ảnh',
       template: 'tpl-4_2',
       scripts: ['js/dithering.js', 'js/paint.js', 'js/crop.js',
         'js/4_2/mode_preview.js', 'js/4_2/designer.js', 'js/4_2/main.js'],
@@ -64,7 +64,8 @@
   }
 
   // DIY-2_13-xxxx → 2.13", DIY-2_9-xxxx → 2.9", DIY-4_2-xxxx → 4.2",
-  // DIY-7_5-xxxx → 7.5" (CC2640, cùng giao thức + app với 4.2"),
+  // DIY-7_5-xxxx → 7.5" (CC2640 800×480, cùng giao thức + app với 4.2"),
+  // DIY-7_5V-xxxx → 7.5" V1 640×384 (DA14585, epd_7_5inch — model 08/09),
   // DLG-CLOCK-xxxx → đồng hồ DLG.
   // Plain DIY-xxxx = 4.2" board on older firmware without the size tag.
   function detectType(name) {
@@ -73,6 +74,7 @@
     if (name.startsWith('DIY-2_13-')) return '2_13';
     if (name.startsWith('DIY-2_9-')) return '2_9';
     if (name.startsWith('DIY-4_2-')) return '4_2';
+    if (name.startsWith('DIY-7_5V-')) return '4_2'; // 7.5" V1 (DA14585) cùng giao thức 4.2"
     if (name.startsWith('DIY-7_5-')) return '4_2';  // firmware CC2640 7.5" nói giao thức 4.2"
     if (name.startsWith('DIY-')) return '4_2';
     return null;
