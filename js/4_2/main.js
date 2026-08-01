@@ -174,6 +174,18 @@ function waitMtuNotify(timeoutMs) {
   });
 }
 
+// đợi thiết bị báo 'img=rdy' sau lệnh mở khe ảnh (fw >= 1.6). Thiết bị xóa
+// 32KB flash (~0.5-1.5s) TRONG handler lệnh mở khe; bắn gói ảnh trong lúc đó
+// là gói dồn đống làm cạn MSG heap BLE -> thiết bị reset (lỗi v1.5).
+// Resolve true khi 'img=rdy', false khi 'img=err' hoặc hết giờ.
+let imgRdyResolve = null;
+function waitImgRdy(timeoutMs) {
+  return new Promise(resolve => {
+    const t = setTimeout(() => { imgRdyResolve = null; resolve(false); }, timeoutMs);
+    imgRdyResolve = (ok) => { clearTimeout(t); resolve(ok); };
+  });
+}
+
 async function writeImage(data, step = 'bw') {
   const chunkSize = document.getElementById('mtusize').value - 2;
   const interleavedCount = document.getElementById('interleavedcount').value;
@@ -377,11 +389,20 @@ async function sendimg(slot = 0) {
   await write(EpdCmd.INIT);
   await mtuReady;
 
-  // mở khe: thiết bị xóa 32KB flash của khe (~1s) rồi tee ảnh vào đó
+  // mở khe: thiết bị xóa 32KB flash của khe (~1s) rồi tee ảnh vào đó.
+  // fw >= 1.6 báo 'img=rdy' khi xóa xong — PHẢI đợi rồi mới stream: bắn gói
+  // trong lúc erase là gói dồn đống cạn MSG heap BLE -> thiết bị reset (v1.5)
   if (slotCapable) {
     setStatus(`Đang chuẩn bị khe ${slot + 1} (xóa flash)…`);
+    const rdyWait = FwCheck.atLeast('1.6') ? waitImgRdy(8000) : null;
     if (!await write(EpdCmd.IMG_SLOT, [0x01, slot])) {
+      imgRdyResolve = null;
       setStatus('Không mở được khe ảnh — thử lại.');
+      updateButtonStatus();
+      return;
+    }
+    if (rdyWait && !await rdyWait) {
+      setStatus('Không mở được khe ảnh (thiết bị không báo sẵn sàng) — thử lại.');
       updateButtonStatus();
       return;
     }
@@ -655,6 +676,9 @@ function handleNotify(value, idx) {
         addLog("Đồng hồ thiết bị chưa được đồng bộ — bấm «Sync time» để gửi ngày giờ trước khi chọn giao diện.");
       }
       updateButtonStatus();
+    } else if (msg.startsWith('img=') && imgRdyResolve) {
+      // trả lời lệnh mở khe ảnh: 'img=rdy' (xóa flash xong) / 'img=err'
+      const f = imgRdyResolve; imgRdyResolve = null; f(msg === 'img=rdy');
     } else if (msg.startsWith('fw=') && msg.length > 3) {
       FwCheck.report(msg.substring(3));
       // khu «Tự động đổi ảnh» chỉ hiện khi firmware hỗ trợ 3 khe (>= 1.5)
