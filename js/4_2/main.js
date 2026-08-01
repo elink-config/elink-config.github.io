@@ -714,7 +714,9 @@ async function connect() {
     appVersion = 0x15;
   }
 
-  if (appVersion < 0x16) {
+  // is75: cả hai bản 7.5" đánh số APP_VERSION riêng từ 0x01 (không có đời
+  // EPD-nRF5 cũ) — ngưỡng 0x16 của dòng 4.2" không áp dụng, khỏi báo nhầm
+  if (appVersion < 0x16 && !is75) {
     const oldURL = "https://tsl0922.github.io/EPD-nRF5/v1.5";
     alert("!!! Chú ý !!!\nPhiên bản firmware quá cũ, một số chức năng có thể không hoạt động. Nên cập nhật firmware.");
     if (confirm('Mở phiên bản web tool cũ?')) location.href = oldURL;
