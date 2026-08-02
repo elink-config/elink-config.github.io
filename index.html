@@ -60,6 +60,7 @@
 						<option value="03" data-color="threeColor" data-size="4.2_400_300">4.2" (Ba màu, UC8176)</option>
 						<option value="04" data-color="blackWhiteColor" data-size="4.2_400_300">4.2" (Đen trắng, SSD1619)</option>
 						<option value="02" data-color="threeColor" data-size="4.2_400_300" selected>4.2" (Ba màu, SSD1619)</option>
+						<option value="05" data-color="fourColor" data-size="4.2_400_300">4.2" (Bốn màu, IST7158)</option>
 						<option value="06" data-color="fourColor" data-size="4.2_400_300">4.2" (Bốn màu, JD79668)</option>
 					</select>
 				</div>
@@ -147,7 +148,7 @@
 					</label>
 				</div>
 					<div class="flex-group" style="flex:1 1 100%; display:none" id="fourColorHint">
-						<span class="mode-gallery-hint" style="margin:0">Màn 4 màu (JD79668): đồng hồ nhảy <b>từng phút</b> bằng cập nhật cục bộ — từ fw v2.3 chỉ <b>ô số phút</b> chớp ~15s (chế độ kim analog: cả mặt đồng hồ vì kim quét khắp mặt — giới hạn phần cứng, màn 4 màu không có kiểu cập nhật không-chớp như màn 3 màu); mỗi giờ làm mới toàn màn, chế độ lịch làm mới lúc 00:00. Ảnh dùng chế độ màu «4 màu (đen trắng đỏ vàng)».</span>
+						<span class="mode-gallery-hint" style="margin:0">Màn 4 màu: driver <b>JD79668</b> (06) đồng hồ nhảy <b>từng phút</b> bằng cập nhật cục bộ — chỉ vùng đồng hồ chớp ~15s, mỗi giờ làm mới toàn màn; driver <b>IST7158</b> (05) không có cập nhật cục bộ nên đồng hồ làm mới <b>mỗi giờ</b> (hiển thị HH:00). Các chế độ lịch làm mới lúc 00:00. Ảnh dùng chế độ màu «4 màu (đen trắng đỏ vàng)».</span>
 					</div>
 				<div class="flex-group">
 					<button id="clearscreenbutton" type="button" class="secondary" onclick="clearScreen()">Xóa màn hình</button>
@@ -1574,7 +1575,7 @@
 		</div>
 	</div>
 	<script type="text/javascript" src="js/fw_check.js?v=20260729a"></script>
-	<script type="text/javascript" src="js/connector.js?v=20260802b"></script>
+	<script type="text/javascript" src="js/connector.js?v=20260802c"></script>
 	<script>
 		var _hmt = _hmt || [];
 		(function () {

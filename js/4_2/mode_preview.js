@@ -6,11 +6,11 @@
  */
 (function () {
   const RED = '#C0261F', BK = '#151515', WH = '#f6f4ec', YE = '#E8B90C';
-  // màn 4 màu BWRY (driver 06 JD79668; 05 IST7158 đã gỡ): preview vẽ thêm các
-  // điểm nhấn VÀNG đúng như firmware epd_4_2inch_4c; gallery vẽ lại khi đổi driver
+  // màn 4 màu BWRY (driver 05 IST7158 / 06 JD79668): preview vẽ thêm các điểm
+  // nhấn VÀNG đúng như firmware epd_4_2inch_4c; gallery vẽ lại khi đổi driver
   function is4c() {
     const s = document.getElementById('epddriver');
-    return !!s && s.value === '06';
+    return !!s && (s.value === '05' || s.value === '06');
   }
   const WD_SHORT = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
   const WD_FULL = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'];
