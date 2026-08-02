@@ -476,8 +476,12 @@ function downloadDataArray() {
 function updateButtonStatus(forceDisabled = false) {
   const connected = gattServer != null && gattServer.connected;
   const status = forceDisabled ? 'disabled' : (connected ? null : 'disabled');
-  // mode selection additionally requires a valid device clock ([Sync time])
-  const modeStatus = forceDisabled ? 'disabled' : ((connected && timeSynced) ? null : 'disabled');
+  // mode selection KHÔNG còn đòi [Sync time] trước: lệnh chọn giao diện
+  // (0x02) tự mang timestamp nên thiết bị luôn nhận được giờ đúng. Gate cũ
+  // từng khóa chết người dùng khi mode ĐANG LƯU trên máy bị lỗi render
+  // (7.5" rst=P4): bấm Sync time là máy vẽ lại mode lỗi và reset ngay,
+  // không có cách nào thoát sang mode khác.
+  const modeStatus = status;
   document.getElementById("reconnectbutton").disabled = (gattServer == null || gattServer.connected) ? 'disabled' : null;
   document.getElementById("synctimebutton").disabled = status;
   document.getElementById("sendcmdbutton").disabled = status;
@@ -634,7 +638,7 @@ function handleNotify(value, idx) {
       if (deviceEpoch >= 1738281600) {
         timeSynced = true;
       } else {
-        addLog("Đồng hồ thiết bị chưa được đồng bộ — bấm «Sync time» để gửi ngày giờ trước khi chọn giao diện.");
+        addLog("Đồng hồ thiết bị chưa được đồng bộ — bấm «Sync time», hoặc chọn thẳng một giao diện (lệnh chọn giao diện tự gửi kèm ngày giờ).");
       }
       updateButtonStatus();
     } else if (msg.startsWith('fw=') && msg.length > 3) {
