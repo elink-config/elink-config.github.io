@@ -13,7 +13,7 @@
 (function () {
   'use strict';
 
-  const VER = '20260802a'; // cache-buster, keep in sync with index.html
+  const VER = '20260802b'; // cache-buster, keep in sync with index.html
 
   const EPD42_SERVICE = '62750001-d828-918d-fb46-b6c11c675aec';
   const HM213_SERVICE = '0000ff00-0000-1000-8000-00805f9b34fb';
@@ -64,7 +64,7 @@
   }
 
   // DIY-2_13-xxxx → 2.13", DIY-2_9-xxxx → 2.9", DIY-4_2-xxxx → 4.2",
-  // DIY-4_2C-xxxx → 4.2" BỐN MÀU (epd_4_2inch_4c — cùng app 4_2, driver 05/06),
+  // DIY-4_2C-xxxx → 4.2" BỐN MÀU (epd_4_2inch_4c — cùng app 4_2, driver 06),
   // DLG-CLOCK-xxxx → đồng hồ DLG.
   // Plain DIY-xxxx = 4.2" board on older firmware without the size tag.
   function detectType(name) {

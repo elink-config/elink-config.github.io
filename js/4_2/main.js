@@ -1061,10 +1061,10 @@ function updateDitcherOptions() {
   if (colorMode) document.getElementById('ditherMode').value = colorMode;
   if (canvasSize) document.getElementById('canvasSize').value = canvasSize;
 
-  // Màn 4 màu IST7158/JD79668 (driver 05/06, firmware epd_4_2inch_4c): không có
-  // partial refresh nên «làm mới mỗi giờ» và «chữ đậm» không áp dụng — ẩn 2 tùy
-  // chọn, hiện ghi chú nhịp cập nhật thay thế
-  const is4c = epdDriverSelect.value === '05' || epdDriverSelect.value === '06';
+  // Màn 4 màu JD79668 (driver 06, firmware epd_4_2inch_4c; driver 05 IST7158
+  // đã gỡ): «làm mới mỗi giờ» và «chữ đậm» của bản BWR không áp dụng — ẩn 2
+  // tùy chọn, hiện ghi chú nhịp cập nhật thay thế
+  const is4c = epdDriverSelect.value === '06';
   const hfRow = document.getElementById('hourlyFullRow');
   const dbRow = document.getElementById('darkBoostRow');
   const hint = document.getElementById('fourColorHint');
