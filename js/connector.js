@@ -13,7 +13,7 @@
 (function () {
   'use strict';
 
-  const VER = '20260729a'; // cache-buster, keep in sync with index.html
+  const VER = '20260803a'; // cache-buster, keep in sync with index.html
 
   const EPD42_SERVICE = '62750001-d828-918d-fb46-b6c11c675aec';
   const HM213_SERVICE = '0000ff00-0000-1000-8000-00805f9b34fb';
@@ -229,6 +229,9 @@
   // returns true when the device may be used (activated, or old firmware
   // that does not implement the activation handshake at all)
   async function checkActivation(type) {
+    // chế độ dev (?debug=true): bỏ qua kiểm tra kích hoạt, không hiện popup
+    // (helper ?act=<MAC> vẫn mở popup chủ động để soi giao diện)
+    if (isDebugMode()) return true;
     try {
       if (type === '2_13' || type === '2_9') {   // cùng giao thức HM 0xff00
         const s = await act213Query();
