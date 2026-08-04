@@ -110,14 +110,16 @@
   function monthGrid(x, gx, gy, gw, gh, now, opt) {
     opt = opt || {};
     const year = now.getFullYear(), mon = now.getMonth(), today = now.getDate();
-    const first = new Date(year, mon, 1).getDay();
+    const first0 = new Date(year, mon, 1).getDay();
+    const first = (first0 + 7 - (v17() ? 1 : 0)) % 7;  // v1.7: tuần bắt đầu T2
     const maxD = new Date(year, mon + 1, 0).getDate();
     const rows = Math.ceil((first + maxD) / 7);
     const cw = gw / 7, rh = gh / rows;
     for (let d = 1; d <= maxD; d++) {
       const idx = first + d - 1, col = idx % 7, row = (idx - col) / 7;
       const cx = gx + col * cw + cw / 2, cy = gy + row * rh + rh / 2;
-      const weekend = col === 0 || col === 6;
+      const wd = (first0 + d - 1) % 7;  // thứ THẬT của ngày d (0=CN)
+      const weekend = wd === 0 || wd === 6;
       // BWRY: đĩa đen «hôm nay» (mode Combo) thành đĩa VÀNG chữ đen; đĩa đỏ
       // thêm viền vàng — đúng firmware
       const comboYellow = is4c() && (opt.todayCol || RED) === BK;
@@ -142,16 +144,17 @@
     return rows;
   }
   function weekBar(x, gx, gy, gw, h, labels, px, sep) {
-    const w = gw / 7;
+    const w = gw / 7, off = v17() ? 1 : 0;  // v1.7: tuần bắt đầu THỨ HAI
     font(x, px || 13, 1);
     for (let i = 0; i < 7; i++) {
+      const day = (i + off) % 7;  // 0=CN..6=T7 (thứ tự nhãn theo week_start)
       // BWRY: T7 nền VÀNG chữ đen (CN vẫn đỏ) — đúng firmware
-      const yellowSat = is4c() && i === 6;
-      x.fillStyle = i === 0 ? RED : (yellowSat ? YE : (i === 6 ? RED : BK));
+      const yellowSat = is4c() && day === 6;
+      x.fillStyle = day === 0 ? RED : (yellowSat ? YE : (day === 6 ? RED : BK));
       x.fillRect(gx + i * w, gy, w - 1, h);
-      center(x, labels[i], gx + i * w + w / 2, gy + h / 2 + 5, yellowSat ? BK : '#fff');
+      center(x, labels[day], gx + i * w + w / 2, gy + h / 2 + 5, yellowSat ? BK : '#fff');
     }
-    // v1.7 mode 5: vạch trắng | ngăn cách các ô thứ
+    // v1.7 mode 1 + 5: vạch trắng | ngăn cách các ô thứ
     if (sep && v17()) {
       x.fillStyle = '#fff';
       for (let i = 1; i < 7; i++) x.fillRect(gx + i * w - 2, gy, 2, h);
@@ -166,7 +169,7 @@
     multi(x, [['Tháng ', BK], [String(now.getMonth() + 1), RED], [' - ', BK], [String(now.getFullYear()), RED],
               ['   ÂL 21/5 Bính Ngọ ', BK], ['[Tuần 27]', RED]], 165, 24);
     battery(x, 366, 8, BK, '3.2V');
-    weekBar(x, 10, 32, 380, 24, WD_SHORT, 13);
+    weekBar(x, 10, 32, 380, 24, WD_SHORT, 13, true);  // v1.7: vạch | như mode 5
     monthGrid(x, 10, 64, 380, 226, now, { lunar: true, dayPx: 15 });
   }
   function m2(x, now) { // Đồng hồ
@@ -195,10 +198,12 @@
     line(x, 7, 48, 393, 48, BK, 2);
     if (is4c()) line(x, 7, 50, 393, 50, YE, 1.5);  // BWRY: mép vàng
     analogClock(x, 104, 140, 78, now, true);
-    // v1.7: hàng thứ đậm sẵn, T7/CN đỏ
+    // v1.7: hàng thứ đậm sẵn, T7/CN đỏ, tuần bắt đầu T2
     font(x, 11, 1);
-    for (let i = 0; i < 7; i++)
-      center(x, WD_SHORT[i], 206 + i * 26 + 13, 72, (v17() && (i === 0 || i === 6)) ? RED : BK);
+    for (let i = 0; i < 7; i++) {
+      const day = (i + (v17() ? 1 : 0)) % 7;
+      center(x, WD_SHORT[day], 206 + i * 26 + 13, 72, (v17() && (day === 0 || day === 6)) ? RED : BK);
+    }
     // v1.7: vòng «hôm nay» ĐỎ (trước là đen)
     monthGrid(x, 206, 80, 182, 144, now, { todayCol: v17() ? RED : BK, dayPx: 11, noWeekendRed: true });
     line(x, 7, 230, 393, 230, BK, 2);
@@ -236,10 +241,12 @@
     font(x, 17, 1); x.fillStyle = BK; x.textAlign = 'right';
     x.fillText(now.getFullYear() + '-' + pad2(now.getMonth() + 1), 384, 48); x.textAlign = 'left';
     x.fillRect(178, 58, 206, 5);
-    // v1.7: hàng thứ T7/CN đỏ, còn lại ĐEN (trước toàn đỏ)
+    // v1.7: hàng thứ T7/CN đỏ, còn lại ĐEN (trước toàn đỏ), tuần bắt đầu T2
     font(x, 11, 1);
-    for (let i = 0; i < 7; i++)
-      center(x, WD_SHORT[i], 173 + i * 31 + 15, 88, v17() ? ((i === 0 || i === 6) ? RED : BK) : RED);
+    for (let i = 0; i < 7; i++) {
+      const day = (i + (v17() ? 1 : 0)) % 7;
+      center(x, WD_SHORT[day], 173 + i * 31 + 15, 88, v17() ? ((day === 0 || day === 6) ? RED : BK) : RED);
+    }
     monthGrid(x, 173, 96, 217, 186, now, { dayPx: 12, noWeekendRed: true });
   }
   function m5(x, now) { // Lịch VN (Can Chi)
@@ -291,7 +298,9 @@
     multi(x, [['Tháng ' + (now.getMonth() + 1) + ' - ' + now.getFullYear(), BK], ['  Âm Lịch tháng 5', RED]], 128, 28);
     battery(x, 362, 12, BK, '3.2V');
     line(x, 10, 44, 390, 44);
-    const start = new Date(now); start.setDate(now.getDate() - now.getDay());
+    // v1.7: tuần bắt đầu THỨ HAI
+    const start = new Date(now);
+    start.setDate(now.getDate() - (v17() ? (now.getDay() + 6) % 7 : now.getDay()));
     for (let i = 0; i < 7; i++) {
       const d = new Date(start); d.setDate(start.getDate() + i);
       const bx = 12 + i * 54, today = d.getDate() === now.getDate() && d.getMonth() === now.getMonth();
@@ -313,15 +322,24 @@
   }
   function m10(x, now) { // Giờ + lịch tháng
     segStr(x, 16, 12, 6, pad2(now.getHours()) + ':' + pad2(now.getMinutes()), BK, RED);
-    battery(x, 260, 14, BK, '3.2V'); // giữa đồng hồ và cột chữ phải (khớp firmware v1.6)
-    font(x, 14, 1); x.textAlign = 'right'; x.fillStyle = RED; x.fillText(WD_FULL[now.getDay()], 388, 28);
+    if (v17()) {
+      // v1.7: pin CHIẾM góc phải trên, thứ dời xuống dưới + ĐẬM
+      battery(x, 362, 4, BK, '3.2V');
+      font(x, 14, 1); x.textAlign = 'right'; x.fillStyle = RED; x.fillText(WD_FULL[now.getDay()], 388, 32);
+    } else {
+      battery(x, 260, 14, BK, '3.2V'); // giữa đồng hồ và cột chữ phải (fw <= 1.6)
+      font(x, 14, 1); x.textAlign = 'right'; x.fillStyle = RED; x.fillText(WD_FULL[now.getDay()], 388, 28);
+    }
     font(x, 16, 1); x.fillStyle = BK;
-    x.fillText(pad2(now.getDate()) + '/' + pad2(now.getMonth() + 1) + '/' + now.getFullYear(), 388, 54);
+    x.fillText(pad2(now.getDate()) + '/' + pad2(now.getMonth() + 1) + '/' + now.getFullYear(), 388, v17() ? 56 : 54);
     font(x, 12, 0); x.fillText('Âm Lịch 21/5 - 32°C', 388, 76); x.textAlign = 'left';
     line(x, 10, 82, 390, 82, BK, 2);
     if (is4c()) line(x, 10, 84, 390, 84, YE, 1.5);  // BWRY: mép vàng
     font(x, 12, 1);
-    for (let i = 0; i < 7; i++) center(x, WD_SHORT[i], 11 + i * 54 + 27, 102, (i === 0 || i === 6) ? RED : BK);
+    for (let i = 0; i < 7; i++) {
+      const day = (i + (v17() ? 1 : 0)) % 7;  // v1.7: tuần bắt đầu T2
+      center(x, WD_SHORT[day], 11 + i * 54 + 27, 102, (day === 0 || day === 6) ? RED : BK);
+    }
     monthGrid(x, 11, 110, 378, 186, now, { lunar: true, dayPx: 13, rPlus: v17() ? 2 : 0 });
   }
   function m11(x, now) { // Kim + thẻ ngày
@@ -363,19 +381,25 @@
     return best;
   }
   function miniMonth(x, bx, by, w, rh, y0, mo, today, dayPx) {
-    const first = new Date(y0, mo, 1).getDay(), maxD = new Date(y0, mo + 1, 0).getDate(), cw = w / 7;
+    const off = v17() ? 1 : 0;  // v1.7: tuần bắt đầu THỨ HAI
+    const first0 = new Date(y0, mo, 1).getDay();
+    const first = (first0 + 7 - off) % 7, maxD = new Date(y0, mo + 1, 0).getDate(), cw = w / 7;
     font(x, Math.max(8, dayPx - 3), 1);
-    for (let i = 0; i < 7; i++) center(x, WD_SHORT[i], bx + i * cw + cw / 2, by, (i === 0 || i === 6) ? RED : BK);
+    for (let i = 0; i < 7; i++) {
+      const day = (i + off) % 7;
+      center(x, WD_SHORT[day], bx + i * cw + cw / 2, by, (day === 0 || day === 6) ? RED : BK);
+    }
     for (let d = 1; d <= maxD; d++) {
       const idx = first + d - 1, col = idx % 7, row = (idx - col) / 7;
       const cx = bx + col * cw + cw / 2, cy = by + 8 + row * rh + rh / 2;
+      const wd = (first0 + d - 1) % 7;
       if (d === today) {
         const rr = Math.min(cw, rh) / 2 - 1;
         x.fillStyle = RED; x.beginPath(); x.arc(cx, cy - 3, rr, 0, 7); x.fill();
         if (is4c()) { x.strokeStyle = YE; x.lineWidth = 1.5; x.beginPath(); x.arc(cx, cy - 3, rr, 0, 7); x.stroke(); }
       }
       font(x, dayPx, 1);
-      center(x, d, cx, cy + 1, d === today ? '#fff' : ((col === 0 || col === 6) ? RED : BK));
+      center(x, d, cx, cy + 1, d === today ? '#fff' : ((wd === 0 || wd === 6) ? RED : BK));
     }
   }
   function m13(x, now) { // Lịch vạn niên
@@ -403,9 +427,21 @@
     }
     line(x, 196, 178, 384, 178);
     font(x, 13, 1); x.fillStyle = RED; x.fillText('Giờ hắc đạo', 196, 202);
-    font(x, 12, 0); x.fillStyle = BK; x.fillText('Tý, Sửu, Mão,', 196, 224); x.fillText('Ngọ, Mùi, Tuất', 196, 242);
-    const nf = nextSolarFest(now);
-    font(x, 12, 0); x.fillStyle = RED; x.fillText(nf.name, 196, 270); x.fillText('còn ' + nf.days + ' ngày', 196, 290);
+    if (v17()) {
+      // v1.7: hắc đạo CÙNG bố cục 2 cột + giờ như hoàng đạo (chấm ĐEN),
+      // khối lễ hội bỏ để lấy chỗ
+      const hac = [['Tý', '23-1h'], ['Sửu', '1-3h'], ['Mão', '5-7h'], ['Ngọ', '11-13h'], ['Mùi', '13-15h'], ['Tuất', '19-21h']];
+      font(x, 12, 0);
+      for (let i = 0; i < 6; i++) {
+        const gx = 196 + (i % 2) * 96, gy = 228 + ((i - i % 2) / 2) * 26;
+        x.fillStyle = BK; x.beginPath(); x.arc(gx + 4, gy - 4, 3, 0, 7); x.fill();
+        x.fillText(hac[i][0] + ' ' + hac[i][1], gx + 12, gy);
+      }
+    } else {
+      font(x, 12, 0); x.fillStyle = BK; x.fillText('Tý, Sửu, Mão,', 196, 224); x.fillText('Ngọ, Mùi, Tuất', 196, 242);
+      const nf = nextSolarFest(now);
+      font(x, 12, 0); x.fillStyle = RED; x.fillText(nf.name, 196, 270); x.fillText('còn ' + nf.days + ' ngày', 196, 290);
+    }
   }
   function m14(x, now) { // Đếm ngược — v1.7: all text bold
     font(x, 14, v17() ? 1 : 0); x.fillStyle = BK;
@@ -440,22 +476,20 @@
     for (let m = 0; m < 12; m++) {
       const bx = 10 + (m % 4) * 97, by = 44 + ((m - m % 4) / 4) * 85, cur = m === now.getMonth();
       if (cur) {
+        // khung 1px đều bốn cạnh (bản 2px phải/đáy đã bị user yêu cầu hoàn lại)
         x.strokeStyle = RED; x.lineWidth = 2; x.beginPath(); x.roundRect(bx - 3, by - 10, 94, 82, 4); x.stroke();
-        if (v17()) {  // v1.7: nét PHẢI + ĐÁY dày 2px
-          x.lineWidth = 2; x.beginPath();
-          x.moveTo(bx + 93, by - 5); x.lineTo(bx + 93, by + 68);
-          x.moveTo(bx + 1, by + 74); x.lineTo(bx + 87, by + 74); x.stroke();
-        }
         if (is4c()) { x.strokeStyle = YE; x.lineWidth = 1.5; x.beginPath(); x.roundRect(bx - 1, by - 8, 90, 78, 3); x.stroke(); }
       }
       font(x, 10, 1); center(x, 'Tháng ' + (m + 1), bx + 44, by, cur ? RED : BK);
-      const first = new Date(y, m, 1).getDay(), maxD = new Date(y, m + 1, 0).getDate();
+      const first0 = new Date(y, m, 1).getDay(), maxD = new Date(y, m + 1, 0).getDate();
+      const first = (first0 + 7 - (v17() ? 1 : 0)) % 7;  // v1.7: tuần bắt đầu T2
       for (let d = 1; d <= maxD; d++) {
         const idx = first + d - 1, col = idx % 7, row = (idx - col) / 7;
         const dx = bx + col * 12.6 + 6, dy = by + 11 + row * 10;
+        const wd = (first0 + d - 1) % 7;
         if (cur && d === now.getDate()) { x.fillStyle = RED; x.beginPath(); x.arc(dx, dy - 2, 5.5, 0, 7); x.fill(); }
         font(x, 7, 0);
-        center(x, d, dx, dy, (cur && d === now.getDate()) ? '#fff' : ((col === 0 || col === 6) ? RED : BK));
+        center(x, d, dx, dy, (cur && d === now.getDate()) ? '#fff' : ((wd === 0 || wd === 6) ? RED : BK));
       }
     }
   }
