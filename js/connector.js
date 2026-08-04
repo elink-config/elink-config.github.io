@@ -13,7 +13,7 @@
 (function () {
   'use strict';
 
-  const VER = '20260803a'; // cache-buster, keep in sync with index.html
+  const VER = '20260804c'; // cache-buster, keep in sync with index.html
 
   const EPD42_SERVICE = '62750001-d828-918d-fb46-b6c11c675aec';
   const HM213_SERVICE = '0000ff00-0000-1000-8000-00805f9b34fb';
@@ -64,6 +64,7 @@
   }
 
   // DIY-2_13-xxxx → 2.13", DIY-2_9-xxxx → 2.9", DIY-4_2-xxxx → 4.2",
+  // DIY-4_2C-xxxx → 4.2" BỐN MÀU (epd_4_2inch_4c — cùng app 4_2, driver 05/06),
   // DLG-CLOCK-xxxx → đồng hồ DLG.
   // Plain DIY-xxxx = 4.2" board on older firmware without the size tag.
   function detectType(name) {
@@ -71,6 +72,7 @@
     if (name.startsWith('DLG-CLOCK-')) return 'dlg';
     if (name.startsWith('DIY-2_13-')) return '2_13';
     if (name.startsWith('DIY-2_9-')) return '2_9';
+    if (name.startsWith('DIY-4_2C-')) return '4_2';
     if (name.startsWith('DIY-4_2-')) return '4_2';
     if (name.startsWith('DIY-')) return '4_2';
     return null;
@@ -397,7 +399,7 @@
     } catch (e) {
       console.error(e);
       if (e.name === 'NotFoundError') {
-        addLog('Không tìm thấy thiết bị E-Ink (DIY-4_2-xxxx / DIY-2_13-xxxx / DIY-2_9-xxxx / DLG-CLOCK-xxxx)');
+        addLog('Không tìm thấy thiết bị E-Ink (DIY-4_2-xxxx / DIY-4_2C-xxxx / DIY-2_13-xxxx / DIY-2_9-xxxx / DLG-CLOCK-xxxx)');
       } else if (e.message) {
         addLog('requestDevice: ' + e.message);
       }
@@ -433,7 +435,7 @@
       }
     }
     if (!type) {
-      addLog('Thiết bị "' + (device.name || '?') + '" không phải DIY-4_2-xxxx / DIY-2_13-xxxx / DIY-2_9-xxxx / DLG-CLOCK-xxxx.');
+      addLog('Thiết bị "' + (device.name || '?') + '" không phải DIY-4_2-xxxx / DIY-4_2C-xxxx / DIY-2_13-xxxx / DIY-2_9-xxxx / DLG-CLOCK-xxxx.');
       return;
     }
 
