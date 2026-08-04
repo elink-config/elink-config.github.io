@@ -369,7 +369,7 @@
     x.fillStyle = WH; x.beginPath(); x.arc(97, 265, 11, 0, 7); x.fill();
     line(x, 180, 8, 180, 292, BK, 2);
     if (is4c()) line(x, 182, 8, 182, 292, YE, 1.5);  // BWRY: mép vàng
-    font(x, 14, 1); x.fillStyle = BK; x.fillText('Ngày Canh Thìn', 196, 32); battery(x, 362, 20, BK);
+    font(x, 14, 1); x.fillStyle = BK; x.fillText('Ngày Canh Thìn', 196, 32); battery(x, 362, 20, BK, '3.2V');
     font(x, 13, 1); x.fillStyle = RED; x.fillText('Giờ hoàng đạo', 196, 62);
     const gio = [['Dần', '3-5h'], ['Thìn', '7-9h'], ['Tỵ', '9-11h'], ['Thân', '15-17h'], ['Dậu', '17-19h'], ['Hợi', '21-23h']];
     font(x, 12, 0);
