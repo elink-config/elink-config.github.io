@@ -686,6 +686,10 @@ function handleNotify(value, idx) {
         document.getElementById('imgAutoRow').style.display = '';
         updateImgAutoUI();
       }
+      // giao diện v1.7 (chữ đậm/đỏ, số 12-3-6-9 đỏ, bỏ mode 2 & 18, hắc đạo):
+      // preview mới CHỈ hiện khi firmware thiết bị khớp — máy cũ giữ preview cũ
+      window.__fw17 = FwCheck.atLeast('1.7');
+      if (window.refreshModeGallery) window.refreshModeGallery();
     }
   }
 }
