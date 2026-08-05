@@ -320,8 +320,9 @@ const BTN_PIN_OPTIONS = [
   ['10', 'P1_0'], ['11', 'P1_1'], ['12', 'P1_2'], ['13', 'P1_3'],
   ['22', 'P2_2'], ['24', 'P2_4'], ['28', 'P2_8'], ['29', 'P2_9'],
 ];
-// r2.0: 3 nút, mặc định theo pad board 6TP (TX / SWCLK / SWDIO)
-const BTN_DEFAULTS = { btnNext: 0x04, btnPrev: 0x14, btnSel: 0x15 };
+// 3 nút, mặc định theo pad board 6TP — NEXT/PREV đã đảo theo yêu cầu:
+// NEXT=SWCLK, PREV=TX, SEL=SWDIO
+const BTN_DEFAULTS = { btnNext: 0x14, btnPrev: 0x04, btnSel: 0x15 };
 
 function initBtnSelects() {
   document.querySelectorAll('select.btnsel').forEach(sel => {
@@ -728,9 +729,9 @@ function parseMobi(buf) {
 
 /* ================= Xem trước & thông tin sách ================= */
 
-// khớp metric fw r2.1: font vn12 (Tahoma 12px), 18 dòng x ~57 ký tự
-const PREVIEW_CHARS_PER_LINE = 57;
-const PREVIEW_LINES = 18;
+// khớp metric fw r2.1: font vn12 (Tahoma BOLD 12px), 19 dòng x ~50 ký tự
+const PREVIEW_CHARS_PER_LINE = 50;
+const PREVIEW_LINES = 19;
 
 function updateBookUI() {
   const row = document.getElementById('bookInfoRow');
@@ -821,8 +822,8 @@ async function renderPreview() {
     previewPage = Math.max(0, Math.min(previewPage, previewTextPages.length - 1));
     const lines = previewTextPages[previewPage] || [];
     ctx.fillStyle = 'black';
-    ctx.font = '12px sans-serif';
-    lines.forEach((l, i) => ctx.fillText(l, 8, 13 + i * 15, 384));
+    ctx.font = 'bold 12px sans-serif';
+    lines.forEach((l, i) => ctx.fillText(l, 8, 12 + i * 14, 384));
     ctx.fillRect(8, 280, 384, 1);
     ctx.font = '10px monospace';
     ctx.fillText(`${previewPage + 1}/${previewTextPages.length} (xem trước ước lượng)`, 8, 294);
