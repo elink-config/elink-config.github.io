@@ -151,7 +151,7 @@ function handleNotify(value, idx) {
       setBtnSelect('btnSel', data[218]);
       const fe = data[220];
       const sel = document.getElementById('fullEvery');
-      if ([5, 10, 20, 30].includes(fe)) sel.value = String(fe);
+      if ([0, 5, 10, 20, 30].includes(fe)) sel.value = String(fe);
       const pg = data[222] | (data[223] << 8);
       if (pg !== 0xFFFF) document.getElementById('gotoPage').value = pg + 1;
     }
@@ -306,9 +306,11 @@ async function readerGoto() {
   await write(EpdCmd.BOOK, [0x10, p & 0xFF, (p >> 8) & 0xFF]);
 }
 async function setFullEvery() {
-  const n = parseInt(document.getElementById('fullEvery').value) || 10;
+  let n = parseInt(document.getElementById('fullEvery').value);
+  if (isNaN(n) || n < 0 || n > 60) n = 0;  // 0 = tắt (mặc định fw r2.1)
   if (await write(EpdCmd.BOOK, [0x20, n]))
-    addLog(`Đã đặt: làm mới đầy đủ sau mỗi ${n} trang lật.`);
+    addLog(n === 0 ? 'Đã tắt tự làm mới khi lật trang (chỉ làm mới khi vào/ra Trang chủ).'
+                   : `Đã đặt: làm mới đầy đủ sau mỗi ${n} trang lật.`);
 }
 
 /* ================= Nút bấm vật lý ================= */
