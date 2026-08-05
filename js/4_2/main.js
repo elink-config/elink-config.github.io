@@ -720,14 +720,9 @@ async function setImgAuto() {
   const hours = sel ? parseInt(sel.value) : 24;
   updateImgAutoUI();
   if (await write(EpdCmd.IMG_SLOT, [0x03, auto, hours])) {
-    // giá trị 5 = 5 PHÚT thử nghiệm (fw >= 1.7.1); fw cũ nhận 5 sẽ rơi về 24h
-    const nhan = hours === 5 ? '5 phút (chế độ thử)' : `${hours} giờ`;
     addLog(auto
-      ? `Đã bật tự động đổi ảnh mỗi ${nhan} (khe 1 → 2 → 3 → 1).`
+      ? `Đã bật tự động đổi ảnh mỗi ${hours} giờ (khe 1 → 2 → 3 → 1).`
       : 'Đã tắt tự động đổi ảnh.');
-    if (auto && hours === 5 && !FwCheck.atLeast('1.7.1')) {
-      addLog('LƯU Ý: firmware thiết bị chưa phải 1.7.1 — máy sẽ hiểu là chu kỳ 24 giờ. Hãy cập nhật firmware trước.');
-    }
   }
 }
 
