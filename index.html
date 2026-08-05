@@ -291,6 +291,7 @@
 						<input type="checkbox" id="imgAutoCHK" onchange="setImgAuto()">
 						Tự động đổi ảnh đã tải
 					</label>
+					<label><input type="radio" name="imgInterval" value="5" onchange="setImgAuto()"> 5 phút (chỉ để thử — cần fw ≥ 1.7.1, hao pin nếu để lâu)</label>
 					<label><input type="radio" name="imgInterval" value="1" onchange="setImgAuto()"> 1 giờ</label>
 					<label><input type="radio" name="imgInterval" value="12" onchange="setImgAuto()"> 12 giờ</label>
 					<label><input type="radio" name="imgInterval" value="24" checked onchange="setImgAuto()"> 24 giờ</label>
@@ -1575,7 +1576,7 @@
 		</div>
 	</div>
 	<script type="text/javascript" src="js/fw_check.js?v=20260729a"></script>
-	<script type="text/javascript" src="js/connector.js?v=20260804c"></script>
+	<script type="text/javascript" src="js/connector.js?v=20260805a"></script>
 	<script>
 		var _hmt = _hmt || [];
 		(function () {
