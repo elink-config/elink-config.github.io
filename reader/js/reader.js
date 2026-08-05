@@ -16,11 +16,11 @@ const EpdCmd = {
 const EPD_SERVICE = '62750001-d828-918d-fb46-b6c11c675aec';
 const EPD_CHAR = '62750002-d828-918d-fb46-b6c11c675aec';
 
-// kho sách trên máy (fw r2.0 map 512KB): vùng riêng 240KB tại 0x40000, dữ
-// liệu bắt đầu tại +0x3000 — 224KB dùng được (chừa lề dưới trần 228KB)
+// kho sách trên máy (fw r2.1 mở rộng): vùng riêng 276KB tại 0x39000, dữ
+// liệu bắt đầu tại +0x3000 — 260KB dùng được (chừa lề dưới trần 264KB)
 const BOOK_IDX_OFF = 0x1000;
 const BOOK_DATA_OFF = 0x3000;
-const MAX_DATA = 224 * 1024;
+const MAX_DATA = 260 * 1024;
 const MAX_PAGES_PART = 500;
 const PLANE_SIZE = 15000; // 400x300 / 8
 
