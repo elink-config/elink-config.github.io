@@ -62,7 +62,7 @@
 				Chọn file sách: <b>.txt</b>, <b>.epub</b> (sách chữ) — <b>.cbz/.zip</b> hoặc nhiều file ảnh (truyện tranh) —
 				<b>.mobi/.azw3</b> không DRM (thử đọc, nếu không được hãy chuyển sang epub/txt bằng Calibre).
 				Kho sách trong máy chứa ~260KB; chữ Việt được nén bảng mã 8-bit (fw r2.1) nên tương đương ~350KB file .txt,
-				và font đọc 12px hiển thị 19 dòng/trang. Sách dài sẽ được chia thành nhiều <b>phần</b>, mỗi lần gửi một phần
+				và có 3 cỡ chữ đọc 12/14/16px (chỉnh ở «Điều khiển đọc sách»). Sách dài sẽ được chia thành nhiều <b>phần</b>, mỗi lần gửi một phần
 				(gửi phần mới sẽ thay phần cũ; máy tự lưu trang đang đọc của phần hiện tại).
 			</p>
 			<div class="flex-container">
@@ -130,6 +130,16 @@
 					<label for="gotoPage">Tới trang:</label>
 					<input type="number" id="gotoPage" value="1" min="1" style="width:70px">
 					<button id="rgotobutton" type="button" class="primary" onclick="readerGoto()" disabled>Đi</button>
+				</div>
+				<div class="flex-group">
+					<label for="fontSize">Cỡ chữ (fw r2.2+):</label>
+					<select id="fontSize" onchange="previewTextPages=null;renderPreview()">
+						<option value="0" selected>Nhỏ 12px (19 dòng)</option>
+						<option value="1">Vừa 14px (16 dòng)</option>
+						<option value="2">Lớn 16px (14 dòng)</option>
+					</select>
+					<button id="fontSizebutton" type="button" class="secondary" onclick="setFontSize()" disabled>Áp dụng</button>
+					<span class="mode-gallery-hint" style="margin:0">Đổi cỡ chữ xong máy tự phân trang lại sách đang chứa (vài chục giây với sách dài), vẫn giữ đúng vị trí đang đọc.</span>
 				</div>
 				<div class="flex-group">
 					<label for="fullEvery">Làm mới đầy đủ sau mỗi</label>

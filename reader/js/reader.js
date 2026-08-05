@@ -152,6 +152,8 @@ function handleNotify(value, idx) {
       const fe = data[220];
       const sel = document.getElementById('fullEvery');
       if ([0, 5, 10, 20, 30].includes(fe)) sel.value = String(fe);
+      // rd_font offset 221 (fw r2.2+; fw cũ đọc 0xFF -> giữ mặc định Nhỏ)
+      if (data[221] <= 2) document.getElementById('fontSize').value = String(data[221]);
       const pg = data[222] | (data[223] << 8);
       if (pg !== 0xFFFF) document.getElementById('gotoPage').value = pg + 1;
     }
@@ -296,7 +298,7 @@ function updateButtonStatus(busy = false) {
   const dis = (busy || !connected) ? 'disabled' : null;
   document.getElementById('reconnectbutton').disabled = (gattServer == null || connected) ? 'disabled' : null;
   document.getElementById('sendbookbutton').disabled = (dis || !book) ? 'disabled' : null;
-  ['rprevbutton', 'rnextbutton', 'rhomebutton', 'rgotobutton', 'fullEverybutton', 'btnApply', 'otabutton', 'sendcmdbutton']
+  ['rprevbutton', 'rnextbutton', 'rhomebutton', 'rgotobutton', 'fullEverybutton', 'fontSizebutton', 'btnApply', 'otabutton', 'sendcmdbutton']
     .forEach(id => document.getElementById(id).disabled = dis);
 }
 
@@ -307,6 +309,24 @@ async function readerGoto() {
   const p = Math.max(1, parseInt(document.getElementById('gotoPage').value) || 1) - 1;
   await write(EpdCmd.BOOK, [0x10, p & 0xFF, (p >> 8) & 0xFF]);
 }
+async function setFontSize() {
+  // fw r2.2+: [0x28 0x22 0/1/2] — sách chữ tự phân trang lại (bki= rồi book=)
+  const v = Math.min(2, Math.max(0, parseInt(document.getElementById('fontSize').value) || 0));
+  idxEstPages = 0;
+  const done = waitNotify(m => {
+    const mm = m.match(/^book=(\d+)$/);
+    return mm ? parseInt(mm[1]) : null;
+  }, 120000);
+  if (!(await write(EpdCmd.BOOK, [0x22, v]))) return;
+  addLog(`Đã đổi cỡ chữ (${['nhỏ 12px', 'vừa 14px', 'lớn 16px'][v]}) — máy đang phân trang lại...`);
+  try {
+    const pages = await done;
+    addLog(`Phân trang lại xong: ${pages} trang.`);
+  } catch (e) {
+    addLog('Không thấy máy báo xong (có thể máy không có sách chữ — cỡ chữ vẫn đã lưu).');
+  }
+}
+
 async function setFullEvery() {
   let n = parseInt(document.getElementById('fullEvery').value);
   if (isNaN(n) || n < 0 || n > 60) n = 0;  // 0 = tắt (mặc định fw r2.1)
@@ -733,9 +753,12 @@ function parseMobi(buf) {
 
 /* ================= Xem trước & thông tin sách ================= */
 
-// khớp metric fw r2.1: font vn12 (Tahoma 12px bilevel), 19 dòng x ~53 ký tự
-const PREVIEW_CHARS_PER_LINE = 53;
-const PREVIEW_LINES = 19;
+// khớp metric fw r2.2 theo cỡ chữ đã chọn (fontSize):
+// [ký tự/dòng, dòng/trang, px, bước dòng, baseline đầu]
+const PREVIEW_METRICS = [[53, 19, 12, 14, 13], [48, 16, 14, 17, 15], [41, 14, 16, 19, 17]];
+function previewMetric() {
+  return PREVIEW_METRICS[Math.min(2, Math.max(0, parseInt(document.getElementById('fontSize').value) || 0))];
+}
 
 function updateBookUI() {
   const row = document.getElementById('bookInfoRow');
@@ -785,21 +808,22 @@ function currentPart() {
   return book.parts[Math.min(i, book.parts.length - 1)];
 }
 
-// phân trang XEM TRƯỚC (ước lượng — máy tự phân trang thật bằng font vn12)
+// phân trang XEM TRƯỚC (ước lượng — máy tự phân trang thật bằng font vnXX)
 function buildPreviewTextPages(text) {
+  const [cpl, lpp] = previewMetric();
   const pages = [];
   let lines = [];
   for (const para of text.split('\n')) {
     let rest = para;
     do {
-      let line = rest.slice(0, PREVIEW_CHARS_PER_LINE);
-      if (rest.length > PREVIEW_CHARS_PER_LINE) {
+      let line = rest.slice(0, cpl);
+      if (rest.length > cpl) {
         const sp = line.lastIndexOf(' ');
-        if (sp > PREVIEW_CHARS_PER_LINE / 2) line = line.slice(0, sp);
+        if (sp > cpl / 2) line = line.slice(0, sp);
       }
       lines.push(line);
       rest = rest.slice(line.length).replace(/^ /, '');
-      if (lines.length === PREVIEW_LINES) { pages.push(lines); lines = []; }
+      if (lines.length === lpp) { pages.push(lines); lines = []; }
       if (pages.length > 400) return pages; // đủ để xem trước
     } while (rest.length);
   }
@@ -825,9 +849,10 @@ async function renderPreview() {
     if (!previewTextPages) previewTextPages = buildPreviewTextPages(part.text);
     previewPage = Math.max(0, Math.min(previewPage, previewTextPages.length - 1));
     const lines = previewTextPages[previewPage] || [];
+    const [, , px, lh, y0] = previewMetric();
     ctx.fillStyle = 'black';
-    ctx.font = '12px sans-serif';
-    lines.forEach((l, i) => ctx.fillText(l, 8, 13 + i * 14, 384));
+    ctx.font = px + 'px sans-serif';
+    lines.forEach((l, i) => ctx.fillText(l, 8, y0 + i * lh, 384));
     ctx.fillRect(8, 280, 384, 1);
     ctx.font = '10px monospace';
     ctx.fillText(`${previewPage + 1}/${previewTextPages.length} (xem trước ước lượng)`, 8, 294);
@@ -973,7 +998,8 @@ async function sendBook() {
       // sách chữ: gửi nội dung chiếm 2..80%, máy phân trang 80..99%
       await sendChunks(part.bytes, BOOK_DATA_OFF, 'nội dung', 2, 78);
       dataLen = part.bytes.length;
-      idxEstPages = Math.max(1, Math.round(dataLen / 1050)); // ~1KB EVN1/trang (18 dòng x ~57 ký tự)
+      // ước lượng byte EVN1/trang theo cỡ chữ đang chọn (19x53 / 16x48 / 14x41)
+      idxEstPages = Math.max(1, Math.round(dataLen / [1000, 770, 570][previewMetric()[2] === 12 ? 0 : previewMetric()[2] === 14 ? 1 : 2]));
     } else {
       // truyện tranh: nén 2..30%, mục lục 30..34%, dữ liệu 34..95%
       const blobs = [];
