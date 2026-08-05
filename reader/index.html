@@ -22,7 +22,7 @@
 			<div class="app-header-icon"><span class="material-symbols-outlined">menu_book</span></div>
 			<div class="app-header-text">
 				<h1>Máy đọc sách E-Ink 4.2"</h1>
-				<p>Gửi sách chữ / truyện tranh xuống thiết bị qua Bluetooth (firmware r1.x)</p>
+				<p>Gửi sách chữ / truyện tranh xuống thiết bị qua Bluetooth (firmware r2.x)</p>
 			</div>
 			<button type="button" class="theme-toggle-btn" id="theme-toggle" title="Đổi giao diện sáng/tối"
 				onclick="(function(){const h=document.documentElement;const dark=h.getAttribute('data-theme')==='dark';if(dark){h.removeAttribute('data-theme');localStorage.setItem('theme','light');}else{h.setAttribute('data-theme','dark');localStorage.setItem('theme','dark');}document.getElementById('theme-toggle-icon').textContent=dark?'dark_mode':'light_mode';})()">
@@ -141,6 +141,15 @@
 					<button id="fullEverybutton" type="button" class="secondary" onclick="setFullEvery()" disabled>Áp dụng</button>
 					<span class="mode-gallery-hint" style="margin:0">Lật trang dùng cập nhật nhanh không chớp; thi thoảng làm mới đầy đủ để xóa bóng mờ.</span>
 				</div>
+				<div class="flex-group">
+					<label for="darkBoost">Chữ đậm (fw r2.0+):</label>
+					<select id="darkBoost">
+						<option value="0" selected>Tắt</option>
+						<option value="1">Bật</option>
+					</select>
+					<button id="darkBoostbutton" type="button" class="secondary" onclick="setDarkBoost()" disabled>Áp dụng</button>
+					<span class="mode-gallery-hint" style="margin:0">Dành cho màn thuộc lô in mực đen NHẠT: mỗi lần làm mới đầy đủ chạy thêm một lượt để mực bám đậm hơn (chậm hơn chút). Cũng đổi được ngay trên máy: Trang chủ → «Chữ đậm».</span>
+				</div>
 			</div>
 		</fieldset>
 
@@ -148,6 +157,8 @@
 			<legend>Nút bấm vật lý (4 nút)</legend>
 			<p class="mode-gallery-hint">
 				Hàn 4 nút từ các điểm test xuống <b>GND</b> (nhấn = nối đất, nên nối tiếp điện trở ~1kΩ).
+				Từ firmware r2.0, ở màn Trang chủ hai nút trang sau/trước <b>di chuyển menu</b>, nút trang chủ <b>chọn</b>
+				(Tiếp tục đọc / Nhảy tới trang bằng bàn phím số / Làm mới toàn màn / Chữ đậm / Bluetooth).
 				Mặc định: trang sau = <b>TX (P0_4)</b>, trang trước = <b>SCL (P0_2)</b>, trang chủ = <b>SDA (P0_1)</b>,
 				nguồn (bật/tắt BLE) = <b>RX (P0_5)</b>. Chân trùng với chân màn hình sẽ bị firmware <b>tự tắt</b>
 				(board kiểu dây A: nút nguồn RX bị tắt vì P0_5 là chân DC — chọn chân khác như P1_0 nếu cần).

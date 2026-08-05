@@ -141,7 +141,7 @@ function handleNotify(value, idx) {
   const data = new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
   if (idx === 0) {
     // config blob: chân màn hình 0..10, mode 11, chân nút 216..219,
-    // rd_full_every 220, trang đang đọc (u16 LE) 222
+    // rd_full_every 220, dark_boost 221 (r2.0), trang đang đọc (u16 LE) 222
     addLog('Nhận cấu hình thiết bị (' + data.length + ' byte)');
     cfgPins = Array.from(data.slice(0, 11));
     if (data.length >= 224) {
@@ -152,6 +152,8 @@ function handleNotify(value, idx) {
       const fe = data[220];
       const sel = document.getElementById('fullEvery');
       if ([5, 10, 20, 30].includes(fe)) sel.value = String(fe);
+      // dark_boost: firmware r1.x không có trường này (đọc 0xFF) -> giữ Tắt
+      if (data[221] <= 1) document.getElementById('darkBoost').value = String(data[221]);
       const pg = data[222] | (data[223] << 8);
       if (pg !== 0xFFFF) document.getElementById('gotoPage').value = pg + 1;
     }
@@ -168,7 +170,7 @@ function handleNotify(value, idx) {
   } else if (msg.startsWith('fw=')) {
     deviceFw = msg.substring(3);
     if (!deviceFw.startsWith('r')) {
-      addLog('⚠ Thiết bị đang chạy firmware LỊCH chuẩn (' + deviceFw + '), không phải firmware máy đọc sách (r1.x).');
+      addLog('⚠ Thiết bị đang chạy firmware LỊCH chuẩn (' + deviceFw + '), không phải firmware máy đọc sách (rX.Y).');
       addLog('⚠ Hãy nạp firmware fw_reader_4_2inch_rX.Y.bin (mục OTA bên dưới) trước khi gửi sách.');
     }
   } else if (msg.startsWith('bki=')) {
@@ -294,7 +296,7 @@ function updateButtonStatus(busy = false) {
   const dis = (busy || !connected) ? 'disabled' : null;
   document.getElementById('reconnectbutton').disabled = (gattServer == null || connected) ? 'disabled' : null;
   document.getElementById('sendbookbutton').disabled = (dis || !book) ? 'disabled' : null;
-  ['rprevbutton', 'rnextbutton', 'rhomebutton', 'rgotobutton', 'fullEverybutton', 'btnApply', 'otabutton', 'sendcmdbutton']
+  ['rprevbutton', 'rnextbutton', 'rhomebutton', 'rgotobutton', 'fullEverybutton', 'darkBoostbutton', 'btnApply', 'otabutton', 'sendcmdbutton']
     .forEach(id => document.getElementById(id).disabled = dis);
 }
 
@@ -309,6 +311,13 @@ async function setFullEvery() {
   const n = parseInt(document.getElementById('fullEvery').value) || 10;
   if (await write(EpdCmd.BOOK, [0x20, n]))
     addLog(`Đã đặt: làm mới đầy đủ sau mỗi ${n} trang lật.`);
+}
+async function setDarkBoost() {
+  // fw r2.0+: [0x28 0x21 0/1] — màn lô in nhạt chạy 2 lượt refresh mỗi lần
+  // làm mới đầy đủ; máy vẽ lại ngay để thấy hiệu quả
+  const v = document.getElementById('darkBoost').value === '1' ? 1 : 0;
+  if (await write(EpdCmd.BOOK, [0x21, v]))
+    addLog(`Đã ${v ? 'bật' : 'tắt'} «chữ đậm» (máy sẽ vẽ lại toàn màn).`);
 }
 
 /* ================= Nút bấm vật lý ================= */
