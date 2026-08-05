@@ -175,10 +175,12 @@ function handleNotify(value, idx) {
     }
   } else if (msg.startsWith('bki=')) {
     // máy đang phân trang sách chữ: ánh xạ số trang đã chốt vào 80..99% của
-    // thanh tiến độ (idxEstPages ước lượng từ dung lượng chữ, ~1KB/trang)
+    // thanh tiến độ (idxEstPages ước lượng từ dung lượng chữ). Khi ĐỔI CỠ CHỮ
+    // không biết tổng trang mới -> progress tiệm cận n/(n+30).
     const n = parseInt(msg.substring(4)) || 0;
     setStatus(`Máy đang phân trang sách chữ... ${n}${idxEstPages ? '/~' + idxEstPages : ''} trang`);
     if (idxEstPages) setProgress(80 + 19 * Math.min(1, n / idxEstPages));
+    else if (fontApplyBusy) setProgress(Math.min(99, Math.round(100 * n / (n + 30))));
   } else if (msg.startsWith('flash=')) {
     // JEDEC ID chip SPI flash: [hãng][loại][dung lượng 2^n byte]
     const id = msg.substring(6);
@@ -313,18 +315,30 @@ async function setFontSize() {
   // fw r2.2+: [0x28 0x22 0/1/2] — sách chữ tự phân trang lại (bki= rồi book=)
   const v = Math.min(2, Math.max(0, parseInt(document.getElementById('fontSize').value) || 0));
   idxEstPages = 0;
+  fontApplyBusy = true;
+  updateButtonStatus(true);
+  setProgress(2);
+  setStatus('Máy đang phân trang lại theo cỡ chữ mới...');
   const done = waitNotify(m => {
     const mm = m.match(/^book=(\d+)$/);
     return mm ? parseInt(mm[1]) : null;
-  }, 120000);
-  if (!(await write(EpdCmd.BOOK, [0x22, v]))) return;
-  addLog(`Đã đổi cỡ chữ (${['nhỏ 12px', 'vừa 14px', 'lớn 16px'][v]}) — máy đang phân trang lại...`);
+  }, 180000);
   try {
+    if (!(await write(EpdCmd.BOOK, [0x22, v]))) throw new Error('gửi lệnh thất bại');
+    addLog(`Đã đổi cỡ chữ (${['nhỏ 12px', 'vừa 14px', 'lớn 16px'][v]}) — máy đang phân trang lại...`);
     const pages = await done;
+    setProgress(100);
+    setStatus(`Xong! Phân trang lại theo cỡ chữ mới: ${pages} trang.`);
     addLog(`Phân trang lại xong: ${pages} trang.`);
+    setTimeout(() => setProgress(null), 3000);
   } catch (e) {
-    addLog('Không thấy máy báo xong (có thể máy không có sách chữ — cỡ chữ vẫn đã lưu).');
+    setProgress(null);
+    setStatus('');
+    addLog('Không thấy máy báo xong (máy không có sách chữ? — cỡ chữ vẫn đã lưu). ' +
+      'Nếu vừa mất kết nối: máy vẫn TỰ phân trang tiếp, chờ xong rồi kết nối lại.');
   }
+  fontApplyBusy = false;
+  updateButtonStatus();
 }
 
 async function setFullEvery() {
@@ -404,6 +418,7 @@ let comicPages = [];   // ImageBitmap của từng trang truyện (toàn bộ fi
 let previewPage = 0;   // trang đang xem trước (trong phần đang chọn)
 let previewTextPages = null; // cache phân trang ước lượng của phần chữ đang chọn
 let idxEstPages = 0;   // ước lượng số trang khi máy phân trang (progress bki=)
+let fontApplyBusy = false;  // đang đổi cỡ chữ: progress bki= kiểu tiệm cận
 
 function fmtKB(n) { return (n / 1024).toFixed(1) + 'KB'; }
 
