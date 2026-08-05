@@ -237,7 +237,9 @@ async function preConnect() {
       acceptAllDevices: true,
       optionalServices: [EPD_SERVICE],
     } : {
-      filters: [{ namePrefix: 'DIY-4_2R' }, { namePrefix: 'DIY-4_2' }],
+      // CHỈ máy đọc sách DIY-4_2R-xxxx (yêu cầu user) — không hiện máy lịch
+      // DIY-4_2 chuẩn nữa; cần quét mọi thiết bị thì thêm ?debug=true
+      filters: [{ namePrefix: 'DIY-4_2R' }],
       optionalServices: [EPD_SERVICE],
     });
   } catch (e) {
