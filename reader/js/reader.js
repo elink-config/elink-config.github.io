@@ -729,8 +729,8 @@ function parseMobi(buf) {
 
 /* ================= Xem trước & thông tin sách ================= */
 
-// khớp metric fw r2.1: font vn12 (Tahoma BOLD 12px), 19 dòng x ~50 ký tự
-const PREVIEW_CHARS_PER_LINE = 50;
+// khớp metric fw r2.1: font vn12 (Tahoma 12px bilevel), 19 dòng x ~57 ký tự
+const PREVIEW_CHARS_PER_LINE = 57;
 const PREVIEW_LINES = 19;
 
 function updateBookUI() {
@@ -822,8 +822,8 @@ async function renderPreview() {
     previewPage = Math.max(0, Math.min(previewPage, previewTextPages.length - 1));
     const lines = previewTextPages[previewPage] || [];
     ctx.fillStyle = 'black';
-    ctx.font = 'bold 12px sans-serif';
-    lines.forEach((l, i) => ctx.fillText(l, 8, 12 + i * 14, 384));
+    ctx.font = '12px sans-serif';
+    lines.forEach((l, i) => ctx.fillText(l, 8, 13 + i * 14, 384));
     ctx.fillRect(8, 280, 384, 1);
     ctx.font = '10px monospace';
     ctx.fillText(`${previewPage + 1}/${previewTextPages.length} (xem trước ước lượng)`, 8, 294);
