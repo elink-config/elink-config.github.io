@@ -147,19 +147,20 @@
 		<fieldset>
 			<legend>Nút bấm vật lý (4 nút)</legend>
 			<p class="mode-gallery-hint">
-				Hàn 4 nút từ các điểm test xuống <b>GND</b> (nhấn = nối đất, nên nối tiếp điện trở ~1kΩ).
+				Hàn 3 nút từ các điểm test xuống <b>GND</b> (nhấn = nối đất, nên nối tiếp điện trở ~1kΩ).
 				Từ firmware r2.0, ở màn Trang chủ hai nút trang sau/trước <b>di chuyển menu</b>, nút trang chủ <b>chọn</b>
 				(Tiếp tục đọc / Nhảy tới trang bằng bàn phím số / Làm mới toàn màn / Bluetooth).
-				Mặc định: trang sau = <b>TX (P0_4)</b>, trang trước = <b>SCL (P0_2)</b>, trang chủ = <b>SDA (P0_1)</b>,
-				nguồn (bật/tắt BLE) = <b>RX (P0_5)</b>. Chân trùng với chân màn hình sẽ bị firmware <b>tự tắt</b>
-				(board kiểu dây A: nút nguồn RX bị tắt vì P0_5 là chân DC — chọn chân khác như P1_0 nếu cần).
+				Mặc định theo pad board 6TP: trang sau = <b>TX (P0_4)</b>, trang trước = <b>SWCLK (P1_4)</b>, trang chủ = <b>SWDIO (P1_5)</b>,
+				<b>không có nút nguồn</b> — bật/tắt Bluetooth nằm trong menu Trang chủ trên máy.
+				Đừng hàn nút vào pad RX: trên board 6TP đó là chân DC của màn hình.
+				Chân trùng với chân màn hình sẽ bị firmware <b>tự tắt</b>; SWCLK/SWDIO dùng được vì bản build đã tắt debug SWD
+				(đừng đè nút khi đang nạp firmware bằng J-Link).
 			</p>
 			<div class="flex-container">
 				<div class="flex-group">
 					<label>Trang sau:</label><select id="btnNext" class="btnsel"></select>
 					<label>Trang trước:</label><select id="btnPrev" class="btnsel"></select>
 					<label>Trang chủ:</label><select id="btnSel" class="btnsel"></select>
-					<label>Nguồn:</label><select id="btnPwr" class="btnsel"></select>
 					<button id="btnApply" type="button" class="primary" onclick="applyButtons()" disabled>Lưu chân nút</button>
 				</div>
 				<div class="flex-group">

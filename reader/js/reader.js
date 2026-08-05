@@ -148,7 +148,6 @@ function handleNotify(value, idx) {
       setBtnSelect('btnNext', data[216]);
       setBtnSelect('btnPrev', data[217]);
       setBtnSelect('btnSel', data[218]);
-      setBtnSelect('btnPwr', data[219]);
       const fe = data[220];
       const sel = document.getElementById('fullEvery');
       if ([5, 10, 20, 30].includes(fe)) sel.value = String(fe);
@@ -320,7 +319,8 @@ const BTN_PIN_OPTIONS = [
   ['10', 'P1_0'], ['11', 'P1_1'], ['12', 'P1_2'], ['13', 'P1_3'],
   ['22', 'P2_2'], ['24', 'P2_4'], ['28', 'P2_8'], ['29', 'P2_9'],
 ];
-const BTN_DEFAULTS = { btnNext: 0x04, btnPrev: 0x02, btnSel: 0x01, btnPwr: 0x05 };
+// r2.0: 3 nút, mặc định theo pad board 6TP (TX / SWCLK / SWDIO)
+const BTN_DEFAULTS = { btnNext: 0x04, btnPrev: 0x14, btnSel: 0x15 };
 
 function initBtnSelects() {
   document.querySelectorAll('select.btnsel').forEach(sel => {
@@ -348,7 +348,7 @@ function updateBtnHint() {
   const hint = document.getElementById('btnHint');
   if (!cfgPins) { hint.textContent = 'Kết nối thiết bị để kiểm tra chân trùng với chân màn hình.'; return; }
   const used = [cfgPins[0], cfgPins[1], cfgPins[2], cfgPins[3], cfgPins[4], cfgPins[5], cfgPins[6], cfgPins[10], 0x00, 0x03, 0x06];
-  const names = { btnNext: 'trang sau', btnPrev: 'trang trước', btnSel: 'trang chủ', btnPwr: 'nguồn' };
+  const names = { btnNext: 'trang sau', btnPrev: 'trang trước', btnSel: 'trang chủ' };
   const bad = [];
   for (const id of Object.keys(names)) {
     const v = parseInt(document.getElementById(id).value, 16);
@@ -361,7 +361,10 @@ function updateBtnHint() {
     : '✓ Không có chân nào xung đột với cấu hình màn hình hiện tại.';
 }
 async function applyButtons() {
-  const b = ['btnNext', 'btnPrev', 'btnSel', 'btnPwr'].map(id => parseInt(document.getElementById(id).value, 16));
+  // r2.0 chỉ còn 3 nút; vẫn gửi byte thứ 4 = 0xFE (tắt) để firmware r1.x cũ
+  // (yêu cầu đủ 4 byte) không từ chối gói
+  const b = ['btnNext', 'btnPrev', 'btnSel'].map(id => parseInt(document.getElementById(id).value, 16));
+  b.push(0xFE);
   if (await write(EpdCmd.BTN, b)) addLog('Đã gửi cấu hình chân nút (thiết bị trả btn=ok).');
 }
 
