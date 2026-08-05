@@ -61,7 +61,8 @@
 			<p class="mode-gallery-hint">
 				Chọn file sách: <b>.txt</b>, <b>.epub</b> (sách chữ) — <b>.cbz/.zip</b> hoặc nhiều file ảnh (truyện tranh) —
 				<b>.mobi/.azw3</b> không DRM (thử đọc, nếu không được hãy chuyển sang epub/txt bằng Calibre).
-				Kho sách trong máy chứa ~224KB (fw r2.0): sách dài sẽ được chia thành nhiều <b>phần</b>, mỗi lần gửi một phần
+				Kho sách trong máy chứa ~224KB; chữ Việt được nén bảng mã 8-bit (fw r2.1) nên tương đương ~300KB file .txt,
+				và font đọc 12px hiển thị 18 dòng/trang. Sách dài sẽ được chia thành nhiều <b>phần</b>, mỗi lần gửi một phần
 				(gửi phần mới sẽ thay phần cũ; máy tự lưu trang đang đọc của phần hiện tại).
 			</p>
 			<div class="flex-container">
@@ -114,7 +115,7 @@
 			<div class="flex-container">
 				<div class="flex-group">
 					<button id="sendbookbutton" type="button" class="primary" onclick="sendBook()" disabled>Gửi sách xuống máy</button>
-					<span class="mode-gallery-hint" style="margin:0">Sách chữ: sau khi gửi, máy tự phân trang ~5-10 giây rồi hiện trang 1.</span>
+					<span class="mode-gallery-hint" style="margin:0">Sách chữ: sau khi gửi, máy tự phân trang (sách dài có thể ~30 giây) rồi hiện trang 1. Cần firmware r2.1+.</span>
 				</div>
 			</div>
 		</fieldset>

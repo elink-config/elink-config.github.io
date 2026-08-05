@@ -424,16 +424,66 @@ function stripExt(n) { return n.replace(/\.[^.]+$/, ''); }
 // ---- sách chữ ----
 function normalizeText(t) {
   t = t.replace(/^﻿/, '').replace(/\r\n?/g, '\n');
-  t = t.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n');
+  // nắn ký tự bố cục/punctuation lạ về ASCII: gọn bảng mã EVN1 (1 byte) và
+  // chắc chắn font trên máy có glyph
+  t = t.replace(/ /g, ' ').replace(/[​‌‍﻿]/g, '')
+    .replace(/[“”„«»]/g, '"').replace(/[‘’‚]/g, "'")
+    .replace(/[‐-―−]/g, '-').replace(/…/g, '...');
+  t = t.replace(/[ \t]+\n/g, '\n');
+  // BỎ TOÀN BỘ dòng trống (r2.1 — tối đa chữ trên trang; đoạn văn vẫn
+  // xuống dòng riêng)
+  t = t.replace(/\n{2,}/g, '\n');
   return t.trim();
+}
+
+// ---- bảng mã EVN1 (fw r2.1+): chữ Việt có dấu = 1 byte thay 2-3 byte UTF-8.
+// Sinh bởi fontool/gen_evn_tab.py — PHẢI khớp k_evn_tab trong READER.c.
+const EVN_CHARS = 'àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđÀÁẢÃẠĂẰẮÂẦẤẬÈÉẺẼẸÊỀẾỂỄỆÌÍỈĨỊÒÓỎÕỌÔỒỐỔỖỘƠỜỚỞỢÙÚỦŨỤƯỪỨỬỮỰỲÝỶỸĐ';
+const EVN_MAP = (() => {
+  const m = new Map();
+  [...EVN_CHARS].forEach((c, i) => m.set(c.codePointAt(0), 0x80 + i));
+  return m;
+})();
+
+// Mã hóa EVN1: ASCII giữ nguyên, chữ Việt 1 byte, còn lại 0xFF + u16 LE.
+// starts[i]=1 nếu byte i MỞ ĐẦU một ký tự (để cắt phần không đứt escape);
+// charAt[i] = chỉ số ký tự tại byte i (để giữ text xem trước cho từng phần).
+function evnEncode(text) {
+  const cap = text.length * 3 + 3;
+  const out = new Uint8Array(cap);
+  const starts = new Uint8Array(cap);
+  const charAt = new Uint32Array(cap);
+  let o = 0, ci = 0;
+  for (const ch of text) {
+    const u = ch.codePointAt(0);
+    starts[o] = 1;
+    charAt[o] = ci;
+    if (u < 0x80) {
+      out[o++] = u;
+    } else {
+      const s = EVN_MAP.get(u);
+      if (s !== undefined) {
+        out[o++] = s;
+      } else if (u <= 0xFFFF) {
+        out[o] = 0xFF; out[o + 1] = u & 0xFF; out[o + 2] = u >> 8;
+        charAt[o + 1] = ci; charAt[o + 2] = ci;
+        o += 3;
+      } else {
+        out[o++] = 0x3F; // ngoài BMP (emoji...): thay '?'
+      }
+    }
+    ci++;
+  }
+  return { bytes: out.slice(0, o), starts, charAt };
 }
 
 function loadTextBook(text, title) {
   text = normalizeText(text);
   if (!text) throw new Error('File không có nội dung chữ.');
-  const enc = new TextEncoder();
-  const all = enc.encode(text);
-  // chia phần <= MAX_DATA tại ranh giới đoạn (\n), không cắt giữa ký tự UTF-8
+  const chars = [...text];
+  const enc = evnEncode(text);
+  const all = enc.bytes;
+  // chia phần <= MAX_DATA tại ranh giới đoạn (\n), không cắt giữa escape EVN1
   const parts = [];
   let off = 0;
   while (off < all.length) {
@@ -444,9 +494,11 @@ function loadTextBook(text, title) {
         if (all[i] === 10) { nl = i; break; }
       }
       if (nl > 0) end = nl;
-      else while (end > off && (all[end] & 0xC0) === 0x80) end--;
+      else while (end > off && !enc.starts[end]) end--;
     }
-    parts.push({ bytes: all.slice(off, end) });
+    const c0 = enc.charAt[off];
+    const c1 = end < all.length ? enc.charAt[end] : chars.length;
+    parts.push({ bytes: all.slice(off, end), text: chars.slice(c0, c1).join('').replace(/^\n+/, '') });
     off = end;
     while (off < all.length && all[off] === 10) off++;
   }
@@ -676,8 +728,9 @@ function parseMobi(buf) {
 
 /* ================= Xem trước & thông tin sách ================= */
 
-const PREVIEW_CHARS_PER_LINE = 46;
-const PREVIEW_LINES = 14;
+// khớp metric fw r2.1: font vn12 (Tahoma 12px), 18 dòng x ~57 ký tự
+const PREVIEW_CHARS_PER_LINE = 57;
+const PREVIEW_LINES = 18;
 
 function updateBookUI() {
   const row = document.getElementById('bookInfoRow');
@@ -727,7 +780,7 @@ function currentPart() {
   return book.parts[Math.min(i, book.parts.length - 1)];
 }
 
-// phân trang XEM TRƯỚC (ước lượng — máy tự phân trang thật bằng font unifont)
+// phân trang XEM TRƯỚC (ước lượng — máy tự phân trang thật bằng font vn12)
 function buildPreviewTextPages(text) {
   const pages = [];
   let lines = [];
@@ -764,12 +817,12 @@ async function renderPreview() {
 
   if (book.type === 'text') {
     const part = currentPart();
-    if (!previewTextPages) previewTextPages = buildPreviewTextPages(new TextDecoder().decode(part.bytes));
+    if (!previewTextPages) previewTextPages = buildPreviewTextPages(part.text);
     previewPage = Math.max(0, Math.min(previewPage, previewTextPages.length - 1));
     const lines = previewTextPages[previewPage] || [];
     ctx.fillStyle = 'black';
-    ctx.font = '15px monospace';
-    lines.forEach((l, i) => ctx.fillText(l, 8, 22 + i * 19, 384));
+    ctx.font = '12px sans-serif';
+    lines.forEach((l, i) => ctx.fillText(l, 8, 13 + i * 15, 384));
     ctx.fillRect(8, 280, 384, 1);
     ctx.font = '10px monospace';
     ctx.fillText(`${previewPage + 1}/${previewTextPages.length} (xem trước ước lượng)`, 8, 294);
@@ -899,7 +952,11 @@ async function sendBook() {
     await write(EpdCmd.INIT);
     await mtuReady;
 
-    const type = book.type === 'text' ? 1 : 2;
+    // sách chữ gửi bảng mã EVN1 (type 3) — cần firmware r2.1+
+    if (book.type === 'text' && deviceFw && deviceFw.startsWith('r') && parseFloat(deviceFw.slice(1)) < 2.1) {
+      throw new Error(`firmware ${deviceFw} chưa hiểu bảng mã sách mới — cập nhật firmware r2.1 (mục OTA) rồi gửi lại`);
+    }
+    const type = book.type === 'text' ? 3 : 2;
     setStatus('Mở phiên nhận sách trên thiết bị...');
     const ack = waitNotify(m => (m === 'book=rx') ? m : (m === 'book=err' ? new Error('thiết bị từ chối (book=err)') : null), 8000);
     await write(EpdCmd.BOOK, [0x01, type]);
@@ -907,11 +964,11 @@ async function sendBook() {
     setProgress(2);
 
     let pages = 0, dataLen = 0;
-    if (type === 1) {
+    if (type === 3) {
       // sách chữ: gửi nội dung chiếm 2..80%, máy phân trang 80..99%
       await sendChunks(part.bytes, BOOK_DATA_OFF, 'nội dung', 2, 78);
       dataLen = part.bytes.length;
-      idxEstPages = Math.max(1, Math.round(dataLen / 1000)); // ~1KB chữ/trang
+      idxEstPages = Math.max(1, Math.round(dataLen / 1050)); // ~1KB EVN1/trang (18 dòng x ~57 ký tự)
     } else {
       // truyện tranh: nén 2..30%, mục lục 30..34%, dữ liệu 34..95%
       const blobs = [];
@@ -944,7 +1001,7 @@ async function sendBook() {
     }
 
     setProgress(type === 1 ? 80 : 95);
-    setStatus(type === 1 ? 'Chốt sách — máy đang phân trang (~5-10s)...' : 'Chốt sách...');
+    setStatus(type === 3 ? 'Chốt sách — máy đang phân trang (sách dài có thể ~30s)...' : 'Chốt sách...');
     const done = waitNotify(m => {
       if (m === 'book=err') return new Error('thiết bị báo lỗi khi chốt sách');
       const mm = m.match(/^book=(\d+)$/);
