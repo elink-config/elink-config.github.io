@@ -731,8 +731,8 @@ function parseMobi(buf) {
 
 /* ================= Xem trước & thông tin sách ================= */
 
-// khớp metric fw r2.1: font vn12 (Tahoma 12px bilevel), 19 dòng x ~57 ký tự
-const PREVIEW_CHARS_PER_LINE = 57;
+// khớp metric fw r2.1: font vn12 (Tahoma 12px bilevel), 19 dòng x ~53 ký tự
+const PREVIEW_CHARS_PER_LINE = 53;
 const PREVIEW_LINES = 19;
 
 function updateBookUI() {
