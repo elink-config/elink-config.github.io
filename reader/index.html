@@ -61,7 +61,7 @@
 			<p class="mode-gallery-hint">
 				Chọn file sách: <b>.txt</b>, <b>.epub</b> (sách chữ) — <b>.cbz/.zip</b> hoặc nhiều file ảnh (truyện tranh) —
 				<b>.mobi/.azw3</b> không DRM (thử đọc, nếu không được hãy chuyển sang epub/txt bằng Calibre).
-				Kho sách trong máy chứa ~100KB: sách dài sẽ được chia thành nhiều <b>phần</b>, mỗi lần gửi một phần
+				Kho sách trong máy chứa ~224KB (fw r2.0): sách dài sẽ được chia thành nhiều <b>phần</b>, mỗi lần gửi một phần
 				(gửi phần mới sẽ thay phần cũ; máy tự lưu trang đang đọc của phần hiện tại).
 			</p>
 			<div class="flex-container">
@@ -179,7 +179,8 @@
 				</div>
 			</div>
 			<p class="mode-gallery-hint">Chỉ nạp firmware dòng <b>máy đọc sách</b> (fw_reader_4_2inch_rX.Y.bin).
-				<b>Chú ý:</b> cập nhật firmware sẽ xóa sách trong máy — gửi lại sách sau khi cập nhật.</p>
+				Từ bản r2.0 (map 512KB) kho sách nằm ngoài vùng OTA nên <b>cập nhật firmware giữ nguyên sách</b>;
+				máy đang chạy bản cũ (map 256KB) thì lần cập nhật ĐẦU TIÊN vẫn xóa sách — gửi lại sau khi lên bản mới.</p>
 			<div style="overflow-x:auto">
 				<table class="fw-table">
 					<thead>

@@ -16,10 +16,11 @@ const EpdCmd = {
 const EPD_SERVICE = '62750001-d828-918d-fb46-b6c11c675aec';
 const EPD_CHAR = '62750002-d828-918d-fb46-b6c11c675aec';
 
-// kho sách trên máy: dữ liệu bắt đầu tại +0x3000 của bank, ~100KB dùng được
+// kho sách trên máy (fw r2.0 map 512KB): vùng riêng 240KB tại 0x40000, dữ
+// liệu bắt đầu tại +0x3000 — 224KB dùng được (chừa lề dưới trần 228KB)
 const BOOK_IDX_OFF = 0x1000;
 const BOOK_DATA_OFF = 0x3000;
-const MAX_DATA = 100 * 1024;
+const MAX_DATA = 224 * 1024;
 const MAX_PAGES_PART = 500;
 const PLANE_SIZE = 15000; // 400x300 / 8
 
@@ -957,7 +958,7 @@ async function sendBook() {
     fin[4] = dataLen & 0xFF;
     fin[5] = (dataLen >> 8) & 0xFF;
     fin[6] = (dataLen >> 16) & 0xFF;
-    // byte thứ 4 của len luôn 0 (sách <= 100KB) — chèn vào giữa
+    // byte thứ 4 của len luôn 0 (sách <= 224KB, dưới 16MB) — chèn vào giữa
     const finalize = new Uint8Array(8 + titleBytes.length);
     finalize.set(fin.subarray(0, 7), 0);
     finalize[7] = (dataLen >> 24) & 0xFF;
