@@ -152,8 +152,9 @@ function handleNotify(value, idx) {
       const fe = data[220];
       const sel = document.getElementById('fullEvery');
       if ([0, 5, 10, 20, 30].includes(fe)) sel.value = String(fe);
-      // rd_font offset 221 (fw r2.2+; fw cũ đọc 0xFF -> giữ mặc định Nhỏ)
+      // rd_font offset 221, rd_clock offset 219 (fw r2.2+; cũ đọc 0xFF -> mặc định)
       if (data[221] <= 2) document.getElementById('fontSize').value = String(data[221]);
+      if (data[219] <= 2) document.getElementById('clockMode').value = String(data[219]);
       const pg = data[222] | (data[223] << 8);
       if (pg !== 0xFFFF) document.getElementById('gotoPage').value = pg + 1;
     }
@@ -172,6 +173,13 @@ function handleNotify(value, idx) {
     if (!deviceFw.startsWith('r')) {
       addLog('⚠ Thiết bị đang chạy firmware LỊCH chuẩn (' + deviceFw + '), không phải firmware máy đọc sách (rX.Y).');
       addLog('⚠ Hãy nạp firmware fw_reader_4_2inch_rX.Y.bin (mục OTA bên dưới) trước khi gửi sách.');
+    }
+    // tự đồng bộ giờ ĐỊA PHƯƠNG cho giờ chân trang (fw r2.2+; fw cũ bỏ qua)
+    {
+      const t = Math.floor(Date.now() / 1000) - new Date().getTimezoneOffset() * 60;
+      write(EpdCmd.BOOK, [0x30, t & 0xFF, (t >>> 8) & 0xFF, (t >>> 16) & 0xFF, (t >>> 24) & 0xFF])
+        .then(ok => { if (ok) addLog('Đã đồng bộ giờ cho máy.'); })
+        .catch(() => { });
     }
   } else if (msg.startsWith('bki=')) {
     // máy đang phân trang sách chữ: ánh xạ số trang đã chốt vào 80..99% của
@@ -300,7 +308,7 @@ function updateButtonStatus(busy = false) {
   const dis = (busy || !connected) ? 'disabled' : null;
   document.getElementById('reconnectbutton').disabled = (gattServer == null || connected) ? 'disabled' : null;
   document.getElementById('sendbookbutton').disabled = (dis || !book) ? 'disabled' : null;
-  ['rprevbutton', 'rnextbutton', 'rhomebutton', 'rgotobutton', 'fullEverybutton', 'fontSizebutton', 'btnApply', 'otabutton', 'sendcmdbutton']
+  ['rprevbutton', 'rnextbutton', 'rhomebutton', 'rgotobutton', 'fullEverybutton', 'fontSizebutton', 'clockModebutton', 'btnApply', 'otabutton', 'sendcmdbutton']
     .forEach(id => document.getElementById(id).disabled = dis);
 }
 
@@ -311,6 +319,13 @@ async function readerGoto() {
   const p = Math.max(1, parseInt(document.getElementById('gotoPage').value) || 1) - 1;
   await write(EpdCmd.BOOK, [0x10, p & 0xFF, (p >> 8) & 0xFF]);
 }
+async function setClockMode() {
+  // fw r2.2+: [0x28 0x31 0/1/2] — cơ hội / nhảy từng phút / tắt
+  const v = Math.min(2, Math.max(0, parseInt(document.getElementById('clockMode').value) || 0));
+  if (await write(EpdCmd.BOOK, [0x31, v]))
+    addLog('Giờ chân trang: ' + ['cơ hội (cập nhật khi màn vẽ lại)', 'nhảy từng phút (tốn pin hơn)', 'tắt hiển thị'][v] + '.');
+}
+
 async function setFontSize() {
   // fw r2.2+: [0x28 0x22 0/1/2] — sách chữ tự phân trang lại (bki= rồi book=)
   const v = Math.min(2, Math.max(0, parseInt(document.getElementById('fontSize').value) || 0));

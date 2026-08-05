@@ -132,6 +132,16 @@
 					<button id="rgotobutton" type="button" class="primary" onclick="readerGoto()" disabled>Đi</button>
 				</div>
 				<div class="flex-group">
+					<label for="clockMode">Giờ chân trang (fw r2.2+):</label>
+					<select id="clockMode">
+						<option value="0" selected>Cơ hội (mặc định — không tốn pin)</option>
+						<option value="1">Nhảy từng phút (tốn pin như máy đồng hồ)</option>
+						<option value="2">Tắt hiển thị</option>
+					</select>
+					<button id="clockModebutton" type="button" class="secondary" onclick="setClockMode()" disabled>Áp dụng</button>
+					<span class="mode-gallery-hint" style="margin:0">Giờ tự đồng bộ từ điện thoại mỗi lần kết nối. «Cơ hội» = giờ chỉ cập nhật khi màn vốn dĩ vẽ lại (lật trang, vào/ra Trang chủ) — đang đọc thì gần như luôn đúng; «Nhảy từng phút» = máy tự vẽ lại mỗi phút kể cả khi để không.</span>
+				</div>
+				<div class="flex-group">
 					<label for="fontSize">Cỡ chữ (fw r2.2+):</label>
 					<select id="fontSize" onchange="previewTextPages=null;renderPreview()">
 						<option value="0" selected>Nhỏ 12px (19 dòng)</option>
