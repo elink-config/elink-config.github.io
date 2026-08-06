@@ -193,16 +193,56 @@
 				</div>
 			</div>
 			<details class="mode-gallery-hint" style="margin:6px 0 0">
-				<summary>Hướng dẫn hàn nút &amp; cách dùng</summary>
+				<summary>Hướng dẫn hàn nút &amp; cách dùng (kèm ảnh vị trí)</summary>
 				<p style="margin:6px 0 0">
 					Hàn 3 nút từ các điểm test xuống <b>GND</b> (nhấn = nối đất, nên nối tiếp điện trở ~1kΩ).
-					Mặc định theo pad board 6TP: trang sau = <b>SWCLK (P1_4)</b>, trang trước = <b>TX (P0_4)</b>,
-					trang chủ = <b>SWDIO (P1_5)</b>. Đừng hàn vào pad <b>RX</b> — trên board 6TP đó là chân DC của màn hình.
+					Mặc định: trang sau = <b>SWCLK (P1_4)</b>, trang trước = <b>TX (P0_4)</b>,
+					trang chủ = <b>SWDIO (P1_5)</b>. Đừng hàn vào pad <b>RX/URX</b> hay <b>VBAT</b>.
 					Không có nút nguồn: bật/tắt Bluetooth nằm trong menu Trang chủ trên máy.
 					Ở màn Trang chủ, hai nút trang sau/trước <b>di chuyển menu</b>, nút trang chủ <b>chọn</b>.
 					Chân trùng với chân màn hình sẽ bị firmware <b>tự tắt</b>; SWCLK/SWDIO dùng được vì build đã tắt debug SWD
 					(đừng đè nút khi đang nạp firmware bằng J-Link).
 				</p>
+				<p style="margin:8px 0 4px">
+					<b>Chú giải màu:</b>
+					<span style="color:#d32f2f;font-weight:bold">● Trang sau (SWCLK)</span> —
+					<span style="color:#1565c0;font-weight:bold">● Trang trước (TX)</span> —
+					<span style="color:#2e7d32;font-weight:bold">● Trang chủ (SWDIO)</span>
+				</p>
+				<div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:6px">
+					<!-- Board kiểu 1: Alibaba Group 20181101 — hàng 5 pad RST GND URX UTX VBAT
+					     + hàng 2 pad SWDIO/SWCLK cạnh phải MCU -->
+					<figure style="position:relative;flex:1 1 380px;max-width:640px;margin:0">
+						<img src="img/board_6tp_v1.jpg" style="width:100%;display:block;border-radius:6px"
+							alt="[Chưa có ảnh img/board_6tp_v1.jpg — board Alibaba 20181101]">
+						<!-- TX = pad UTX (thứ 4 từ trái, hàng 5 chân) -->
+						<span style="position:absolute;left:38.7%;top:21.5%;width:5%;aspect-ratio:1;transform:translate(-50%,-50%);border:3px solid #1565c0;border-radius:50%"></span>
+						<span style="position:absolute;left:38.7%;top:8%;transform:translate(-50%,0);background:#1565c0;color:#fff;padding:1px 6px;border-radius:8px;font-size:11px;white-space:nowrap">Trang trước ▼ (UTX)</span>
+						<!-- SWDIO = pad TRÁI của hàng 2 chân -->
+						<span style="position:absolute;left:57.8%;top:28%;width:5%;aspect-ratio:1;transform:translate(-50%,-50%);border:3px solid #2e7d32;border-radius:50%"></span>
+						<span style="position:absolute;left:57.8%;top:40%;transform:translate(-70%,0);background:#2e7d32;color:#fff;padding:1px 6px;border-radius:8px;font-size:11px;white-space:nowrap">▲ Trang chủ (SWDIO)</span>
+						<!-- SWCLK = pad PHẢI cạnh SWDIO -->
+						<span style="position:absolute;left:61.4%;top:28%;width:5%;aspect-ratio:1;transform:translate(-50%,-50%);border:3px solid #d32f2f;border-radius:50%"></span>
+						<span style="position:absolute;left:61.4%;top:14%;transform:translate(-20%,0);background:#d32f2f;color:#fff;padding:1px 6px;border-radius:8px;font-size:11px;white-space:nowrap">Trang sau ▼ (SWCLK)</span>
+						<figcaption style="font-size:12px;margin-top:4px">Board «Alibaba Group 20181101»: TX = pad ghi <b>UTX</b> (thứ 4 từ trái trong hàng 5 chân); hàng 2 chân cạnh MCU: <b>SWDIO bên trái</b>, <b>SWCLK bên phải</b>.</figcaption>
+					</figure>
+					<!-- Board kiểu 2: BZT06629 — hàng 6 pad TP4 TP2 TP8 TP7 TP1 TP3
+					     + TP5/TP6 dưới thạch anh -->
+					<figure style="position:relative;flex:1 1 380px;max-width:640px;margin:0">
+						<img src="img/board_6tp_v2.jpg" style="width:100%;display:block;border-radius:6px"
+							alt="[Chưa có ảnh img/board_6tp_v2.jpg — board BZT06629]">
+						<!-- TX = TP7 (thứ 4 từ trái, hàng 6 chân) -->
+						<span style="position:absolute;left:40.8%;top:25%;width:4%;aspect-ratio:1;transform:translate(-50%,-50%);border:3px solid #1565c0;border-radius:50%"></span>
+						<span style="position:absolute;left:40.8%;top:13%;transform:translate(-50%,0);background:#1565c0;color:#fff;padding:1px 6px;border-radius:8px;font-size:11px;white-space:nowrap">Trang trước ▼ (TP7)</span>
+						<!-- SWCLK = TP5 (dưới thạch anh, chân TRÊN) -->
+						<span style="position:absolute;left:57.9%;top:41%;width:4%;aspect-ratio:1;transform:translate(-50%,-50%);border:3px solid #d32f2f;border-radius:50%"></span>
+						<span style="position:absolute;left:63%;top:38%;background:#d32f2f;color:#fff;padding:1px 6px;border-radius:8px;font-size:11px;white-space:nowrap">◀ Trang sau (TP5)</span>
+						<!-- SWDIO = TP6 (ngay DƯỚI TP5) -->
+						<span style="position:absolute;left:57.7%;top:46.3%;width:4%;aspect-ratio:1;transform:translate(-50%,-50%);border:3px solid #2e7d32;border-radius:50%"></span>
+						<span style="position:absolute;left:63%;top:47%;background:#2e7d32;color:#fff;padding:1px 6px;border-radius:8px;font-size:11px;white-space:nowrap">◀ Trang chủ (TP6)</span>
+						<figcaption style="font-size:12px;margin-top:4px">Board «BZT06629»: TX = <b>TP7</b> (thứ 4 từ trái trong hàng 6 chân); dưới thạch anh: <b>TP5 = Trang sau (SWCLK)</b>, <b>TP6 ngay dưới = Trang chủ (SWDIO)</b>.</figcaption>
+					</figure>
+				</div>
 			</details>
 		</fieldset>
 
