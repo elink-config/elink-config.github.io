@@ -6,6 +6,7 @@ let bleDevice, gattServer, epdService, epdCharacteristic;
 let msgIndex, textDecoderInst, startTime;
 let cfgPins = null;      // 11 byte chân màn hình từ config blob (tính xung đột nút)
 let deviceFw = null;
+let devFont = null, devRot = null; // cỡ chữ/hướng màn MÁY đang lưu (config blob)
 
 const EpdCmd = {
   INIT: 0x01,
@@ -168,10 +169,10 @@ function handleNotify(value, idx) {
       const sel = document.getElementById('fullEvery');
       if ([0, 1, 3, 5, 10].includes(fe)) sel.value = String(fe);
       // rd_font offset 221, rd_clock offset 219 (fw r2.2+; cũ đọc 0xFF -> mặc định)
-      if (data[221] <= 2) document.getElementById('fontSize').value = String(data[221]);
+      if (data[221] <= 2) { devFont = data[221]; document.getElementById('fontSize').value = String(devFont); }
       if (data[219] <= 2) document.getElementById('clockMode').value = String(data[219]);
       // rd_rot offset 204 (byte cuối vùng note cũ — fw r1.0+): 0 ngang / 1 dọc
-      if (data[204] <= 1) document.getElementById('rotMode').value = String(data[204]);
+      if (data[204] <= 1) { devRot = data[204]; document.getElementById('rotMode').value = String(devRot); }
       previewTextPages = null;  // select đồng bộ theo máy: preview dựng lại
       renderPreview();
       const pg = data[222] | (data[223] << 8);
@@ -222,6 +223,8 @@ function resetVariables() {
   msgIndex = 0;
   cfgPins = null;
   deviceFw = null;
+  devFont = null;
+  devRot = null;
   notifyWaiters.forEach(w => { clearTimeout(w.timer); w.reject(new Error('Mất kết nối')); });
   notifyWaiters = [];
 }
@@ -1058,9 +1061,17 @@ async function sendBook() {
     // đổi lựa chọn chỉ cập nhật preview, bấm gửi sách mới áp xuống máy)
     const bkFont = Math.min(2, Math.max(0, parseInt(document.getElementById('fontSize').value) || 0));
     const bkRot = document.getElementById('rotMode').value === '1' ? 1 : 0;
+    // TƯƠNG THÍCH build cũ chưa hiểu 0x01 mở rộng [font, rot]: máy đang lưu
+    // giá trị khác thì gửi lệnh đổi trực tiếp trước — config được ghi ngay,
+    // còn phiên phân-trang-lại 2 lệnh này khởi động sẽ bị 0x01 hủy tức thì
+    // (rx_begin abort reindex) nên không tốn thời gian chờ
+    if (devFont !== null && devFont !== bkFont) await write(EpdCmd.BOOK, [0x22, bkFont]);
+    if (devRot !== null && devRot !== bkRot) await write(EpdCmd.BOOK, [0x23, bkRot]);
     const ack = waitNotify(m => (m === 'book=rx') ? m : (m === 'book=err' ? new Error('thiết bị từ chối (book=err)') : null), 8000);
     await write(EpdCmd.BOOK, [0x01, type, bkFont, bkRot]);
     await ack;
+    devFont = bkFont;
+    devRot = bkRot;
     setProgress(2);
 
     let pages = 0, dataLen = 0;
