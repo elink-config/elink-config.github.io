@@ -452,14 +452,34 @@
 							<td>19/07/2026</td>
 							<td><a href="OTA firmware/fw_4_2inch_v1.4.bin" download>Tải về</a></td>
 						</tr>
-                        <!-- <tr>
+                        <tr>
 							<td>6</td>
 							<td>1.5</td>
-							<td>Thêm chế độ slide mới cho phép tự chuyển đổi giữa 3 ảnh đã upload trước đó</td>
-							<td>19/07/2026</td>
-                            <td>🚧</td>
-							<!-- <td><a href="OTA firmware/fw_4_2inch_v1.3.bin" download>Tải về</a></td> -->
-						</tr> -->
+							<td>Thêm chức năng tự thay đổi giữa 3 hình ảnh. <br>Bật nút bấm vật lý chuyển chế độ màn hình. <br>Sửa báo pin về 100% khi ở mức trên 3.1 vol</td>
+							<td>30/07/2026</td>
+							<td><a href="OTA firmware/fw_4_2inch_v1.5.bin" download>Tải về</a></td>
+						</tr>
+                        <tr>
+							<td>7</td>
+							<td>1.6</td>
+							<td>Thêm báo pin vào chế độ số 10</td>
+							<td>04/08/2026</td>
+							<td><a href="OTA firmware/fw_4_2inch_v1.6.bin" download>Tải về</a></td>
+						</tr>
+                        <tr>
+							<td>8</td>
+							<td>1.7</td>
+							<td>Làm đậm chữ và thêm màu đỏ cho toàn bộ giao diện, tuần bắt đầu từ Thứ 2. <br>Thêm lại «Giờ hắc đạo» cho Lịch vạn niên. <br>Bỏ 2 chế độ Đồng hồ (2) và Trăng (18) để tiết kiệm bộ nhớ. <br>Sửa lỗi tự đổi ảnh giữa 3 khe không hoạt động khi không kết nối Bluetooth</td>
+							<td>04/08/2026</td>
+							<td><a href="OTA firmware/fw_4_2inch_v1.7.bin" download>Tải về</a></td>
+						</tr>
+                        <tr>
+							<td>9</td>
+							<td>1.8</td>
+							<td>Sửa lỗi tự đổi ảnh giữa 3 khe không hoạt động khi không kết nối Bluetooth. <br>Sửa lỗi nút bấm đổi giao diện chỉ hoạt động một lần từ lúc cấp nguồn. <br>LƯU Ý: sau mỗi lần cập nhật firmware, 3 khe ảnh bị xóa — cần gửi lại ảnh rồi bật lại chu kỳ tự đổi ảnh</td>
+							<td>05/08/2026</td>
+							<td><a href="OTA firmware/fw_4_2inch_v1.8.bin" download>Tải về</a></td>
+						</tr>
 					</tbody>
 				</table>
 			</div>
@@ -484,6 +504,8 @@
 				<div class="flex-group">
 					<label>Độ phân giải hiện tại:</label>
 					<span id="resLabel" class="system-time">212×104</span>
+					<!-- nút đổi phân giải: chỉ hiện ở chế độ debug (?debug=true) -->
+					<button id="resswitchbutton" type="button" class="primary debug" onclick="switchResolution()">Chuyển sang 250×122</button>
 				</div>
 				<div class="flex-group">
 					<label>Nhiệt độ màn hình:</label>
@@ -808,10 +830,24 @@
 						</tr>
 						<tr>
 							<td>6</td>
-							<td>1.4/td>
+							<td>1.4</td>
 							<td>Fix lỗi vạch đen bên trái màn hình</td>
 							<td>26/07/2026</td>
 							<td><a href="OTA firmware/fw_2_13inch_v1.4.bin" download>Tải về</a></td>
+						</tr>
+                        <tr>
+							<td>7</td>
+							<td>1.5</td>
+							<td>Fix lỗi update OTA bị treo</td>
+							<td>27/07/2026</td>
+							<td><a href="OTA firmware/fw_2_13inch_v1.5.bin" download>Tải về</a></td>
+						</tr>
+                        <tr>
+							<td>8</td>
+							<td>1.6</td>
+							<td>Cập nhật lại hiển thị % pin đúng với dung lượng pin thực tế</td>
+							<td>30/07/2026</td>
+							<td><a href="OTA firmware/fw_2_13inch_v1.6.bin" download>Tải về</a></td>
 						</tr>
 					</tbody>
 				</table>

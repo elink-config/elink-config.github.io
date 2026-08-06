@@ -231,6 +231,9 @@
   // returns true when the device may be used (activated, or old firmware
   // that does not implement the activation handshake at all)
   async function checkActivation(type) {
+    // chế độ dev (?debug=true): bỏ qua kiểm tra kích hoạt, không hiện popup
+    // (helper ?act=<MAC> vẫn mở popup chủ động để soi giao diện)
+    if (isDebugMode()) return true;
     try {
       if (type === '2_13' || type === '2_9') {   // cùng giao thức HM 0xff00
         const s = await act213Query();
