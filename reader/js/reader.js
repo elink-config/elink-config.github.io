@@ -171,10 +171,9 @@ function handleNotify(value, idx) {
       if (data[221] <= 2) document.getElementById('fontSize').value = String(data[221]);
       if (data[219] <= 2) document.getElementById('clockMode').value = String(data[219]);
       // rd_rot offset 204 (byte cuối vùng note cũ — fw r1.0+): 0 ngang / 1 dọc
-      if (data[204] <= 1) {
-        document.getElementById('rotMode').value = String(data[204]);
-        previewTextPages = null;
-      }
+      if (data[204] <= 1) document.getElementById('rotMode').value = String(data[204]);
+      previewTextPages = null;  // select đồng bộ theo máy: preview dựng lại
+      renderPreview();
       const pg = data[222] | (data[223] << 8);
       if (pg !== 0xFFFF) document.getElementById('gotoPage').value = pg + 1;
     }
@@ -321,7 +320,7 @@ function updateButtonStatus(busy = false) {
   const dis = (busy || !connected) ? 'disabled' : null;
   document.getElementById('reconnectbutton').disabled = (gattServer == null || connected) ? 'disabled' : null;
   document.getElementById('sendbookbutton').disabled = (dis || !book) ? 'disabled' : null;
-  ['rprevbutton', 'rnextbutton', 'rhomebutton', 'rgotobutton', 'fullEverybutton', 'fontSizebutton', 'rotModebutton', 'clockModebutton', 'syncClockbutton', 'btnApply', 'otabutton', 'sendcmdbutton']
+  ['rprevbutton', 'rnextbutton', 'rhomebutton', 'rgotobutton', 'fullEverybutton', 'clockModebutton', 'syncClockbutton', 'btnApply', 'otabutton', 'sendcmdbutton']
     .forEach(id => document.getElementById(id).disabled = dis);
 }
 
@@ -360,65 +359,9 @@ async function setClockMode() {
     addLog('Giờ thiết bị: ' + ['cập nhật khi chuyển trang', 'tự động cập nhật', 'tắt hiển thị'][v] + '.');
 }
 
-async function setFontSize() {
-  // fw r2.2+: [0x28 0x22 0/1/2] — sách chữ tự phân trang lại (bki= rồi book=)
-  const v = Math.min(2, Math.max(0, parseInt(document.getElementById('fontSize').value) || 0));
-  idxEstPages = 0;
-  fontApplyBusy = true;
-  updateButtonStatus(true);
-  setProgress(2);
-  setStatus('Máy đang phân trang lại theo cỡ chữ mới...');
-  const done = waitNotify(m => {
-    const mm = m.match(/^book=(\d+)$/);
-    return mm ? parseInt(mm[1]) : null;
-  }, 180000);
-  try {
-    if (!(await write(EpdCmd.BOOK, [0x22, v]))) throw new Error('gửi lệnh thất bại');
-    addLog(`Đã đổi cỡ chữ (${['nhỏ 12px', 'vừa 14px', 'lớn 16px'][v]}) — máy đang phân trang lại...`);
-    const pages = await done;
-    setProgress(100);
-    setStatus(`Xong! Phân trang lại theo cỡ chữ mới: ${pages} trang.`);
-    addLog(`Phân trang lại xong: ${pages} trang.`);
-    setTimeout(() => setProgress(null), 3000);
-  } catch (e) {
-    setProgress(null);
-    setStatus('');
-    addLog('Không thấy máy báo xong (máy không có sách chữ? — cỡ chữ vẫn đã lưu). ' +
-      'Nếu vừa mất kết nối: máy vẫn TỰ phân trang tiếp, chờ xong rồi kết nối lại.');
-  }
-  fontApplyBusy = false;
-  updateButtonStatus();
-}
-
-async function setRotation() {
-  // fw r1.0+: [0x28 0x23 0/1] — đổi hướng cũng phân trang lại như đổi cỡ chữ
-  const v = document.getElementById('rotMode').value === '1' ? 1 : 0;
-  idxEstPages = 0;
-  fontApplyBusy = true;
-  updateButtonStatus(true);
-  setProgress(2);
-  setStatus('Máy đang phân trang lại theo hướng màn mới...');
-  const done = waitNotify(m => {
-    const mm = m.match(/^book=(\d+)$/);
-    return mm ? parseInt(mm[1]) : null;
-  }, 180000);
-  try {
-    if (!(await write(EpdCmd.BOOK, [0x23, v]))) throw new Error('gửi lệnh thất bại');
-    addLog(`Đã đổi hướng màn hình (${v ? 'dọc' : 'ngang'}) — máy đang phân trang lại...`);
-    const pages = await done;
-    setProgress(100);
-    setStatus(`Xong! Phân trang lại theo hướng ${v ? 'dọc' : 'ngang'}: ${pages} trang.`);
-    addLog(`Phân trang lại xong: ${pages} trang.`);
-    setTimeout(() => setProgress(null), 3000);
-  } catch (e) {
-    setProgress(null);
-    setStatus('');
-    addLog('Không thấy máy báo xong (máy không có sách chữ? — hướng màn vẫn đã lưu). ' +
-      'Nếu vừa mất kết nối: máy vẫn TỰ phân trang tiếp, chờ xong rồi kết nối lại.');
-  }
-  fontApplyBusy = false;
-  updateButtonStatus();
-}
+// (setFontSize/setRotation đã BỎ: cỡ chữ + hướng màn chỉ đổi preview tại chỗ,
+// áp xuống máy kèm lệnh mở phiên [0x01 type font rot] khi bấm «Gửi sách».
+// Firmware vẫn giữ BOOK 0x22/0x23 cho tương thích.)
 
 async function setFullEvery() {
   let n = parseInt(document.getElementById('fullEvery').value);
@@ -1110,8 +1053,13 @@ async function sendBook() {
     // gate < r2.1 dev cũ đã bỏ khi đánh số lại phiên bản công khai từ r1.0
     const type = book.type === 'text' ? 3 : 2;
     setStatus('Mở phiên nhận sách trên thiết bị...');
+    // gửi kèm cỡ chữ + hướng màn đang chọn: máy đặt config rồi phân trang
+    // sách mới theo lưới đó luôn (2 select không còn nút Áp dụng riêng —
+    // đổi lựa chọn chỉ cập nhật preview, bấm gửi sách mới áp xuống máy)
+    const bkFont = Math.min(2, Math.max(0, parseInt(document.getElementById('fontSize').value) || 0));
+    const bkRot = document.getElementById('rotMode').value === '1' ? 1 : 0;
     const ack = waitNotify(m => (m === 'book=rx') ? m : (m === 'book=err' ? new Error('thiết bị từ chối (book=err)') : null), 8000);
-    await write(EpdCmd.BOOK, [0x01, type]);
+    await write(EpdCmd.BOOK, [0x01, type, bkFont, bkRot]);
     await ack;
     setProgress(2);
 

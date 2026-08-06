@@ -6,7 +6,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>Máy đọc sách E-Ink 4.2" (DA14585)</title>
 	<link rel="shortcut icon" type="image/png" href="favicon.png">
-	<link rel="stylesheet" href="css/main.css?v=20260806e">
+	<link rel="stylesheet" href="css/main.css?v=20260806f">
 	<script>
 		// apply the saved theme before first paint to avoid a flash
 		(function () {
@@ -152,8 +152,7 @@
 						<option value="1">Vừa 14px (16 dòng)</option>
 						<option value="2">Lớn 16px (14 dòng)</option>
 					</select>
-					<button id="fontSizebutton" type="button" class="secondary" onclick="setFontSize()" disabled>Áp dụng</button>
-					<span class="mode-gallery-hint" style="margin:0">Máy tự phân trang lại (~vài chục giây với sách dài), giữ đúng vị trí đang đọc.</span>
+					<span class="mode-gallery-hint" style="margin:0">Chọn xong xem ngay ở khung xem trước.</span>
 				</div>
 				<div class="flex-group">
 					<label for="rotMode">Hướng màn hình:</label>
@@ -161,8 +160,7 @@
 						<option value="0" selected>Ngang (mặc định)</option>
 						<option value="1">Dọc (xoay 90°)</option>
 					</select>
-					<button id="rotModebutton" type="button" class="secondary" onclick="setRotation()" disabled>Áp dụng</button>
-					<span class="mode-gallery-hint" style="margin:0">Chỉ trang đọc sách chữ xoay dọc; menu máy và truyện tranh vẫn ngang.</span>
+					<span class="mode-gallery-hint" style="margin:0">Cỡ chữ + hướng màn áp xuống máy khi bấm «Gửi sách xuống máy» (chỉ trang đọc sách chữ xoay dọc; menu máy và truyện tranh vẫn ngang).</span>
 				</div>
 				<div class="flex-group">
 					<label for="clockMode">Giờ thiết bị:</label>
@@ -267,8 +265,8 @@
 			</span>
 		</div>
 	</div>
-	<script type="text/javascript" src="js/dithering.js?v=20260806e"></script>
-	<script type="text/javascript" src="js/reader.js?v=20260806e"></script>
+	<script type="text/javascript" src="js/dithering.js?v=20260806f"></script>
+	<script type="text/javascript" src="js/reader.js?v=20260806f"></script>
 </body>
 
 </html>
