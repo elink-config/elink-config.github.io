@@ -203,52 +203,19 @@
 					Chân trùng với chân màn hình sẽ bị firmware <b>tự tắt</b>; SWCLK/SWDIO dùng được vì build đã tắt debug SWD
 					(đừng đè nút khi đang nạp firmware bằng J-Link).
 				</p>
-				<p style="margin:8px 0 4px">
-					<b>Chú giải màu:</b>
-					<span style="color:#d32f2f;font-weight:bold">● Trang sau (SWCLK)</span> —
-					<span style="color:#1565c0;font-weight:bold">● Trang trước (TX)</span> —
-					<span style="color:#2e7d32;font-weight:bold">● Trang chủ (SWDIO)</span> —
-					<span style="color:#37474f;font-weight:bold">● GND (dây chung của cả 3 nút)</span>
-				</p>
+				<!-- Chú thích được NƯỚNG THẲNG vào ảnh (img/annotate.py — vòng khoanh
+				     viền trắng + đường chỉ + hộp nhãn, tọa độ đo từ ảnh gốc). Đổi ảnh
+				     board: chạy lại annotate.py với 2 ảnh gốc mới. -->
 				<div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:6px">
-					<!-- Board kiểu 1: Alibaba Group 20181101 — hàng 5 pad RST GND URX UTX VBAT
-					     + hàng 2 pad SWDIO/SWCLK cạnh phải MCU. Tọa độ % ĐO TỪ ẢNH GỐC,
-					     đã kiểm bằng ảnh vẽ thử (check_v1.jpg) -->
-					<figure style="position:relative;flex:1 1 380px;max-width:640px;margin:0">
+					<figure style="flex:1 1 380px;max-width:680px;margin:0">
 						<img src="img/board_6tp_v1.jpg" style="width:100%;display:block;border-radius:6px"
 							alt="[Thiếu ảnh img/board_6tp_v1.jpg — board Alibaba 20181101]">
-						<!-- GND = pad thứ 2 từ trái, hàng 5 chân -->
-						<span style="position:absolute;left:34.6%;top:24.2%;width:3%;aspect-ratio:1;transform:translate(-50%,-50%);border:3px solid #37474f;border-radius:50%"></span>
-						<span style="position:absolute;left:31%;top:12%;transform:translate(-50%,0);background:#37474f;color:#fff;padding:1px 6px;border-radius:8px;font-size:11px;white-space:nowrap">GND ▼</span>
-						<!-- TX = pad UTX (thứ 4 từ trái, hàng 5 chân) -->
-						<span style="position:absolute;left:39.6%;top:24.2%;width:3%;aspect-ratio:1;transform:translate(-50%,-50%);border:3px solid #1565c0;border-radius:50%"></span>
-						<span style="position:absolute;left:43%;top:12%;transform:translate(-50%,0);background:#1565c0;color:#fff;padding:1px 6px;border-radius:8px;font-size:11px;white-space:nowrap">Trang trước ▼ (UTX)</span>
-						<!-- SWDIO = pad TRÁI của hàng 2 chân -->
-						<span style="position:absolute;left:57.0%;top:27.1%;width:2.6%;aspect-ratio:1;transform:translate(-50%,-50%);border:3px solid #2e7d32;border-radius:50%"></span>
-						<span style="position:absolute;left:55%;top:37%;transform:translate(-60%,0);background:#2e7d32;color:#fff;padding:1px 6px;border-radius:8px;font-size:11px;white-space:nowrap">▲ Trang chủ (SWDIO)</span>
-						<!-- SWCLK = pad PHẢI cạnh SWDIO -->
-						<span style="position:absolute;left:58.7%;top:26.7%;width:2.6%;aspect-ratio:1;transform:translate(-50%,-50%);border:3px solid #d32f2f;border-radius:50%"></span>
-						<span style="position:absolute;left:62%;top:15%;transform:translate(-20%,0);background:#d32f2f;color:#fff;padding:1px 6px;border-radius:8px;font-size:11px;white-space:nowrap">Trang sau ▼ (SWCLK)</span>
-						<figcaption style="font-size:12px;margin-top:4px">Board «Alibaba Group 20181101»: GND = pad thứ 2, TX = pad ghi <b>UTX</b> (thứ 4) trong hàng 5 chân; hàng 2 chân cạnh MCU: <b>SWDIO bên trái</b>, <b>SWCLK bên phải</b>.</figcaption>
+						<figcaption style="font-size:12px;margin-top:4px">Board «Alibaba Group 20181101»: GND = pad thứ 2, Trang trước = pad <b>UTX</b> (thứ 4) trong hàng 5 chân; hàng 2 chân cạnh MCU: <b>SWDIO bên trái = Trang chủ</b>, <b>SWCLK bên phải = Trang sau</b>.</figcaption>
 					</figure>
-					<!-- Board kiểu 2: BZT06629 — hàng 6 pad TP4 TP2 TP8 TP7 TP1 TP3
-					     + TP5/TP6 dưới thạch anh. Tọa độ đã kiểm (check_v2.jpg) -->
-					<figure style="position:relative;flex:1 1 380px;max-width:640px;margin:0">
+					<figure style="flex:1 1 380px;max-width:680px;margin:0">
 						<img src="img/board_6tp_v2.jpg" style="width:100%;display:block;border-radius:6px"
 							alt="[Thiếu ảnh img/board_6tp_v2.jpg — board BZT06629]">
-						<!-- GND = TP2 (thứ 2 từ trái, hàng 6 chân) -->
-						<span style="position:absolute;left:35.3%;top:24.0%;width:2.4%;aspect-ratio:1;transform:translate(-50%,-50%);border:3px solid #37474f;border-radius:50%"></span>
-						<span style="position:absolute;left:32%;top:13%;transform:translate(-50%,0);background:#37474f;color:#fff;padding:1px 6px;border-radius:8px;font-size:11px;white-space:nowrap">GND ▼ (TP2)</span>
-						<!-- TX = TP7 (thứ 4 từ trái, hàng 6 chân) -->
-						<span style="position:absolute;left:40.3%;top:24.2%;width:2.4%;aspect-ratio:1;transform:translate(-50%,-50%);border:3px solid #1565c0;border-radius:50%"></span>
-						<span style="position:absolute;left:45%;top:13%;transform:translate(-50%,0);background:#1565c0;color:#fff;padding:1px 6px;border-radius:8px;font-size:11px;white-space:nowrap">Trang trước ▼ (TP7)</span>
-						<!-- SWCLK = TP5 (dưới thạch anh, chân TRÊN) -->
-						<span style="position:absolute;left:57.9%;top:37.7%;width:2%;aspect-ratio:1;transform:translate(-50%,-50%);border:3px solid #d32f2f;border-radius:50%"></span>
-						<span style="position:absolute;left:61.5%;top:35%;background:#d32f2f;color:#fff;padding:1px 6px;border-radius:8px;font-size:11px;white-space:nowrap">◀ Trang sau (TP5)</span>
-						<!-- SWDIO = TP6 (ngay DƯỚI TP5) -->
-						<span style="position:absolute;left:58.3%;top:40.4%;width:2%;aspect-ratio:1;transform:translate(-50%,-50%);border:3px solid #2e7d32;border-radius:50%"></span>
-						<span style="position:absolute;left:61.5%;top:42%;background:#2e7d32;color:#fff;padding:1px 6px;border-radius:8px;font-size:11px;white-space:nowrap">◀ Trang chủ (TP6)</span>
-						<figcaption style="font-size:12px;margin-top:4px">Board «BZT06629»: GND = <b>TP2</b> (thứ 2), TX = <b>TP7</b> (thứ 4) trong hàng 6 chân; dưới thạch anh: <b>TP5 = Trang sau (SWCLK)</b>, <b>TP6 ngay dưới = Trang chủ (SWDIO)</b>.</figcaption>
+						<figcaption style="font-size:12px;margin-top:4px">Board «BZT06629»: GND = <b>TP2</b> (thứ 2), Trang trước = <b>TP7</b> (thứ 4) trong hàng 6 chân; dưới thạch anh: <b>TP5 = Trang sau</b>, <b>TP6 ngay dưới = Trang chủ</b>.</figcaption>
 					</figure>
 				</div>
 			</details>
