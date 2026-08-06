@@ -327,7 +327,7 @@ async function syncClock() {
     addLog('Máy đã nhận giờ (' + new Date().toTimeString().slice(0, 5) + ') — footer sẽ hiện giờ ở lần vẽ kế.');
     return true;
   } catch (e) {
-    addLog('⚠ Máy KHÔNG xác nhận (clk=ok) — firmware trên máy là build r2.2 CŨ chưa có tính năng giờ. Hãy build lại từ code mới nhất rồi OTA.');
+    addLog('⚠ Máy KHÔNG xác nhận (clk=ok) — firmware trên máy là build cũ chưa có tính năng giờ. Hãy cập nhật firmware mới nhất (mục OTA) rồi thử lại.');
     return false;
   }
 }
@@ -1026,10 +1026,8 @@ async function sendBook() {
     await write(EpdCmd.INIT);
     await mtuReady;
 
-    // sách chữ gửi bảng mã EVN1 (type 3) — cần firmware r2.1+
-    if (book.type === 'text' && deviceFw && deviceFw.startsWith('r') && parseFloat(deviceFw.slice(1)) < 2.1) {
-      throw new Error(`firmware ${deviceFw} chưa hiểu bảng mã sách mới — cập nhật firmware r2.1 (mục OTA) rồi gửi lại`);
-    }
+    // sách chữ gửi bảng mã EVN1 (type 3) — mọi bản phát hành (r1.0+) đều hiểu;
+    // gate < r2.1 dev cũ đã bỏ khi đánh số lại phiên bản công khai từ r1.0
     const type = book.type === 'text' ? 3 : 2;
     setStatus('Mở phiên nhận sách trên thiết bị...');
     const ack = waitNotify(m => (m === 'book=rx') ? m : (m === 'book=err' ? new Error('thiết bị từ chối (book=err)') : null), 8000);
