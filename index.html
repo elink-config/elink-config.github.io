@@ -480,44 +480,11 @@
 							<td>05/08/2026</td>
 							<td><a href="OTA firmware/fw_4_2inch_v1.8.bin" download>Tải về</a></td>
 						</tr>
-                        <tr>
-							<td>10</td>
-							<td>r1.0</td>
-							<td>Firmware <b>máy đọc sách</b> (biến thiết bị thành máy đọc sách chữ tiếng Việt, cần hàn 3 nút bấm).
-								<b>PHẢI làm theo <a href="#" onclick="document.getElementById('readerBtnGuide').showModal();return false">hướng dẫn nối nút bấm</a></b> sau đó mới nạp firmware này.</td>
-							<td>06/08/2026</td>
-							<td><span class="material-symbols-outlined" style="vertical-align:middle" title="Đang phát triển">construction</span> Đang phát triển</td>
-						</tr>
 					</tbody>
 				</table>
 			</div>
 			<p class="mode-gallery-hint">Tải file .bin tương ứng về rồi nạp bằng khung «Cập nhật firmware (OTA)» phía trên. <br> Nếu gặp bất kì vấn đề hoặc yêu cầu nào về cập nhật firmware mới, vui lòng nhắn tin cho tôi qua kênh bán hàng và tôi sẽ cập nhật bản update ở đây.</p>
 		</fieldset>
-
-		<!-- Popup hướng dẫn nối nút bấm cho firmware máy đọc sách (mở từ dòng r2.2 trong bảng firmware) -->
-		<dialog id="readerBtnGuide" style="max-width:min(1100px,94vw);border:1px solid #888;border-radius:10px;padding:16px">
-			<h3 style="margin:0 0 8px">Hướng dẫn nối nút bấm — firmware máy đọc sách</h3>
-			<p style="font-size:13px;margin:0 0 10px">
-				Hàn 3 nút nhấn từ các điểm test xuống <b>GND</b> (nhấn = nối đất, nên nối tiếp điện trở ~1kΩ):
-				trang sau = <b>SWCLK (P1_4)</b>, trang trước = <b>TX (P0_4)</b>, trang chủ = <b>SWDIO (P1_5)</b>.
-				Đừng hàn vào pad <b>RX/URX</b> hay <b>VBAT</b>. Vị trí pad theo từng loại board như 2 ảnh dưới.
-			</p>
-			<div style="display:flex;flex-wrap:wrap;gap:12px">
-				<figure style="flex:1 1 380px;max-width:640px;margin:0">
-					<img src="img/board_6tp_v1.jpg" style="width:100%;display:block;border-radius:6px"
-						alt="[Thiếu ảnh img/board_6tp_v1.jpg — board Alibaba 20181101]">
-					<figcaption style="font-size:12px;margin-top:4px">Board «Alibaba Group 20181101»: GND = pad thứ 2, Trang trước = pad <b>UTX</b> (thứ 4) trong hàng 5 chân; hàng 2 chân cạnh MCU: <b>SWDIO bên trái = Trang chủ</b>, <b>SWCLK bên phải = Trang sau</b>.</figcaption>
-				</figure>
-				<figure style="flex:1 1 380px;max-width:640px;margin:0">
-					<img src="img/board_6tp_v2.jpg" style="width:100%;display:block;border-radius:6px"
-						alt="[Thiếu ảnh img/board_6tp_v2.jpg — board BZT06629]">
-					<figcaption style="font-size:12px;margin-top:4px">Board «BZT06629»: GND = <b>TP2</b> (thứ 2), Trang trước = <b>TP7</b> (thứ 4) trong hàng 6 chân; dưới thạch anh: <b>TP5 = Trang sau</b>, <b>TP6 ngay dưới = Trang chủ</b>.</figcaption>
-				</figure>
-			</div>
-			<div style="text-align:right;margin-top:10px">
-				<button type="button" class="secondary" onclick="document.getElementById('readerBtnGuide').close()">Đóng</button>
-			</div>
-		</dialog>
 		</template>
 
 		<template id="tpl-2_13">
