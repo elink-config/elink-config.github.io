@@ -196,12 +196,12 @@ function handleNotify(value, idx) {
     }
   } else if (msg.startsWith('bki=')) {
     // máy đang phân trang sách chữ: ánh xạ số trang đã chốt vào 80..99% của
-    // thanh tiến độ (idxEstPages ước lượng từ dung lượng chữ). Khi ĐỔI CỠ CHỮ
-    // không biết tổng trang mới -> progress tiệm cận n/(n+30).
+    // thanh tiến độ (idxEstPages ước lượng từ dung lượng chữ); máy tự phân
+    // trang lại không rõ tổng (đứt kết nối giữa chừng) -> tiệm cận n/(n+30)
     const n = parseInt(msg.substring(4)) || 0;
     setStatus(`Máy đang phân trang sách chữ... ${n}${idxEstPages ? '/~' + idxEstPages : ''} trang`);
     if (idxEstPages) setProgress(80 + 19 * Math.min(1, n / idxEstPages));
-    else if (fontApplyBusy) setProgress(Math.min(99, Math.round(100 * n / (n + 30))));
+    else setProgress(Math.min(99, Math.round(100 * n / (n + 30))));
   } else if (msg.startsWith('flash=')) {
     // JEDEC ID chip SPI flash: [hãng][loại][dung lượng 2^n byte]
     const id = msg.substring(6);
@@ -443,7 +443,6 @@ let comicPages = [];   // ImageBitmap của từng trang truyện (toàn bộ fi
 let previewPage = 0;   // trang đang xem trước (trong phần đang chọn)
 let previewTextPages = null; // cache phân trang ước lượng của phần chữ đang chọn
 let idxEstPages = 0;   // ước lượng số trang khi máy phân trang (progress bki=)
-let fontApplyBusy = false;  // đang đổi cỡ chữ: progress bki= kiểu tiệm cận
 
 function fmtKB(n) { return (n / 1024).toFixed(1) + 'KB'; }
 
