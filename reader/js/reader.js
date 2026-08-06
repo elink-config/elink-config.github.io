@@ -337,7 +337,7 @@ async function setClockMode() {
   const v = Math.min(2, Math.max(0, parseInt(document.getElementById('clockMode').value) || 0));
   if (!(await syncClock())) return;  // gửi giờ trước; máy không ACK thì khỏi đặt chế độ
   if (await write(EpdCmd.BOOK, [0x31, v]))
-    addLog('Giờ chân trang: ' + ['cơ hội (cập nhật khi màn vẽ lại)', 'nhảy từng phút (tốn pin hơn)', 'tắt hiển thị'][v] + '.');
+    addLog('Giờ thiết bị: ' + ['cập nhật khi chuyển trang', 'tự động cập nhật', 'tắt hiển thị'][v] + '.');
 }
 
 async function setFontSize() {
@@ -372,10 +372,10 @@ async function setFontSize() {
 
 async function setFullEvery() {
   let n = parseInt(document.getElementById('fullEvery').value);
-  if (isNaN(n) || n < 0 || n > 60) n = 3;  // mặc định fw r2.2: quét mỗi 3 trang
+  if (isNaN(n) || n < 0 || n > 60) n = 0;  // mặc định: tắt
   if (await write(EpdCmd.BOOK, [0x20, n]))
-    addLog(n === 0 ? 'Đã tắt quét bóng mờ khi lật trang (chỉ làm sạch khi vào/ra Trang chủ).'
-                   : `Đã đặt: quét bóng mờ sau mỗi ${n} trang lật (không chớp đen).`);
+    addLog(n === 0 ? 'Đã tắt làm mới màn hình khi lật trang (chỉ làm sạch khi vào/ra Trang chủ).'
+                   : `Đã đặt: làm mới màn hình sau mỗi ${n} trang lật (không chớp đen).`);
 }
 
 /* ================= Nút bấm vật lý ================= */

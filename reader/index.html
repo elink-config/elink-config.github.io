@@ -6,7 +6,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>Máy đọc sách E-Ink 4.2" (DA14585)</title>
 	<link rel="shortcut icon" type="image/png" href="favicon.png">
-	<link rel="stylesheet" href="css/main.css?v=20260806a">
+	<link rel="stylesheet" href="css/main.css?v=20260806b">
 	<script>
 		// apply the saved theme before first paint to avoid a flash
 		(function () {
@@ -42,6 +42,7 @@
 					<button id="connectbutton" type="button" class="primary" onclick="preConnect()">Kết nối</button>
 					<button id="reconnectbutton" type="button" class="secondary" onclick="reConnect()">Kết nối lại</button>
 					<button id="syncClockbutton" type="button" class="secondary" onclick="syncClock()" disabled>Đồng bộ giờ</button>
+					<button type="button" class="secondary" onclick="clearLog()">Xóa nhật ký</button>
 					<span class="mode-gallery-hint" style="margin:0">Thiết bị tên <b>DIY-4_2R-xxxx</b>. Dùng Chrome/Edge; iOS dùng Bluefy. Sau khi kết nối, bấm «Đồng bộ giờ» để footer máy hiện giờ (máy mất điện thì đồng bộ lại).</span>
 				</div>
 				<div class="flex-group debug">
@@ -54,6 +55,7 @@
 					<button id="sendcmdbutton" type="button" class="primary" onclick="sendcmd()">Gửi lệnh</button>
 				</div>
 			</div>
+			<div class="log-container" id="log"></div>
 		</fieldset>
 
 		<!-- 2. GỬI SÁCH — việc chính -->
@@ -154,26 +156,24 @@
 					<span class="mode-gallery-hint" style="margin:0">Máy tự phân trang lại (~vài chục giây với sách dài), giữ đúng vị trí đang đọc.</span>
 				</div>
 				<div class="flex-group">
-					<label for="clockMode">Giờ chân trang:</label>
+					<label for="clockMode">Giờ thiết bị:</label>
 					<select id="clockMode">
-						<option value="0" selected>Cơ hội (mặc định — không tốn pin)</option>
-						<option value="1">Nhảy từng phút (tốn pin hơn)</option>
+						<option value="0" selected>Cập nhật khi chuyển trang</option>
+						<option value="1">Tự động cập nhật</option>
 						<option value="2">Tắt hiển thị</option>
 					</select>
 					<button id="clockModebutton" type="button" class="secondary" onclick="setClockMode()" disabled>Áp dụng</button>
-					<span class="mode-gallery-hint" style="margin:0">«Cơ hội»: giờ cập nhật khi màn vốn dĩ vẽ lại (lật trang, vào/ra Trang chủ) — đang đọc thì gần như luôn đúng.</span>
 				</div>
 				<div class="flex-group">
-					<label for="fullEvery">Quét bóng mờ sau mỗi</label>
+					<label for="fullEvery">Làm mới màn hình sau mỗi</label>
 					<select id="fullEvery">
-						<option value="1">mỗi trang (sạch nhất, chữ nhấp mỗi lần lật)</option>
-						<option value="3" selected>3 trang (mặc định)</option>
+						<option value="1">mỗi trang</option>
+						<option value="3">3 trang</option>
 						<option value="5">5 trang</option>
 						<option value="10">10 trang</option>
-						<option value="0">Tắt</option>
+						<option value="0" selected>Tắt (mặc định)</option>
 					</select>
 					<button id="fullEverybutton" type="button" class="secondary" onclick="setFullEvery()" disabled>Áp dụng</button>
-					<span class="mode-gallery-hint" style="margin:0">Định kỳ drive lại toàn bộ pixel để xóa vệt mờ — không chớp đen, cả trang chỉ nhấp nhẹ một nhịp.</span>
 				</div>
 			</div>
 		</fieldset>
@@ -181,7 +181,9 @@
 		<!-- 5. PHẦN CỨNG — cấu hình một lần khi lắp máy -->
 		<fieldset>
 			<legend>Nút bấm vật lý (3 nút)</legend>
-			<div class="flex-container">
+			<!-- Khối đổi chân nút ẨN (không xóa — reader.js tham chiếu các id btnNext/btnPrev/
+			     btnSel/btnApply/btnHint): người dùng đã hàn đúng chân mặc định theo hướng dẫn. -->
+			<div class="flex-container" style="display:none">
 				<div class="flex-group">
 					<label>Trang sau:</label><select id="btnNext" class="btnsel"></select>
 					<label>Trang trước:</label><select id="btnPrev" class="btnsel"></select>
@@ -249,17 +251,6 @@
 			</div>
 		</fieldset>
 
-		<!-- 7. NHẬT KÝ — tham khảo/chẩn đoán, cuối trang -->
-		<fieldset>
-			<legend>Nhật ký</legend>
-			<div class="flex-container">
-				<div class="flex-group">
-					<button type="button" class="secondary" onclick="clearLog()">Xóa nhật ký</button>
-				</div>
-			</div>
-			<div class="log-container" id="log"></div>
-		</fieldset>
-
 		<div class="footer">
 			<span class="copy">&copy; 2026 doantruonglam</span>
 			<span class="links">
@@ -268,8 +259,8 @@
 			</span>
 		</div>
 	</div>
-	<script type="text/javascript" src="js/dithering.js?v=20260806a"></script>
-	<script type="text/javascript" src="js/reader.js?v=20260806a"></script>
+	<script type="text/javascript" src="js/dithering.js?v=20260806b"></script>
+	<script type="text/javascript" src="js/reader.js?v=20260806b"></script>
 </body>
 
 </html>
