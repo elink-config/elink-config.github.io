@@ -54,7 +54,8 @@ function addLog(txt, action = '') {
 function clearLog() { document.getElementById('log').innerHTML = ''; }
 function setStatus(s) { document.getElementById('status').textContent = s; }
 
-// thanh tiến độ tổng của phiên gửi sách (null = ẩn)
+// thanh tiến độ tổng của phiên gửi sách (null = ẩn, 'busy' = nhịp chờ
+// vô định — dùng khi đọc/phân tích file chưa biết tổng khối lượng)
 function setProgress(pct) {
   const el = document.getElementById('sendProgress');
   if (!el) return;
@@ -64,7 +65,21 @@ function setProgress(pct) {
     return;
   }
   el.style.display = '';
-  el.value = Math.max(0, Math.min(100, pct));
+  if (pct === 'busy') el.removeAttribute('value');
+  else el.value = Math.max(0, Math.min(100, pct));
+}
+
+// nhường một khung hình cho trình duyệt vẽ status/progress vừa đặt trước
+// khi chạy đoạn xử lý đồng bộ nặng (parse mobi/epub, mã hóa EVN1).
+// Tab nền/ẩn KHÔNG chạy requestAnimationFrame -> phải kèm timeout dự phòng,
+// nếu không load file sẽ treo tới khi tab được hiện lại.
+function uiYield() {
+  return new Promise(r => {
+    let done = false;
+    const fin = () => { if (!done) { done = true; r(); } };
+    requestAnimationFrame(() => setTimeout(fin, 0));
+    setTimeout(fin, 50);
+  });
 }
 
 function bytes2hex(data) {
@@ -459,28 +474,45 @@ async function bookFileChange() {
   comicPages = [];
   previewTextPages = null;
   setStatus('Đang đọc file...');
+  setProgress('busy');
+  await uiYield();
   try {
     const imgs = files.filter(f => /\.(png|jpe?g|webp|bmp)$/i.test(f.name));
     const f0 = files[0];
     if (imgs.length === files.length && imgs.length > 0) {
       await loadComicImages(imgs.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true })), stripExt(f0.name));
     } else if (/\.txt$/i.test(f0.name)) {
-      loadTextBook(new TextDecoder('utf-8').decode(await f0.arrayBuffer()), stripExt(f0.name));
+      const buf = await f0.arrayBuffer();
+      setStatus('Đang xử lý sách chữ...');
+      await uiYield();
+      loadTextBook(new TextDecoder('utf-8').decode(buf), stripExt(f0.name));
     } else if (/\.epub$/i.test(f0.name)) {
-      const r = await parseEpub(await f0.arrayBuffer());
+      const buf = await f0.arrayBuffer();
+      setStatus('Đang phân tích EPUB...');
+      await uiYield();
+      const r = await parseEpub(buf);
+      setStatus('Đang xử lý sách chữ...');
+      await uiYield();
       loadTextBook(r.text, r.title || stripExt(f0.name));
     } else if (/\.(cbz|zip)$/i.test(f0.name)) {
       await loadComicZip(await f0.arrayBuffer(), stripExt(f0.name));
     } else if (/\.(mobi|azw3?|azw)$/i.test(f0.name)) {
-      const r = parseMobi(await f0.arrayBuffer());
+      const buf = await f0.arrayBuffer();
+      setStatus('Đang phân tích MOBI...');
+      await uiYield();
+      const r = parseMobi(buf);
+      setStatus('Đang xử lý sách chữ...');
+      await uiYield();
       loadTextBook(r.text, r.title || stripExt(f0.name));
     } else {
       throw new Error('Định dạng chưa hỗ trợ: ' + f0.name);
     }
     setStatus('');
+    setProgress(null);
   } catch (e) {
     console.error(e);
     setStatus('');
+    setProgress(null);
     alert('Không đọc được sách: ' + (e.message || e) +
       '\n\nMẹo: dùng Calibre chuyển sách sang .epub hoặc .txt rồi thử lại.');
     return;
@@ -579,6 +611,7 @@ async function loadComicImages(files, title) {
   const pages = [];
   for (const f of files) {
     setStatus(`Đang nạp trang ${pages.length + 1}/${files.length}...`);
+    setProgress(pages.length * 100 / files.length);
     pages.push(await createImageBitmap(await blobFromFile(f)));
   }
   finishComic(pages, title);
@@ -593,6 +626,7 @@ async function loadComicZip(buf, title) {
   const pages = [];
   for (const e of imgs) {
     setStatus(`Đang giải nén trang ${pages.length + 1}/${imgs.length}...`);
+    setProgress(pages.length * 100 / imgs.length);
     const data = await z.read(e);
     pages.push(await createImageBitmap(new Blob([data])));
   }
