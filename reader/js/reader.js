@@ -170,6 +170,11 @@ function handleNotify(value, idx) {
       // rd_font offset 221, rd_clock offset 219 (fw r2.2+; cũ đọc 0xFF -> mặc định)
       if (data[221] <= 2) document.getElementById('fontSize').value = String(data[221]);
       if (data[219] <= 2) document.getElementById('clockMode').value = String(data[219]);
+      // rd_rot offset 204 (byte cuối vùng note cũ — fw r1.0+): 0 ngang / 1 dọc
+      if (data[204] <= 1) {
+        document.getElementById('rotMode').value = String(data[204]);
+        previewTextPages = null;
+      }
       const pg = data[222] | (data[223] << 8);
       if (pg !== 0xFFFF) document.getElementById('gotoPage').value = pg + 1;
     }
@@ -316,7 +321,7 @@ function updateButtonStatus(busy = false) {
   const dis = (busy || !connected) ? 'disabled' : null;
   document.getElementById('reconnectbutton').disabled = (gattServer == null || connected) ? 'disabled' : null;
   document.getElementById('sendbookbutton').disabled = (dis || !book) ? 'disabled' : null;
-  ['rprevbutton', 'rnextbutton', 'rhomebutton', 'rgotobutton', 'fullEverybutton', 'fontSizebutton', 'clockModebutton', 'syncClockbutton', 'btnApply', 'otabutton', 'sendcmdbutton']
+  ['rprevbutton', 'rnextbutton', 'rhomebutton', 'rgotobutton', 'fullEverybutton', 'fontSizebutton', 'rotModebutton', 'clockModebutton', 'syncClockbutton', 'btnApply', 'otabutton', 'sendcmdbutton']
     .forEach(id => document.getElementById(id).disabled = dis);
 }
 
@@ -379,6 +384,36 @@ async function setFontSize() {
     setProgress(null);
     setStatus('');
     addLog('Không thấy máy báo xong (máy không có sách chữ? — cỡ chữ vẫn đã lưu). ' +
+      'Nếu vừa mất kết nối: máy vẫn TỰ phân trang tiếp, chờ xong rồi kết nối lại.');
+  }
+  fontApplyBusy = false;
+  updateButtonStatus();
+}
+
+async function setRotation() {
+  // fw r1.0+: [0x28 0x23 0/1] — đổi hướng cũng phân trang lại như đổi cỡ chữ
+  const v = document.getElementById('rotMode').value === '1' ? 1 : 0;
+  idxEstPages = 0;
+  fontApplyBusy = true;
+  updateButtonStatus(true);
+  setProgress(2);
+  setStatus('Máy đang phân trang lại theo hướng màn mới...');
+  const done = waitNotify(m => {
+    const mm = m.match(/^book=(\d+)$/);
+    return mm ? parseInt(mm[1]) : null;
+  }, 180000);
+  try {
+    if (!(await write(EpdCmd.BOOK, [0x23, v]))) throw new Error('gửi lệnh thất bại');
+    addLog(`Đã đổi hướng màn hình (${v ? 'dọc' : 'ngang'}) — máy đang phân trang lại...`);
+    const pages = await done;
+    setProgress(100);
+    setStatus(`Xong! Phân trang lại theo hướng ${v ? 'dọc' : 'ngang'}: ${pages} trang.`);
+    addLog(`Phân trang lại xong: ${pages} trang.`);
+    setTimeout(() => setProgress(null), 3000);
+  } catch (e) {
+    setProgress(null);
+    setStatus('');
+    addLog('Không thấy máy báo xong (máy không có sách chữ? — hướng màn vẫn đã lưu). ' +
       'Nếu vừa mất kết nối: máy vẫn TỰ phân trang tiếp, chờ xong rồi kết nối lại.');
   }
   fontApplyBusy = false;
@@ -833,9 +868,14 @@ function parseMobi(buf) {
 
 // khớp metric fw r2.2 theo cỡ chữ đã chọn (fontSize):
 // [ký tự/dòng, dòng/trang, px, bước dòng, baseline đầu]
+// [ký tự/dòng, dòng/trang, px, bước dòng, baseline đầu] khớp lưới fw:
+// ngang 400x300 (384px chữ) và DỌC 300x400 (284px chữ — rd_rot=1)
 const PREVIEW_METRICS = [[53, 19, 12, 14, 13], [48, 16, 14, 17, 15], [41, 14, 16, 19, 17]];
+const PREVIEW_METRICS_P = [[39, 26, 12, 14, 13], [35, 21, 14, 17, 15], [30, 19, 16, 19, 17]];
+function previewRot() { return document.getElementById('rotMode').value === '1'; }
 function previewMetric() {
-  return PREVIEW_METRICS[Math.min(2, Math.max(0, parseInt(document.getElementById('fontSize').value) || 0))];
+  const t = previewRot() ? PREVIEW_METRICS_P : PREVIEW_METRICS;
+  return t[Math.min(2, Math.max(0, parseInt(document.getElementById('fontSize').value) || 0))];
 }
 
 function updateBookUI() {
@@ -916,9 +956,15 @@ function previewStep(d) {
 
 async function renderPreview() {
   const canvas = document.getElementById('canvas');
+  // canvas theo hướng: sách chữ + chế độ dọc = 300x400, còn lại 400x300
+  // (truyện tranh và preview trống luôn ngang — máy không xoay truyện tranh)
+  const portrait = book && book.type === 'text' && previewRot();
+  const W = portrait ? 300 : 400, H = portrait ? 400 : 300;
+  if (canvas.width !== W) canvas.width = W;
+  if (canvas.height !== H) canvas.height = H;
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = 'white';
-  ctx.fillRect(0, 0, 400, 300);
+  ctx.fillRect(0, 0, W, H);
   const label = document.getElementById('previewPageLabel');
   if (!book) { label.textContent = '—'; return; }
 
@@ -930,10 +976,10 @@ async function renderPreview() {
     const [, , px, lh, y0] = previewMetric();
     ctx.fillStyle = 'black';
     ctx.font = px + 'px sans-serif';
-    lines.forEach((l, i) => ctx.fillText(l, 8, y0 + i * lh, 384));
-    ctx.fillRect(8, 280, 384, 1);
+    lines.forEach((l, i) => ctx.fillText(l, 8, y0 + i * lh, W - 16));
+    ctx.fillRect(8, H - 20, W - 16, 1);
     ctx.font = '10px monospace';
-    ctx.fillText(`${previewPage + 1}/${previewTextPages.length} (xem trước ước lượng)`, 8, 294);
+    ctx.fillText(`${previewPage + 1}/${previewTextPages.length} (xem trước ước lượng)`, 8, H - 6);
     label.textContent = `${previewPage + 1}/${previewTextPages.length}`;
   } else {
     const part = currentPart();

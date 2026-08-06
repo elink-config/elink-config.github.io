@@ -6,7 +6,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>Máy đọc sách E-Ink 4.2" (DA14585)</title>
 	<link rel="shortcut icon" type="image/png" href="favicon.png">
-	<link rel="stylesheet" href="css/main.css?v=20260806d">
+	<link rel="stylesheet" href="css/main.css?v=20260806e">
 	<script>
 		// apply the saved theme before first paint to avoid a flash
 		(function () {
@@ -156,6 +156,15 @@
 					<span class="mode-gallery-hint" style="margin:0">Máy tự phân trang lại (~vài chục giây với sách dài), giữ đúng vị trí đang đọc.</span>
 				</div>
 				<div class="flex-group">
+					<label for="rotMode">Hướng màn hình:</label>
+					<select id="rotMode" onchange="previewTextPages=null;renderPreview()">
+						<option value="0" selected>Ngang (mặc định)</option>
+						<option value="1">Dọc (xoay 90°)</option>
+					</select>
+					<button id="rotModebutton" type="button" class="secondary" onclick="setRotation()" disabled>Áp dụng</button>
+					<span class="mode-gallery-hint" style="margin:0">Chỉ trang đọc sách chữ xoay dọc; menu máy và truyện tranh vẫn ngang.</span>
+				</div>
+				<div class="flex-group">
 					<label for="clockMode">Giờ thiết bị:</label>
 					<select id="clockMode">
 						<option value="0" selected>Cập nhật khi chuyển trang</option>
@@ -258,8 +267,8 @@
 			</span>
 		</div>
 	</div>
-	<script type="text/javascript" src="js/dithering.js?v=20260806d"></script>
-	<script type="text/javascript" src="js/reader.js?v=20260806d"></script>
+	<script type="text/javascript" src="js/dithering.js?v=20260806e"></script>
+	<script type="text/javascript" src="js/reader.js?v=20260806e"></script>
 </body>
 
 </html>
