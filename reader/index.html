@@ -153,16 +153,16 @@
 					<span class="mode-gallery-hint" style="margin:0">Đổi cỡ chữ xong máy tự phân trang lại sách đang chứa (vài chục giây với sách dài), vẫn giữ đúng vị trí đang đọc.</span>
 				</div>
 				<div class="flex-group">
-					<label for="fullEvery">Làm mới đầy đủ sau mỗi</label>
+					<label for="fullEvery">Quét bóng mờ sau mỗi</label>
 					<select id="fullEvery">
-						<option value="0" selected>Tắt (mặc định)</option>
+						<option value="1">mỗi trang (sạch nhất, chữ nhấp mỗi lần lật)</option>
+						<option value="3" selected>3 trang (mặc định)</option>
 						<option value="5">5 trang</option>
 						<option value="10">10 trang</option>
-						<option value="20">20 trang</option>
-						<option value="30">30 trang</option>
+						<option value="0">Tắt</option>
 					</select>
 					<button id="fullEverybutton" type="button" class="secondary" onclick="setFullEvery()" disabled>Áp dụng</button>
-					<span class="mode-gallery-hint" style="margin:0">Lật trang dùng cập nhật nhanh không chớp. «Tắt» = không bao giờ tự làm mới khi lật — màn chỉ làm mới đầy đủ khi vào/ra Trang chủ hoặc nhảy trang (đủ để dọn bóng mờ với đa số sách).</span>
+					<span class="mode-gallery-hint" style="margin:0">Lật trang thường chỉ đảo pixel thay đổi (êm). Định kỳ máy «quét bóng mờ»: drive lại toàn bộ pixel bằng cập nhật nhanh — sạch vệt đen, KHÔNG chớp đen màn, chỉ thấy cả trang nhấp nhẹ một nhịp. Làm mới đầy đủ thật vẫn chạy khi vào/ra Trang chủ hoặc nhảy trang.</span>
 				</div>
 			</div>
 		</fieldset>

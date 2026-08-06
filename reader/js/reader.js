@@ -151,7 +151,7 @@ function handleNotify(value, idx) {
       setBtnSelect('btnSel', data[218]);
       const fe = data[220];
       const sel = document.getElementById('fullEvery');
-      if ([0, 5, 10, 20, 30].includes(fe)) sel.value = String(fe);
+      if ([0, 1, 3, 5, 10].includes(fe)) sel.value = String(fe);
       // rd_font offset 221, rd_clock offset 219 (fw r2.2+; cũ đọc 0xFF -> mặc định)
       if (data[221] <= 2) document.getElementById('fontSize').value = String(data[221]);
       if (data[219] <= 2) document.getElementById('clockMode').value = String(data[219]);
@@ -372,10 +372,10 @@ async function setFontSize() {
 
 async function setFullEvery() {
   let n = parseInt(document.getElementById('fullEvery').value);
-  if (isNaN(n) || n < 0 || n > 60) n = 0;  // 0 = tắt (mặc định fw r2.1)
+  if (isNaN(n) || n < 0 || n > 60) n = 3;  // mặc định fw r2.2: quét mỗi 3 trang
   if (await write(EpdCmd.BOOK, [0x20, n]))
-    addLog(n === 0 ? 'Đã tắt tự làm mới khi lật trang (chỉ làm mới khi vào/ra Trang chủ).'
-                   : `Đã đặt: làm mới đầy đủ sau mỗi ${n} trang lật.`);
+    addLog(n === 0 ? 'Đã tắt quét bóng mờ khi lật trang (chỉ làm sạch khi vào/ra Trang chủ).'
+                   : `Đã đặt: quét bóng mờ sau mỗi ${n} trang lật (không chớp đen).`);
 }
 
 /* ================= Nút bấm vật lý ================= */
