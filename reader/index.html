@@ -6,7 +6,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>Máy đọc sách E-Ink 4.2" (DA14585)</title>
 	<link rel="shortcut icon" type="image/png" href="favicon.png">
-	<link rel="stylesheet" href="css/main.css?v=20260728a">
+	<link rel="stylesheet" href="css/main.css?v=20260806a">
 	<script>
 		// apply the saved theme before first paint to avoid a flash
 		(function () {
@@ -34,14 +34,15 @@
 				document.getElementById('theme-toggle-icon').textContent = 'light_mode';
 		</script>
 
+		<!-- 1. KẾT NỐI — luôn là việc đầu tiên -->
 		<fieldset>
 			<legend>Kết nối Bluetooth</legend>
 			<div class="flex-container">
 				<div class="flex-group">
 					<button id="connectbutton" type="button" class="primary" onclick="preConnect()">Kết nối</button>
 					<button id="reconnectbutton" type="button" class="secondary" onclick="reConnect()">Kết nối lại</button>
-					<button type="button" class="secondary" onclick="clearLog()">Xóa nhật ký</button>
-					<span class="mode-gallery-hint" style="margin:0">Thiết bị tên <b>DIY-4_2R-xxxx</b> (firmware máy đọc sách). Dùng Chrome/Edge; iOS dùng Bluefy.</span>
+					<button id="syncClockbutton" type="button" class="secondary" onclick="syncClock()" disabled>Đồng bộ giờ</button>
+					<span class="mode-gallery-hint" style="margin:0">Thiết bị tên <b>DIY-4_2R-xxxx</b>. Dùng Chrome/Edge; iOS dùng Bluefy. Sau khi kết nối, bấm «Đồng bộ giờ» để footer máy hiện giờ (máy mất điện thì đồng bộ lại).</span>
 				</div>
 				<div class="flex-group debug">
 					<label for="mtusize">MTU:</label>
@@ -53,21 +54,24 @@
 					<button id="sendcmdbutton" type="button" class="primary" onclick="sendcmd()">Gửi lệnh</button>
 				</div>
 			</div>
-			<div class="log-container" id="log"></div>
 		</fieldset>
 
+		<!-- 2. GỬI SÁCH — việc chính -->
 		<fieldset>
 			<legend>Gửi sách xuống máy</legend>
-			<p class="mode-gallery-hint">
-				Chọn file sách: <b>.txt</b>, <b>.epub</b> (sách chữ) — <b>.cbz/.zip</b> hoặc nhiều file ảnh (truyện tranh) —
-				<b>.mobi/.azw3</b> không DRM (thử đọc, nếu không được hãy chuyển sang epub/txt bằng Calibre).
-				Kho sách trong máy chứa ~260KB; chữ Việt được nén bảng mã 8-bit (fw r2.1) nên tương đương ~350KB file .txt,
-				và có 3 cỡ chữ đọc 12/14/16px (chỉnh ở «Điều khiển đọc sách»). Sách dài sẽ được chia thành nhiều <b>phần</b>, mỗi lần gửi một phần
-				(gửi phần mới sẽ thay phần cũ; máy tự lưu trang đang đọc của phần hiện tại).
-			</p>
 			<div class="flex-container">
 				<input type="file" id="bookFile" accept=".txt,.epub,.zip,.cbz,.mobi,.azw,.azw3,.png,.jpg,.jpeg,.webp,.bmp" multiple onchange="bookFileChange()">
 			</div>
+			<details class="mode-gallery-hint" style="margin:6px 0">
+				<summary>Định dạng hỗ trợ &amp; giới hạn kho sách</summary>
+				<p style="margin:6px 0 0">
+					<b>.txt</b>, <b>.epub</b> (sách chữ) — <b>.cbz/.zip</b> hoặc nhiều file ảnh (truyện tranh) —
+					<b>.mobi/.azw3</b> không DRM (nếu không đọc được hãy chuyển sang epub/txt bằng Calibre).
+					Kho sách trong máy ~260KB; chữ Việt nén 8-bit nên tương đương ~350KB file .txt.
+					Sách dài tự chia thành nhiều <b>phần</b>, mỗi lần gửi một phần (gửi phần mới thay phần cũ;
+					máy tự lưu trang đang đọc của phần hiện tại).
+				</p>
+			</details>
 			<div class="flex-container" id="bookInfoRow" style="display:none">
 				<div class="flex-group" style="flex:1 1 100%">
 					<label for="bookTitle">Tên sách:</label>
@@ -115,11 +119,12 @@
 			<div class="flex-container">
 				<div class="flex-group">
 					<button id="sendbookbutton" type="button" class="primary" onclick="sendBook()" disabled>Gửi sách xuống máy</button>
-					<span class="mode-gallery-hint" style="margin:0">Sách chữ: sau khi gửi, máy tự phân trang (sách dài có thể ~30 giây) rồi hiện trang 1. Cần firmware r2.1+.</span>
+					<span class="mode-gallery-hint" style="margin:0">Sách chữ: sau khi gửi, máy tự phân trang (sách dài ~30 giây) rồi hiện trang 1.</span>
 				</div>
 			</div>
 		</fieldset>
 
+		<!-- 3. ĐIỀU KHIỂN ĐỌC — thao tác nhanh, tách khỏi cài đặt -->
 		<fieldset>
 			<legend>Điều khiển đọc sách</legend>
 			<div class="flex-container">
@@ -131,26 +136,32 @@
 					<input type="number" id="gotoPage" value="1" min="1" style="width:70px">
 					<button id="rgotobutton" type="button" class="primary" onclick="readerGoto()" disabled>Đi</button>
 				</div>
+			</div>
+		</fieldset>
+
+		<!-- 4. CÀI ĐẶT HIỂN THỊ — chỉnh một lần, thi thoảng đổi -->
+		<fieldset>
+			<legend>Cài đặt hiển thị</legend>
+			<div class="flex-container">
 				<div class="flex-group">
-					<label for="clockMode">Giờ chân trang (fw r2.2+):</label>
-					<select id="clockMode">
-						<option value="0" selected>Cơ hội (mặc định — không tốn pin)</option>
-						<option value="1">Nhảy từng phút (tốn pin như máy đồng hồ)</option>
-						<option value="2">Tắt hiển thị</option>
-					</select>
-					<button id="clockModebutton" type="button" class="secondary" onclick="setClockMode()" disabled>Áp dụng</button>
-					<button id="syncClockbutton" type="button" class="primary" onclick="syncClock()" disabled>Đồng bộ giờ</button>
-					<span class="mode-gallery-hint" style="margin:0">Bấm «Đồng bộ giờ» để gửi giờ điện thoại xuống máy (máy mất điện thì giờ mất — đồng bộ lại). «Cơ hội» = giờ chỉ cập nhật khi màn vốn dĩ vẽ lại (lật trang, vào/ra Trang chủ); «Nhảy từng phút» = máy tự vẽ lại mỗi phút kể cả khi để không.</span>
-				</div>
-				<div class="flex-group">
-					<label for="fontSize">Cỡ chữ (fw r2.2+):</label>
+					<label for="fontSize">Cỡ chữ:</label>
 					<select id="fontSize" onchange="previewTextPages=null;renderPreview()">
 						<option value="0" selected>Nhỏ 12px (19 dòng)</option>
 						<option value="1">Vừa 14px (16 dòng)</option>
 						<option value="2">Lớn 16px (14 dòng)</option>
 					</select>
 					<button id="fontSizebutton" type="button" class="secondary" onclick="setFontSize()" disabled>Áp dụng</button>
-					<span class="mode-gallery-hint" style="margin:0">Đổi cỡ chữ xong máy tự phân trang lại sách đang chứa (vài chục giây với sách dài), vẫn giữ đúng vị trí đang đọc.</span>
+					<span class="mode-gallery-hint" style="margin:0">Máy tự phân trang lại (~vài chục giây với sách dài), giữ đúng vị trí đang đọc.</span>
+				</div>
+				<div class="flex-group">
+					<label for="clockMode">Giờ chân trang:</label>
+					<select id="clockMode">
+						<option value="0" selected>Cơ hội (mặc định — không tốn pin)</option>
+						<option value="1">Nhảy từng phút (tốn pin hơn)</option>
+						<option value="2">Tắt hiển thị</option>
+					</select>
+					<button id="clockModebutton" type="button" class="secondary" onclick="setClockMode()" disabled>Áp dụng</button>
+					<span class="mode-gallery-hint" style="margin:0">«Cơ hội»: giờ cập nhật khi màn vốn dĩ vẽ lại (lật trang, vào/ra Trang chủ) — đang đọc thì gần như luôn đúng.</span>
 				</div>
 				<div class="flex-group">
 					<label for="fullEvery">Quét bóng mờ sau mỗi</label>
@@ -162,23 +173,14 @@
 						<option value="0">Tắt</option>
 					</select>
 					<button id="fullEverybutton" type="button" class="secondary" onclick="setFullEvery()" disabled>Áp dụng</button>
-					<span class="mode-gallery-hint" style="margin:0">Lật trang thường chỉ đảo pixel thay đổi (êm). Định kỳ máy «quét bóng mờ»: drive lại toàn bộ pixel bằng cập nhật nhanh — sạch vệt đen, KHÔNG chớp đen màn, chỉ thấy cả trang nhấp nhẹ một nhịp. Làm mới đầy đủ thật vẫn chạy khi vào/ra Trang chủ hoặc nhảy trang.</span>
+					<span class="mode-gallery-hint" style="margin:0">Định kỳ drive lại toàn bộ pixel để xóa vệt mờ — không chớp đen, cả trang chỉ nhấp nhẹ một nhịp.</span>
 				</div>
 			</div>
 		</fieldset>
 
+		<!-- 5. PHẦN CỨNG — cấu hình một lần khi lắp máy -->
 		<fieldset>
-			<legend>Nút bấm vật lý (4 nút)</legend>
-			<p class="mode-gallery-hint">
-				Hàn 3 nút từ các điểm test xuống <b>GND</b> (nhấn = nối đất, nên nối tiếp điện trở ~1kΩ).
-				Từ firmware r2.0, ở màn Trang chủ hai nút trang sau/trước <b>di chuyển menu</b>, nút trang chủ <b>chọn</b>
-				(Tiếp tục đọc / Nhảy tới trang bằng bàn phím số / Làm mới toàn màn / Bluetooth).
-				Mặc định theo pad board 6TP: trang sau = <b>SWCLK (P1_4)</b>, trang trước = <b>TX (P0_4)</b>, trang chủ = <b>SWDIO (P1_5)</b>,
-				<b>không có nút nguồn</b> — bật/tắt Bluetooth nằm trong menu Trang chủ trên máy.
-				Đừng hàn nút vào pad RX: trên board 6TP đó là chân DC của màn hình.
-				Chân trùng với chân màn hình sẽ bị firmware <b>tự tắt</b>; SWCLK/SWDIO dùng được vì bản build đã tắt debug SWD
-				(đừng đè nút khi đang nạp firmware bằng J-Link).
-			</p>
+			<legend>Nút bấm vật lý (3 nút)</legend>
 			<div class="flex-container">
 				<div class="flex-group">
 					<label>Trang sau:</label><select id="btnNext" class="btnsel"></select>
@@ -190,8 +192,21 @@
 					<span id="btnHint" class="mode-gallery-hint" style="margin:0"></span>
 				</div>
 			</div>
+			<details class="mode-gallery-hint" style="margin:6px 0 0">
+				<summary>Hướng dẫn hàn nút &amp; cách dùng</summary>
+				<p style="margin:6px 0 0">
+					Hàn 3 nút từ các điểm test xuống <b>GND</b> (nhấn = nối đất, nên nối tiếp điện trở ~1kΩ).
+					Mặc định theo pad board 6TP: trang sau = <b>SWCLK (P1_4)</b>, trang trước = <b>TX (P0_4)</b>,
+					trang chủ = <b>SWDIO (P1_5)</b>. Đừng hàn vào pad <b>RX</b> — trên board 6TP đó là chân DC của màn hình.
+					Không có nút nguồn: bật/tắt Bluetooth nằm trong menu Trang chủ trên máy.
+					Ở màn Trang chủ, hai nút trang sau/trước <b>di chuyển menu</b>, nút trang chủ <b>chọn</b>.
+					Chân trùng với chân màn hình sẽ bị firmware <b>tự tắt</b>; SWCLK/SWDIO dùng được vì build đã tắt debug SWD
+					(đừng đè nút khi đang nạp firmware bằng J-Link).
+				</p>
+			</details>
 		</fieldset>
 
+		<!-- 6. FIRMWARE — hiếm khi dùng, để cuối -->
 		<fieldset id="otaFieldset">
 			<legend>Cập nhật firmware (OTA)</legend>
 			<div class="flex-container">
@@ -219,6 +234,17 @@
 			</div>
 		</fieldset>
 
+		<!-- 7. NHẬT KÝ — tham khảo/chẩn đoán, cuối trang -->
+		<fieldset>
+			<legend>Nhật ký</legend>
+			<div class="flex-container">
+				<div class="flex-group">
+					<button type="button" class="secondary" onclick="clearLog()">Xóa nhật ký</button>
+				</div>
+			</div>
+			<div class="log-container" id="log"></div>
+		</fieldset>
+
 		<div class="footer">
 			<span class="copy">&copy; 2026 doantruonglam</span>
 			<span class="links">
@@ -227,8 +253,8 @@
 			</span>
 		</div>
 	</div>
-	<script type="text/javascript" src="js/dithering.js?v=20260728a"></script>
-	<script type="text/javascript" src="js/reader.js?v=20260728c"></script>
+	<script type="text/javascript" src="js/dithering.js?v=20260806a"></script>
+	<script type="text/javascript" src="js/reader.js?v=20260806a"></script>
 </body>
 
 </html>
