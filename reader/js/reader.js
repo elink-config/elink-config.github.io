@@ -168,15 +168,16 @@ function handleNotify(value, idx) {
     const m = parseInt(msg.substring(4));
     if (m > 0) document.getElementById('mtusize').value = m;
     if (mtuNotifyResolve) { mtuNotifyResolve(); mtuNotifyResolve = null; }
+    // tự đồng bộ giờ cho giờ chân trang (fw r2.2+): mtu= là notify CUỐI của
+    // chuỗi bắt tay — gửi sau nó (thêm trễ) mới không đụng "GATT operation
+    // already in progress" (log hiện trường: gửi ngay sau fw= bị va chạm)
+    setTimeout(() => syncClock(), 800);
   } else if (msg.startsWith('fw=')) {
     deviceFw = msg.substring(3);
     if (!deviceFw.startsWith('r')) {
       addLog('⚠ Thiết bị đang chạy firmware LỊCH chuẩn (' + deviceFw + '), không phải firmware máy đọc sách (rX.Y).');
       addLog('⚠ Hãy nạp firmware fw_reader_4_2inch_rX.Y.bin (mục OTA bên dưới) trước khi gửi sách.');
     }
-    // tự đồng bộ giờ ĐỊA PHƯƠNG cho giờ chân trang (fw r2.2+; fw cũ bỏ qua).
-    // Trễ 300ms để chắc chắn không chen giữa chuỗi notify lúc kết nối.
-    setTimeout(() => syncClock(), 300);
   } else if (msg.startsWith('bki=')) {
     // máy đang phân trang sách chữ: ánh xạ số trang đã chốt vào 80..99% của
     // thanh tiến độ (idxEstPages ước lượng từ dung lượng chữ). Khi ĐỔI CỠ CHỮ
