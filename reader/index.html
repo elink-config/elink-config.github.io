@@ -139,7 +139,8 @@
 						<option value="2">Tắt hiển thị</option>
 					</select>
 					<button id="clockModebutton" type="button" class="secondary" onclick="setClockMode()" disabled>Áp dụng</button>
-					<span class="mode-gallery-hint" style="margin:0">Giờ tự đồng bộ từ điện thoại mỗi lần kết nối. «Cơ hội» = giờ chỉ cập nhật khi màn vốn dĩ vẽ lại (lật trang, vào/ra Trang chủ) — đang đọc thì gần như luôn đúng; «Nhảy từng phút» = máy tự vẽ lại mỗi phút kể cả khi để không.</span>
+					<button id="syncClockbutton" type="button" class="primary" onclick="syncClock()" disabled>Đồng bộ giờ</button>
+					<span class="mode-gallery-hint" style="margin:0">Bấm «Đồng bộ giờ» để gửi giờ điện thoại xuống máy (máy mất điện thì giờ mất — đồng bộ lại). «Cơ hội» = giờ chỉ cập nhật khi màn vốn dĩ vẽ lại (lật trang, vào/ra Trang chủ); «Nhảy từng phút» = máy tự vẽ lại mỗi phút kể cả khi để không.</span>
 				</div>
 				<div class="flex-group">
 					<label for="fontSize">Cỡ chữ (fw r2.2+):</label>

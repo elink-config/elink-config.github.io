@@ -168,10 +168,6 @@ function handleNotify(value, idx) {
     const m = parseInt(msg.substring(4));
     if (m > 0) document.getElementById('mtusize').value = m;
     if (mtuNotifyResolve) { mtuNotifyResolve(); mtuNotifyResolve = null; }
-    // tự đồng bộ giờ cho giờ chân trang (fw r2.2+): mtu= là notify CUỐI của
-    // chuỗi bắt tay — gửi sau nó (thêm trễ) mới không đụng "GATT operation
-    // already in progress" (log hiện trường: gửi ngay sau fw= bị va chạm)
-    setTimeout(() => syncClock(), 800);
   } else if (msg.startsWith('fw=')) {
     deviceFw = msg.substring(3);
     if (!deviceFw.startsWith('r')) {
@@ -305,7 +301,7 @@ function updateButtonStatus(busy = false) {
   const dis = (busy || !connected) ? 'disabled' : null;
   document.getElementById('reconnectbutton').disabled = (gattServer == null || connected) ? 'disabled' : null;
   document.getElementById('sendbookbutton').disabled = (dis || !book) ? 'disabled' : null;
-  ['rprevbutton', 'rnextbutton', 'rhomebutton', 'rgotobutton', 'fullEverybutton', 'fontSizebutton', 'clockModebutton', 'btnApply', 'otabutton', 'sendcmdbutton']
+  ['rprevbutton', 'rnextbutton', 'rhomebutton', 'rgotobutton', 'fullEverybutton', 'fontSizebutton', 'clockModebutton', 'syncClockbutton', 'btnApply', 'otabutton', 'sendcmdbutton']
     .forEach(id => document.getElementById(id).disabled = dis);
 }
 
@@ -316,24 +312,30 @@ async function readerGoto() {
   const p = Math.max(1, parseInt(document.getElementById('gotoPage').value) || 1) - 1;
   await write(EpdCmd.BOOK, [0x10, p & 0xFF, (p >> 8) & 0xFF]);
 }
-// gửi giờ ĐỊA PHƯƠNG (epoch giây đã cộng múi giờ) — fw r2.2+ BOOK 0x30
-async function syncClock(retry = 1) {
+// gửi giờ ĐỊA PHƯƠNG (epoch giây đã cộng múi giờ) — fw có tính năng giờ sẽ
+// ACK bằng notify clk=ok; build cũ im lặng -> báo rõ để user biết cần OTA
+async function syncClock() {
   const t = Math.floor(Date.now() / 1000) - new Date().getTimezoneOffset() * 60;
-  const ok = await write(EpdCmd.BOOK, [0x30, t & 0xFF, (t >>> 8) & 0xFF, (t >>> 16) & 0xFF, (t >>> 24) & 0xFF]);
-  if (ok) {
-    addLog('Đã đồng bộ giờ cho máy (' + new Date().toTimeString().slice(0, 5) + ').');
-  } else if (retry > 0) {
-    setTimeout(() => syncClock(retry - 1), 700);
-  } else {
-    addLog('⚠ Không gửi được giờ — bấm «Áp dụng» ở mục Giờ chân trang để gửi lại.');
+  const ack = waitNotify(m => (m === 'clk=ok') ? m : null, 3000);
+  if (!(await write(EpdCmd.BOOK, [0x30, t & 0xFF, (t >>> 8) & 0xFF, (t >>> 16) & 0xFF, (t >>> 24) & 0xFF]))) {
+    ack.catch(() => { });
+    addLog('⚠ Không gửi được giờ (kết nối đang bận) — bấm lại «Đồng bộ giờ».');
+    return false;
   }
-  return ok;
+  try {
+    await ack;
+    addLog('Máy đã nhận giờ (' + new Date().toTimeString().slice(0, 5) + ') — footer sẽ hiện giờ ở lần vẽ kế.');
+    return true;
+  } catch (e) {
+    addLog('⚠ Máy KHÔNG xác nhận (clk=ok) — firmware trên máy là build r2.2 CŨ chưa có tính năng giờ. Hãy build lại từ code mới nhất rồi OTA.');
+    return false;
+  }
 }
 
 async function setClockMode() {
   // fw r2.2+: [0x28 0x31 0/1/2] — cơ hội / nhảy từng phút / tắt
   const v = Math.min(2, Math.max(0, parseInt(document.getElementById('clockMode').value) || 0));
-  await syncClock(0);  // tiện thể gửi lại giờ (đường thủ công khi auto-sync hụt)
+  if (!(await syncClock())) return;  // gửi giờ trước; máy không ACK thì khỏi đặt chế độ
   if (await write(EpdCmd.BOOK, [0x31, v]))
     addLog('Giờ chân trang: ' + ['cơ hội (cập nhật khi màn vẽ lại)', 'nhảy từng phút (tốn pin hơn)', 'tắt hiển thị'][v] + '.');
 }
