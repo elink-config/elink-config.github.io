@@ -174,13 +174,9 @@ function handleNotify(value, idx) {
       addLog('⚠ Thiết bị đang chạy firmware LỊCH chuẩn (' + deviceFw + '), không phải firmware máy đọc sách (rX.Y).');
       addLog('⚠ Hãy nạp firmware fw_reader_4_2inch_rX.Y.bin (mục OTA bên dưới) trước khi gửi sách.');
     }
-    // tự đồng bộ giờ ĐỊA PHƯƠNG cho giờ chân trang (fw r2.2+; fw cũ bỏ qua)
-    {
-      const t = Math.floor(Date.now() / 1000) - new Date().getTimezoneOffset() * 60;
-      write(EpdCmd.BOOK, [0x30, t & 0xFF, (t >>> 8) & 0xFF, (t >>> 16) & 0xFF, (t >>> 24) & 0xFF])
-        .then(ok => { if (ok) addLog('Đã đồng bộ giờ cho máy.'); })
-        .catch(() => { });
-    }
+    // tự đồng bộ giờ ĐỊA PHƯƠNG cho giờ chân trang (fw r2.2+; fw cũ bỏ qua).
+    // Trễ 300ms để chắc chắn không chen giữa chuỗi notify lúc kết nối.
+    setTimeout(() => syncClock(), 300);
   } else if (msg.startsWith('bki=')) {
     // máy đang phân trang sách chữ: ánh xạ số trang đã chốt vào 80..99% của
     // thanh tiến độ (idxEstPages ước lượng từ dung lượng chữ). Khi ĐỔI CỠ CHỮ
@@ -319,9 +315,24 @@ async function readerGoto() {
   const p = Math.max(1, parseInt(document.getElementById('gotoPage').value) || 1) - 1;
   await write(EpdCmd.BOOK, [0x10, p & 0xFF, (p >> 8) & 0xFF]);
 }
+// gửi giờ ĐỊA PHƯƠNG (epoch giây đã cộng múi giờ) — fw r2.2+ BOOK 0x30
+async function syncClock(retry = 1) {
+  const t = Math.floor(Date.now() / 1000) - new Date().getTimezoneOffset() * 60;
+  const ok = await write(EpdCmd.BOOK, [0x30, t & 0xFF, (t >>> 8) & 0xFF, (t >>> 16) & 0xFF, (t >>> 24) & 0xFF]);
+  if (ok) {
+    addLog('Đã đồng bộ giờ cho máy (' + new Date().toTimeString().slice(0, 5) + ').');
+  } else if (retry > 0) {
+    setTimeout(() => syncClock(retry - 1), 700);
+  } else {
+    addLog('⚠ Không gửi được giờ — bấm «Áp dụng» ở mục Giờ chân trang để gửi lại.');
+  }
+  return ok;
+}
+
 async function setClockMode() {
   // fw r2.2+: [0x28 0x31 0/1/2] — cơ hội / nhảy từng phút / tắt
   const v = Math.min(2, Math.max(0, parseInt(document.getElementById('clockMode').value) || 0));
+  await syncClock(0);  // tiện thể gửi lại giờ (đường thủ công khi auto-sync hụt)
   if (await write(EpdCmd.BOOK, [0x31, v]))
     addLog('Giờ chân trang: ' + ['cơ hội (cập nhật khi màn vẽ lại)', 'nhảy từng phút (tốn pin hơn)', 'tắt hiển thị'][v] + '.');
 }
