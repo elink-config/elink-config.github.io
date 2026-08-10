@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="vi">
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>E-Ink DA14585</title>
+	<link rel="shortcut icon" type="image/png" href="favicon.png">
+	<link rel="shortcut icon" type="image/png" href="favicon.png">
+	<link rel="stylesheet" href="css/main.css?v=20260811a">
+	<script>
+		// apply the saved theme before first paint to avoid a flash
+		(function () {
+			const t = localStorage.getItem('theme');
+			if (t === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+		})();
+	</script>
+</head>
+
+<body>
+	<div class="main">
+		<div class="app-header">
+			<div class="app-header-icon"><span class="material-symbols-outlined">calendar_month</span></div>
+			<div class="app-header-text">
+				<h1>E-Ink DA14585</h1>
+				<p id="app-header-sub">Kết nối thiết bị 4.2", 7.5", 2.13", 2.9" hoặc đồng hồ DLG — giao diện hiện theo loại thiết bị — <b>BẢN THỬ NGHIỆM v2</b></p>
+			</div>
+			<button type="button" class="theme-toggle-btn" id="theme-toggle" title="Đổi giao diện sáng/tối"
+				onclick="(function(){const h=document.documentElement;const dark=h.getAttribute('data-theme')==='dark';if(dark){h.removeAttribute('data-theme');localStorage.setItem('theme','light');}else{h.setAttribute('data-theme','dark');localStorage.setItem('theme','dark');}document.getElementById('theme-toggle-icon').textContent=dark?'dark_mode':'light_mode';})()">
+				<span class="material-symbols-outlined" id="theme-toggle-icon">dark_mode</span>
+			</button>
+		</div>
+		<script>
+			if (document.documentElement.getAttribute('data-theme') === 'dark')
+				document.getElementById('theme-toggle-icon').textContent = 'light_mode';
+		</script>
+		<a class="zalo-banner" href="https://zalo.me/g/gqlpuz2xpxy1kttjbeqb" target="_blank" rel="noopener">
+			<span class="material-symbols-outlined" aria-hidden="true">forum</span>
+			<span class="zalo-banner-text"><b>Nhóm Zalo hỗ trợ khách hàng</b> — cần trợ giúp khi cài đặt,
+				sử dụng hoặc cập nhật thiết bị? Tham gia nhóm để được hỗ trợ trực tiếp.</span>
+			<span class="zalo-banner-cta">Tham gia nhóm</span>
+		</a>
+		<fieldset>
+			<legend>Kết nối Bluetooth</legend>
+			<p class="mode-gallery-hint">Bấm «Kết nối» và chọn thiết bị <b>DIY-4_2-xxxx</b> (màn 4.2"),
+				<b>DIY-4_2C-xxxx</b> (màn 4.2" bốn màu), <b>DIY-7_5V-xxxx</b> (màn 7.5"),
+				<b>DIY-2_13-xxxx</b> (màn 2.13"), <b>DIY-2_9-xxxx</b> (màn 2.9")
+				hoặc <b>DLG-CLOCK-xxxx</b> (đồng hồ E-Ink) — các mục điều khiển
+				sẽ hiện ra sau khi kết nối thành công.</p>
+			<div class="flex-container">
+				<div class="flex-group">
+					<button id="connectbutton" type="button" class="primary" onclick="preConnect()">Kết nối</button>
+					<button id="reconnectbutton" type="button" class="secondary" onclick="reConnect()">Kết nối lại</button>
+					<button type="button" class="secondary" onclick="clearLog()">Xóa nhật ký</button>
+				</div>
+				<div class="flex-group debug">
+					<label for="cmdTXT">Gửi lệnh</label>
+					<input type="text" id="cmdTXT" value="">
+					<button id="sendcmdbutton" type="button" class="primary" onclick="sendcmd()">Gửi lệnh</button>
+				</div>
+			</div>
+			<div class="log-container" id="log"></div>
+		</fieldset>
+
+		<!-- per-device sections get cloned here from the templates below after a
+		     successful connection; only one app type is ever instantiated -->
+		<div id="appMount" class="hidden"></div>
+
+		<!-- popup kích hoạt: hiện khi thiết bị DIY báo «act=off» sau khi kết nối
+		     (firmware khóa mọi lệnh cho tới khi nhận mã kích hoạt hợp lệ) -->
+		<div id="act-overlay" class="act-overlay" hidden>
+			<div class="act-dialog" role="dialog" aria-modal="true" aria-labelledby="act-title">
+				<div id="act-form-view">
+					<h2 id="act-title">Thiết bị chưa kích hoạt</h2>
+					<p>Thiết bị phải được <b>kích hoạt</b> trước khi sử dụng. Vui lòng liên hệ
+						<a href="https://vn.shp.ee/ZX4DY1pi" target="_blank" rel="noopener">người bán</a>
+						và gửi mã bên dưới để nhận <b>mã kích hoạt</b> cho thiết bị của bạn:</p>
+					<div class="act-row">
+						<input id="act-mac" type="text" readonly value="" onclick="this.select()">
+						<button id="act-copy" type="button" class="secondary">Sao chép</button>
+					</div>
+					<p style="margin-top:14px">Nhận được mã kích hoạt thì dán vào ô dưới rồi bấm «Kích hoạt»:</p>
+					<textarea id="act-key" placeholder="Dán mã kích hoạt tại đây" spellcheck="false"></textarea>
+					<p class="act-hint" id="act-key-hint" hidden>Mã không đúng định dạng — cần 256 ký tự hex (có thể kèm «26» ở đầu và khoảng trắng).</p>
+					<div class="act-actions">
+						<button id="act-close" type="button" class="secondary">Đóng</button>
+						<button id="act-submit" type="button" class="primary" disabled>Kích hoạt</button>
+					</div>
+				</div>
+				<div id="act-result-view" hidden>
+					<h2 id="act-result-title"></h2>
+					<p id="act-result-text"></p>
+					<div class="act-actions">
+						<button id="act-result-btn" type="button" class="primary"></button>
+					</div>
+				</div>
+			</div>
+		</div>
+
+
+
+		<div class="footer">
+			<span class="copy">&copy; 2026 doantruonglam</span>
+			<span class="links">
+				<!-- <a href="https://github.com/elink-config/elink-config.github.io">Github</a> -->
+				<a href="https://vn.shp.ee/M9ts8TgM" target="_blank" rel="noopener">Link mua bản 2.13 inch</a>
+				<a href="https://vn.shp.ee/yjmTrdsL" target="_blank" rel="noopener">Link mua bản 2.9 inch</a>
+				<a href="https://vn.shp.ee/7qxzasoF" target="_blank" rel="noopener">Link mua bản 4.2 inch</a>
+				<a href="https://vn.shp.ee/Zuh8CVWy" target="_blank" rel="noopener">Link mua bản hoàn thiện</a>
+				<a href="../reader/">Máy đọc sách 4.2"</a>
+				<!-- ẩn với khách nhưng PHẢI giữ trong DOM: connector.js (hubInit) và
+				     main.js của các app (checkDebugMode) đều truy cập #debug-toggle —
+				     xóa hẳn là trang lỗi «Cannot set properties of null» khi kết nối.
+				     Dev vẫn vào được bằng cách gõ ?debug=true trên URL. -->
+				<a href="?debug=true" id="debug-toggle" style="display:none">Chế độ dev</a>
+			</span>
+		</div>
+	</div>
+	<script type="text/javascript" src="js/fw_check.js?v=20260811a"></script>
+	<script type="text/javascript" src="js/connector.js?v=20260811a"></script>
+	<script>
+		var _hmt = _hmt || [];
+		(function () {
+			var hm = document.createElement("script");
+			hm.src = "https://hm.baidu.com/hm.js?c5949ebea1f35f725f7b05fcce462b61";
+			var s = document.getElementsByTagName("script")[0];
+			s.parentNode.insertBefore(hm, s);
+		})();
+	</script>
+</body>
+
+</html>

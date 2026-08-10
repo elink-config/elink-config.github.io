@@ -1,0 +1,436 @@
+<!-- Fragment giao diện thiết bị — được connector.js nạp vào #appMount.
+     Sinh lần đầu bởi scratchpad/build_v2.py từ index.html gốc; sau đó SỬA TRỰC TIẾP file này. -->
+		<fieldset>
+			<legend>Thời gian</legend>
+			<div class="time-sync-row">
+				<button id="time-setter" type="button" class="primary" onclick="setTime()">Đặt giờ</button>
+				<label for="hour-offset">Chênh lệch múi giờ (giờ):</label>
+				<input type="number" max="24" min="0" id="hour-offset" value="0" title="Chênh lệch múi giờ (giờ)">
+				<span class="mode-gallery-hint" style="margin:0">Bấm «Đặt giờ» để đồng bộ ngày giờ hiện tại xuống thiết bị. Bình thường để chênh lệch múi giờ = 0.</span>
+			</div>
+		</fieldset>
+		<fieldset>
+			<legend>Điều khiển thiết bị</legend>
+			<p class="mode-gallery-hint">Bấm nút để chuyển chế độ hiển thị — thiết bị tự làm mới màn hình sau mỗi lệnh.</p>
+			<div class="flex-container">
+				<div class="flex-group">
+					<button type="button" class="primary" onclick="setri('e102')" title="Bấm để chuyển chế độ đồng hồ">Chế độ đồng hồ</button>
+					<button type="button" class="primary" onclick="setri('e102')" title="Bấm để chuyển chế độ kết hợp">Chế độ kết hợp</button>
+					<button type="button" class="primary" onclick="setri('e101')" title="Bấm để chuyển chế độ lịch">Chế độ lịch</button>
+					<button type="button" class="secondary" onclick="setri('e4')" title="Bấm để đổi màu đồng hồ">Đổi màu đồng hồ</button>
+					<button type="button" class="secondary" onclick="triggerRxTxCmd('e100')" title="Hiển thị ảnh đã tải lên cố định trên màn">Chế độ hình ảnh</button>
+				</div>
+				<div class="flex-group">
+					<button type="button" class="secondary" onclick="triggerRxTxCmd('e3')" title="Bấm để đảo màu đen trắng">Đảo màu đen trắng</button>
+					<button type="button" class="secondary" onclick="triggerRxTxCmd('e5')" title="Bấm để lật màn hình">Xoay màn hình 180°</button>
+					<button type="button" class="secondary" onclick="triggerRxTxCmd('E2')" title="Không phản hồi? Bấm để làm mới">Làm mới màn hình</button>
+				</div>
+				<div class="flex-group debug">
+					<button type="button" class="secondary" onclick="triggerRxTxCmd('AA')" title="Gửi lệnh AA qua RxTx">Gửi AA</button>
+					<button type="button" class="secondary" onclick="triggerRxTxCmd('E5')" title="Gửi lệnh AB qua RxTx">Gửi AB</button>
+				</div>
+				<div class="flex-group" style="flex:1 1 100%">
+					<label for="cmdlut_red">Hiệu chỉnh làm mới một phần:</label>
+					<input type="text" id="cmdlut_red" style="flex:1" placeholder="Hex 01-0f: chỉnh màu đỏ · 10-f0: tắt đỏ và chỉnh đen (số cao = tối hơn)" value="">
+					<button type="button" class="secondary" onclick="triggerEpdRed_lut(document.getElementById('cmdlut_red').value)">Áp dụng</button>
+				</div>
+				<div class="flex-group">
+					<label for="D_S_hour">Giờ bắt đầu:</label>
+					<input type="number" id="D_S_hour" value="0" min="0" max="23">
+					<label for="D_S_min">Giờ kết thúc:</label>
+					<input type="number" id="D_S_min" value="0" min="0" max="59">
+					<button type="button" class="secondary" onclick="triggerRxTxCmd_XM('FB01')" title="Không làm mới màn hình trong khoảng giờ bên cạnh (tiết kiệm pin ban đêm)">Bật ngủ</button>
+					<button type="button" class="secondary" onclick="triggerRxTxCmd_XM('FB00')" title="Cho phép làm mới màn hình trong khoảng giờ bên cạnh">Tắt ngủ</button>
+				</div>
+				<div class="flex-group" style="flex:1 1 100%">
+					<label for="CP">Biển số (đồng hồ 2.13"):</label>
+					<input type="text" id="CP" placeholder="Nhập số cần hiển thị" value="" style="width:160px">
+					<button type="button" class="secondary" onclick="triggerEpdCHEPAI(document.getElementById('CP').value)">Hiển thị số</button>
+				</div>
+				<div class="flex-group" style="flex:1 1 100%">
+					<label for="cmdJH">Kích hoạt (không cần nếu màn hình đang chạy):</label>
+					<input type="text" id="cmdJH" placeholder="Nhập mã kích hoạt" value="" style="width:200px">
+					<button type="button" class="secondary" onclick="triggerEpdJH(document.getElementById('cmdJH').value)">Kích hoạt</button>
+				</div>
+			</div>
+		</fieldset>
+		<fieldset>
+			<legend>Đếm ngược</legend>
+			<p class="mode-gallery-hint">Chọn ngày và nhập chữ hiển thị — đồng hồ sẽ hiện số ngày còn lại đến ngày đã chọn. «Dừng đếm ngược» đưa thiết bị về chế độ đồng hồ.</p>
+			<div class="date-picker-container">
+				<label for="datePicker">Chọn ngày:</label>
+				<input type="date" id="datePicker" style="width:auto;flex:0 1 auto">
+				<div class="chip-outlined">Đếm ngược đồng hồ</div>
+			</div>
+			<div style="display:none">
+				<select id="gridSizeSelect"><option value="16" selected>Clock Countdown Interface</option></select>
+				<span id="currentGridSize"></span>
+				<input type="checkbox" id="invertColors" checked>
+				<input type="checkbox" id="showGrid" checked>
+			</div>
+			<div class="flex-container">
+				<div class="flex-group" style="flex:1 1 100%">
+					<label for="textInput">Chữ hiển thị:</label>
+					<input type="text" id="textInput" maxlength="8" value="COUNT" style="flex:1" placeholder="Nhập 1–8 ký tự">
+				</div>
+				<div class="flex-group">
+					<label for="fontFamily">Phông chữ (chỉ máy tính):</label>
+					<select id="fontFamily">
+						<option value="Arial">Arial</option>
+						<option value="SimSun" selected>SimSun</option>
+						<option value="Microsoft YaHei">Microsoft YaHei</option>
+						<option value="SimHei">SimHei</option>
+						<option value="KaiTi">KaiTi</option>
+					</select>
+				</div>
+				<div class="flex-group" style="flex:1 1 100%">
+					<label for="fontSizeSlider">Cỡ chữ (50%–150%):</label>
+					<input type="range" id="fontSizeSlider" min="50" max="150" value="100" style="flex:1">
+					<span class="slider-value" id="fontSizeValue">100%</span>
+				</div>
+			</div>
+			<p class="mode-gallery-hint" id="sizeHint">Đếm ngược đồng hồ hỗ trợ tối đa 8 ký tự ASCII. Cỡ chữ quá lớn có thể bị cắt ký tự.</p>
+			<div class="preview-container">
+				<canvas id="previewCanvas"></canvas>
+				<div class="grid-info" id="gridInfoText"></div>
+			</div>
+			<div class="flex-container">
+				<div class="flex-group">
+					<button id="generateBtn" type="button">Bắt đầu đếm ngược</button>
+					<button id="copyBtn" type="button">Dừng đếm ngược</button>
+				</div>
+			</div>
+		</fieldset>
+		<fieldset id="dlg-image-section">
+			<legend>Truyền hình ảnh</legend>
+			<div class="flex-container">
+				<input type="file" id="image_file" onchange="update_image1()" accept=".png,.jpg,.bmp,.webp,.jpeg">
+			</div>
+			<div class="flex-container options">
+				<div class="flex-group">
+					<label for="screen-size">Kích thước màn hình:</label>
+					<select id="screen-size" onchange="updateCanvasSize()">
+						<option value="2.13_212_104" selected>2.13" (212×104)</option>
+						<option value="2.13hd_250_144">2.13" (250×144)</option>
+						<option value="4.2_400_300">4.2" Transfer (400×300)</option>
+						<option value="4.2cal_280_100">4.2" Calendar Small (280×100)</option>
+						<option value="7.5_800_480">7.5" Transfer (800×480)</option>
+						<option value="7.5cal_400_180">7.5" Calendar Small (400×180)</option>
+						<option value="2.9_296_128">2.9" Transfer (296×128)</option>
+					</select>
+				</div>
+				<div class="flex-group">
+					<label for="dithering">Thuật toán dithering:</label>
+					<select id="dithering">
+						<optgroup label="Ba màu Đen/Trắng/Đỏ">
+							<option value="bwr_none">BWR không dithering</option>
+							<option value="bwr_floydsteinberg">BWR Floyd-Steinberg</option>
+							<option value="bwr_atkinson">BWR Atkinson</option>
+							<option value="bwr_bayer">BWR Bayer</option>
+							<option value="bwr_stucki">BWR Stucki</option>
+							<option value="bwr_jarvis">BWR Jarvis-Judice-Ninke</option>
+						</optgroup>
+						<optgroup label="Đen trắng">
+							<option value="none">Không dithering</option>
+							<option value="floydsteinberg">Floyd-Steinberg</option>
+							<option value="atkinson">Atkinson</option>
+							<option value="bayer">Bayer</option>
+							<option value="stucki">Stucki</option>
+							<option value="jarvis">Jarvis-Judice-Ninke</option>
+						</optgroup>
+					</select>
+				</div>
+				<div class="flex-group">
+					<label for="threshold">Ngưỡng (chế độ đen trắng):</label>
+					<input type="range" max="255" min="10" value="125" id="threshold">
+				</div>
+				<div class="flex-group">
+					<label for="rotationSlider">Xoay:</label>
+					<input type="range" id="rotationSlider" min="0" max="360" value="0" oninput="updateRotation(this.value)">
+					<label id="rotationValue">0°</label>
+				</div>
+				<div class="flex-group">
+					<label for="scaleSlider">Tỷ lệ:</label>
+					<input type="range" id="scaleSlider" min="10" max="500" value="100" oninput="updateScale(this.value)">
+					<label id="scaleValue">100%</label>
+				</div>
+			</div>
+			<div class="flex-container">
+				<div class="flex-group">
+					<button type="button" class="secondary" onclick="update_image()">Tải lại</button>
+					<button type="button" class="secondary" onclick="stretchToCanvas()">Kéo giãn đầy màn</button>
+					<button type="button" class="secondary" onclick="fitToCanvas()">Vừa màn hình</button>
+					<button type="button" class="secondary" onclick="updateScale('100')">Đặt lại 100%</button>
+					<button type="button" class="secondary" onclick="rotateImage(90)">Xoay 90°</button>
+					<button type="button" class="secondary" onclick="rotateImage(-90)">Xoay -90°</button>
+					<button type="button" class="secondary" onclick="rotateImage(0)">Đặt lại xoay</button>
+				</div>
+			</div>
+			<div id="canvas-box">
+				<canvas id="canvas"></canvas>
+			</div>
+			<div class="image-adjustments">
+				<h3>Chỉnh sửa hình ảnh</h3>
+				<div class="adjustment-row">
+					<label for="brightness">Độ sáng:</label>
+					<span class="adjustment-value" id="brightnessValue">0</span>
+					<input type="range" id="brightness" min="-100" max="100" value="0">
+				</div>
+				<div class="adjustment-row">
+					<label for="contrast">Tương phản:</label>
+					<span class="adjustment-value" id="contrastValue">100</span>
+					<input type="range" id="contrast" min="0" max="200" value="100">
+				</div>
+				<div class="adjustment-row">
+					<label for="saturation">Bão hòa:</label>
+					<span class="adjustment-value" id="saturationValue">100</span>
+					<input type="range" id="saturation" min="0" max="200" value="100">
+				</div>
+				<div class="adjustment-row">
+					<label for="diffusion">Cường độ khuếch tán:</label>
+					<span class="adjustment-value" id="diffusionValue">50</span>
+					<input type="range" id="diffusion" min="0" max="100" value="50">
+				</div>
+				<div class="flex-container">
+					<div class="flex-group">
+						<button type="button" class="secondary" onclick="update_image()">Áp dụng chỉnh sửa</button>
+						<button id="uploadimagebutton" type="button" class="primary" onclick="upload_image()">Gửi hình ảnh</button>
+					</div>
+				</div>
+			</div>
+		</fieldset>
+		<fieldset>
+			<legend>Thiết kế mẫu</legend>
+			<p class="mode-gallery-hint">Thêm phần tử (chữ, hình khối, icon, mã QR...), kéo-thả trên canvas để sắp xếp. Xong bấm «Áp dụng mẫu» — thiết kế được chuyển sang khung «Truyền hình ảnh» phía trên để gửi xuống thiết bị.</p>
+			<div class="editor-container">
+				<div class="editor-canvas-wrap">
+					<canvas id="canvas_YS" width="600" height="450"></canvas>
+				</div>
+				<div class="control-panel">
+					<div class="control-group size-controls1" id="size-controls">
+						<h3>Kích thước phần tử</h3>
+						<div class="size-inputs">
+							<input type="number" id="width-input" placeholder="Rộng" min="10" max="400" value="40">
+							<input type="number" id="height-input" placeholder="Cao" min="10" max="300" value="40">
+						</div>
+						<button id="apply-size" type="button" class="secondary">Áp dụng kích thước</button>
+					</div>
+					<div class="control-group" id="rotate-controls1">
+						<h3>Xoay phần tử</h3>
+						<div class="rotate-controls">
+							<input type="range" id="rotation-input" min="0" max="360" value="0" step="1">
+							<span id="rotation-value">0°</span>
+							<button id="apply-rotation" type="button" style="display:none">Áp dụng</button>
+						</div>
+					</div>
+					<div class="control-group">
+						<div class="element-actions">
+							<button id="delete-element" type="button" class="danger">Xóa phần tử</button>
+							<button id="duplicate-element" type="button" class="secondary">Sao chép</button>
+						</div>
+						<div class="element-actions">
+							<button id="bring-to-front" type="button" style="display:none">Lên trước</button>
+							<button id="send-to-back" type="button" style="display:none">Ra sau</button>
+						</div>
+						<div class="position-controls">
+							<button id="move-up" type="button" class="secondary">▲ Lên</button>
+						</div>
+						<div class="position-controls">
+							<button id="move-left" type="button" class="secondary">◀ Trái</button>
+							<button id="move-down" type="button" class="secondary">▼ Xuống</button>
+							<button id="move-right" type="button" class="secondary">▶ Phải</button>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="editor-container">
+				<div class="control-panel">
+					<div class="control-group">
+						<h3>Thêm phần tử</h3>
+						<select id="element-type">
+							<option value="image">Hình / Icon</option>
+							<option value="text">Chữ</option>
+							<option value="rect">Hình chữ nhật</option>
+							<option value="circle">Hình tròn</option>
+							<option value="triangle">Tam giác</option>
+							<option value="line">Đường thẳng</option>
+							<option value="star">Ngôi sao</option>
+						</select>
+						<div class="shape-params" id="shape-params">
+							<input type="number" id="param1" placeholder="Tham số 1" min="3" max="20" value="5">
+							<input type="number" id="param2" placeholder="Tham số 2" min="0.1" max="5" step="0.1" value="0.5">
+						</div>
+						<button id="add-element" type="button" class="primary">Thêm phần tử</button>
+						<textarea id="text-content" placeholder="Nhập nội dung chữ">Chữ tùy chỉnh</textarea>
+					</div>
+					<div class="control-group">
+						<h3>Chữ &amp; màu sắc</h3>
+						<div class="color-palette">
+							<div class="color-option selected" data-color="#ffffff" style="background-color:#ffffff;border:1px solid #ccc;"></div>
+							<div class="color-option" data-color="#000000" style="background-color:#000000;"></div>
+							<div class="color-option" data-color="#ff0000" style="background-color:#ff0000;"></div>
+							<div class="color-option" data-color="#00ff00" style="background-color:#00ff00;"></div>
+							<div class="color-option" data-color="#0000ff" style="background-color:#0000ff;"></div>
+							<div class="color-option" data-color="#ffff00" style="background-color:#ffff00;"></div>
+							<div class="color-option" data-color="#ff00ff" style="background-color:#ff00ff;"></div>
+							<div class="color-option" data-color="#00ffff" style="background-color:#00ffff;"></div>
+							<div class="color-option" data-color="#ff6b6b" style="background-color:#ff6b6b;"></div>
+							<div class="color-option" data-color="#4ecdc4" style="background-color:#4ecdc4;"></div>
+							<div class="color-option" data-color="#ffe066" style="background-color:#ffe066;"></div>
+							<div class="color-option" data-color="#9b5de5" style="background-color:#9b5de5;"></div>
+							<div class="color-option" data-color="#f15bb5" style="background-color:#f15bb5;"></div>
+							<div class="color-option" data-color="#00bbf9" style="background-color:#00bbf9;"></div>
+							<div class="color-option" data-color="#00f5d4" style="background-color:#00f5d4;"></div>
+							<div class="color-option" data-color="#fee440" style="background-color:#fee440;"></div>
+						</div>
+						<div class="size-inputs">
+							<select id="text-font">
+								<option value="'Microsoft YaHei', 'Microsoft YaHei'">Microsoft YaHei</option>
+								<option value="'PingFang SC', 'PingFang'">PingFang (macOS/iOS)</option>
+								<option value="'Hiragino Sans GB', 'DongQingSimHei'">DongQingSimHei</option>
+								<option value="'STXihei', 'STXihei'">STXihei</option>
+								<option value="SimSun, 'SimSun'">SimSun</option>
+								<option value="'SimHei', 'SimHei'">SimHei</option>
+								<option value="'KaiTi', 'KaiTi'">KaiTi</option>
+								<option value="'FangSong', 'FangSong'">FangSong</option>
+								<option value="'STKaiti', 'STFontKaiTi'">STFontKaiTi</option>
+								<option value="'STSong', 'STFontSimSun'">STFontSimSun</option>
+								<option value="'STFangsong', 'STFangsong'">STFangsong</option>
+								<option value="'LiSu', 'LiSu'">LiSu</option>
+								<option value="'YouYuan', 'YouYuan'">YouYuan</option>
+							</select>
+							<select id="text-size">
+								<option value="8">8px</option>
+								<option value="10">10px</option>
+								<option value="12">12px</option>
+								<option value="14">14px</option>
+								<option value="16" selected>16px</option>
+								<option value="20">20px</option>
+								<option value="24">24px</option>
+								<option value="28">28px</option>
+								<option value="32">32px</option>
+								<option value="40">40px</option>
+								<option value="48">48px</option>
+								<option value="56">56px</option>
+								<option value="60">60px</option>
+								<option value="68">68px</option>
+								<option value="76">76px</option>
+								<option value="84">84px</option>
+								<option value="88">88px</option>
+								<option value="120">120px</option>
+								<option value="200">200px</option>
+								<option value="250">250px</option>
+							</select>
+						</div>
+						<div class="text-style">
+							<button id="text-bold" type="button" class="secondary">Đậm</button>
+							<button id="text-italic" type="button" class="secondary">Nghiêng</button>
+							<button id="text-underline" type="button" class="secondary">Gạch chân</button>
+						</div>
+						<button id="update-text" type="button" class="secondary">Cập nhật chữ</button>
+						<div class="qrcode-controls">
+							<textarea id="qrcode-content" placeholder="Nhập nội dung tạo mã QR (chữ, URL, liên hệ...)">https://elink-config.github.io/</textarea>
+							<button id="generate-qrcode" type="button" class="secondary">Tạo mã QR</button>
+						</div>
+					</div>
+				</div>
+				<div class="control-panel">
+					<div class="control-group">
+						<h3>Nền canvas</h3>
+						<div class="bg-color-selector">
+							<div class="bg-color-picker" id="bg-color-picker" style="background-color:#ffffff"></div>
+							<input type="color" id="bg-color-input" value="#ffffff" style="display:none">
+							<span class="bg-color-value" id="bg-color-value">#FFFFFF</span>
+							<button id="apply-bg-color" type="button" class="secondary">Áp dụng</button>
+						</div>
+						<div class="template-preview" id="bg-templates">
+							<div class="template-item selected" style="display:none" data-type="none">
+								<div style="width:100%;height:100%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;">Solid</div>
+							</div>
+							<div class="template-item" style="display:none" data-type="memo">
+								<div style="width:100%;height:100%;background:#f9f3d2;display:flex;align-items:center;justify-content:center;font-size:10px;">NoteMemo</div>
+							</div>
+							<div class="template-item" style="display:none" data-type="card">
+								<div style="width:100%;height:100%;background:#e8f4f8;display:flex;align-items:center;justify-content:center;font-size:10px;">Namecard</div>
+							</div>
+							<div class="template-item" style="display:none" data-type="gradient1">
+								<div style="width:100%;height:100%;background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);display:flex;align-items:center;justify-content:center;font-size:10px;color:white;">Gradient1</div>
+							</div>
+							<div class="template-item" style="display:none" data-type="gradient2">
+								<div style="width:100%;height:100%;background:linear-gradient(135deg, #f093fb 0%, #f5576c 100%);display:flex;align-items:center;justify-content:center;font-size:10px;color:white;">Gradient2</div>
+							</div>
+							<div class="template-item" style="display:none" data-type="gradient3">
+								<div style="width:100%;height:100%;background:linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);display:flex;align-items:center;justify-content:center;font-size:10px;color:white;">Gradient3</div>
+							</div>
+							<div class="template-item" data-type="bg_image1" data-image-url=".bg_image1.jpg">
+								<div style="width:100%;height:100%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:10px;color:#666;">Random</div>
+							</div>
+							<div class="template-item" data-type="bg_image2" data-image-url="./bg1.jpg">
+								<div style="width:100%;height:100%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:10px;color:#666;">Namecard</div>
+							</div>
+							<div class="template-item" data-type="bg_image3" data-image-url="./images/bg3.jpg">
+								<div style="width:100%;height:100%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:10px;color:#666;">NoteMemo</div>
+							</div>
+							<div class="template-item" data-type="bg_image4" data-image-url="./images/bg4.jpg">
+								<div style="width:100%;height:100%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:10px;color:#666;">ClassSchedule</div>
+							</div>
+							<div class="template-item" data-type="bg_image5" data-image-url="./images/bg5.jpg">
+								<div style="width:100%;height:100%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:10px;color:#666;">Items</div>
+							</div>
+							<div class="template-item" data-type="bg_image6" data-image-url="./images/bg5.jpg">
+								<div style="width:100%;height:100%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:10px;color:#666;">WIFI</div>
+							</div>
+						</div>
+						<button type="button" class="upload-btn secondary" style="margin-bottom:8px;">
+							<span>Tải ảnh nền</span>
+							<input type="file" id="bg-upload" accept="image/*">
+						</button>
+						<button id="apply-bg" type="button" style="display:none">Apply Background</button>
+					</div>
+					<div class="control-group">
+						<h3>Icon có sẵn</h3>
+						<div class="icon-materials-container">
+							<div class="template-preview" id="image-templates">
+								<div class="template-item selected" data-type="icon1"><div style="width:100%;height:100%;background:transparent;display:flex;align-items:center;justify-content:center;font-size:18px;">I1</div></div>
+								<div class="template-item" data-type="icon2"><div style="width:100%;height:100%;background:transparent;display:flex;align-items:center;justify-content:center;font-size:18px;">I2</div></div>
+								<div class="template-item" data-type="icon3"><div style="width:100%;height:100%;background:transparent;display:flex;align-items:center;justify-content:center;font-size:18px;">I3</div></div>
+								<div class="template-item" data-type="icon4"><div style="width:100%;height:100%;background:transparent;display:flex;align-items:center;justify-content:center;font-size:18px;">I4</div></div>
+								<div class="template-item" data-type="icon5"><div style="width:100%;height:100%;background:transparent;display:flex;align-items:center;justify-content:center;font-size:18px;">I5</div></div>
+								<div class="template-item" data-type="icon6"><div style="width:100%;height:100%;background:transparent;display:flex;align-items:center;justify-content:center;font-size:18px;">I6</div></div>
+								<div class="template-item" data-type="icon7"><div style="width:100%;height:100%;background:transparent;display:flex;align-items:center;justify-content:center;font-size:18px;">I7</div></div>
+								<div class="template-item" data-type="icon8"><div style="width:100%;height:100%;background:transparent;display:flex;align-items:center;justify-content:center;font-size:18px;">I8</div></div>
+								<div class="template-item" data-type="icon9"><div style="width:100%;height:100%;background:transparent;display:flex;align-items:center;justify-content:center;font-size:18px;">I9</div></div>
+								<div class="template-item" data-type="icon10"><div style="width:100%;height:100%;background:transparent;display:flex;align-items:center;justify-content:center;font-size:18px;">I10</div></div>
+								<div class="template-item" data-type="icon11"><div style="width:100%;height:100%;background:transparent;display:flex;align-items:center;justify-content:center;font-size:18px;">I11</div></div>
+								<div class="template-item" data-type="icon12"><div style="width:100%;height:100%;background:transparent;display:flex;align-items:center;justify-content:center;font-size:18px;">I12</div></div>
+								<div class="template-item" data-type="icon13"><div style="width:100%;height:100%;background:transparent;display:flex;align-items:center;justify-content:center;font-size:18px;">I13</div></div>
+								<div class="template-item" data-type="icon14"><div style="width:100%;height:100%;background:transparent;display:flex;align-items:center;justify-content:center;font-size:18px;">I14</div></div>
+								<div class="template-item" data-type="icon15"><div style="width:100%;height:100%;background:transparent;display:flex;align-items:center;justify-content:center;font-size:18px;">I15</div></div>
+								<div class="template-item" data-type="icon16"><div style="width:100%;height:100%;background:transparent;display:flex;align-items:center;justify-content:center;font-size:18px;">I16</div></div>
+								<div class="template-item" data-type="icon17"><div style="width:100%;height:100%;background:transparent;display:flex;align-items:center;justify-content:center;font-size:18px;">I17</div></div>
+								<div class="template-item" data-type="icon18"><div style="width:100%;height:100%;background:transparent;display:flex;align-items:center;justify-content:center;font-size:18px;">I18</div></div>
+								<div class="template-item" data-type="icon19"><div style="width:100%;height:100%;background:transparent;display:flex;align-items:center;justify-content:center;font-size:18px;">I19</div></div>
+								<div class="template-item" data-type="icon20"><div style="width:100%;height:100%;background:transparent;display:flex;align-items:center;justify-content:center;font-size:18px;">I20</div></div>
+								<div class="template-item" data-type="icon21"><div style="width:100%;height:100%;background:transparent;display:flex;align-items:center;justify-content:center;font-size:18px;">I21</div></div>
+								<div class="template-item" data-type="icon22"><div style="width:100%;height:100%;background:transparent;display:flex;align-items:center;justify-content:center;font-size:18px;">I22</div></div>
+								<div class="template-item" data-type="icon23"><div style="width:100%;height:100%;background:transparent;display:flex;align-items:center;justify-content:center;font-size:18px;">I23</div></div>
+								<div class="template-item" data-type="icon24"><div style="width:100%;height:100%;background:transparent;display:flex;align-items:center;justify-content:center;font-size:18px;">I24</div></div>
+								<div class="template-item" data-type="icon25"><div style="width:100%;height:100%;background:transparent;display:flex;align-items:center;justify-content:center;font-size:18px;">I25</div></div>
+							</div>
+						</div>
+						<button type="button" class="upload-btn secondary" style="margin-bottom:8px;">
+							<span>Tải icon tùy chỉnh</span>
+							<input type="file" id="icon-upload" accept="image/*" multiple>
+						</button>
+						<button id="save-canvas" type="button" class="secondary">Lưu canvas thành ảnh (khôi phục qua «Tải ảnh nền»)</button>
+						<button id="add-local-image" type="button" class="local-image-btn" style="display:none"></button>
+					</div>
+				</div>
+			</div>
+			<div class="flex-container">
+				<div class="flex-group">
+					<button id="clear-canvas" type="button" class="danger">Xóa toàn bộ phần tử</button>
+					<button type="button" class="primary" onclick="saveCanvasYSAndUpdateImage()">Áp dụng mẫu → Truyền hình ảnh</button>
+				</div>
+			</div>
+		</fieldset>

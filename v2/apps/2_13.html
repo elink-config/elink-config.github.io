@@ -1,0 +1,386 @@
+<!-- Fragment giao diện thiết bị — được connector.js nạp vào #appMount.
+     Sinh lần đầu bởi scratchpad/build_v2.py từ index.html gốc; sau đó SỬA TRỰC TIẾP file này. -->
+		<fieldset>
+			<legend>Thời gian</legend>
+			<div class="time-sync-row">
+				<label for="synctimebutton">Giờ hệ thống:</label>
+				<span id="systemTime" class="system-time">--</span>
+				<button id="synctimebutton" type="button" class="primary" onclick="manualSyncTime()">Sync time</button>
+				<button id="calibratebutton" type="button" class="secondary" onclick="calibrateClock()">Hiệu chỉnh giờ</button>
+				<span class="mode-gallery-hint" style="margin:0">«Sync time» đặt giờ và hiển thị đồng hồ. «Hiệu chỉnh giờ» bù sai số nhanh/chậm (đo sau ≥ 2 ngày kể từ lần đặt giờ).</span>
+			</div>
+		</fieldset>
+		<fieldset>
+			<legend>Màn hình</legend>
+			<div class="flex-container">
+				<div class="flex-group">
+					<label>Độ phân giải hiện tại:</label>
+					<span id="resLabel" class="system-time">212×104</span>
+					<!-- nút đổi phân giải: chỉ hiện ở chế độ debug (?debug=true) -->
+					<button id="resswitchbutton" type="button" class="primary debug" onclick="switchResolution()">Chuyển sang 250×122</button>
+				</div>
+				<div class="flex-group">
+					<label>Nhiệt độ màn hình:</label>
+					<span id="panelTemp" class="system-time">--</span>
+					<button id="temprefreshbutton" type="button" class="secondary" onclick="readPanelTemp()">Đọc nhiệt độ</button>
+				</div>
+				<div class="flex-group">
+					<label>Pin:</label>
+					<span id="battVolt" class="system-time">--</span>
+				</div>
+			</div>
+			<p class="mode-gallery-hint">Một cú bấm để đổi giữa hai loại panel 2.13": <b>212×104</b> (HINK-E0213A41/A55) và <b>250×122</b> (OPM021B1). Lựa chọn được lưu trong flash của thiết bị. Nhiệt độ do firmware đọc từ cảm biến tích hợp <b>trong màn hình</b>, tự cập nhật sau mỗi lần làm mới.</p>
+		</fieldset>
+		<fieldset>
+			<legend>Điều khiển thiết bị</legend>
+			<p class="mode-gallery-hint">Chọn giao diện màn hình bên dưới rồi bấm «Áp dụng». Chưa đồng bộ giờ thì webtool tự gửi «Sync time» trước. Giao diện đã chọn được lưu trong flash thiết bị — mất nguồn vẫn nhớ, đồng bộ giờ lại là hiện lại đúng giao diện.</p>
+			<div class="mode-gallery" id="modeGallery"></div>
+			<div class="flex-container">
+				<div class="flex-group">
+					<button id="resetdevicebutton" type="button" class="secondary" onclick="resetDevice()">Khởi động lại thiết bị</button>
+				</div>
+			</div>
+		</fieldset>
+		<fieldset>
+			<legend>Cấu hình giao diện</legend>
+			<div class="flex-container">
+				<div class="flex-group">
+					<label for="eventName">Sự kiện đếm ngược:</label>
+					<input type="text" id="eventName" placeholder="Tên sự kiện (vd. Đếm ngược ngày)" maxlength="30" style="width:220px">
+					<input type="date" id="eventDate">
+					<button id="sendeventbutton" type="button" class="primary" onclick="sendEvent()">Gửi sự kiện</button>
+				</div>
+			</div>
+			<div class="flex-container">
+				<div class="flex-group">
+					<label for="noteLine0">Bảng tên / ghi chú:</label>
+					<input type="text" id="noteLine0" placeholder="Dòng 1 — chữ lớn (vd. họ tên)" maxlength="30" style="width:220px">
+					<input type="text" id="noteLine1" placeholder="Dòng 2 (vd. chức danh)" maxlength="30" style="width:200px">
+					<input type="text" id="noteLine2" placeholder="Dòng 3 (vd. điện thoại)" maxlength="30" style="width:200px">
+					<button id="sendnotebutton" type="button" class="primary" onclick="sendNote()">Gửi ghi chú</button>
+				</div>
+			</div>
+			<p class="mode-gallery-hint">Nội dung gửi xuống được lưu trong flash thiết bị (mất nguồn không mất). Sửa các ô trên là thẻ xem trước «Đếm ngược sự kiện» / «Bảng tên» đổi theo. Tối đa 43 byte UTF-8 mỗi dòng (khoảng 25-30 ký tự tiếng Việt).</p>
+		</fieldset>
+		<fieldset>
+			<legend>Cài đặt thiết bị</legend>
+			<div class="flex-container">
+				<div class="flex-group" style="flex:1 1 100%">
+					<label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+						<input type="checkbox" id="hourlyFullCHK" checked onchange="setHourlyFull()">
+						Làm mới toàn màn hình mỗi giờ — nếu tắt, chỉ làm mới toàn màn lúc 00:00 (ít chớp hơn nhưng bóng mờ tích tụ nhiều hơn)
+					</label>
+				</div>
+				<div class="flex-group" style="flex:1 1 100%" id="battStyleRow">
+					<span>Hiển thị pin:</span>
+					<label><input type="radio" name="battStyle" value="0" onchange="setBattStyle()"> Không (chỉ icon với mức pin)</label>
+					<label><input type="radio" name="battStyle" value="1" onchange="setBattStyle()"> Phần trăm</label>
+					<label><input type="radio" name="battStyle" value="2" checked onchange="setBattStyle()"> Điện áp</label>
+					<span class="mode-gallery-hint" style="margin:0" id="battStyleHint">Cần firmware ≥ 1.7.</span>
+				</div>
+			</div>
+			<p class="mode-gallery-hint">Các cài đặt trong mục này được lưu theo thiết bị (flash) — mất nguồn không mất.</p>
+		</fieldset>
+		<fieldset>
+			<legend>Thiết kế màn hình</legend>
+			<p class="mode-gallery-hint">Bấm để thêm thành phần, kéo thả để xếp chỗ trên canvas (đúng kích thước màn hình). Bấm chọn một thành phần rồi «Đổi cỡ» / «Xóa». Gửi xuống là thiết bị chuyển sang giao diện «Tự thiết kế» và nhớ bố cục trong flash — giống chế độ Tự thiết kế của bản 4.2".</p>
+			<div class="flex-container">
+				<div class="flex-group">
+					<button type="button" class="secondary" onclick="dsAdd(1)">+ Giờ số</button>
+					<button type="button" class="secondary" onclick="dsAdd(2)">+ Đồng hồ kim</button>
+					<button type="button" class="secondary" onclick="dsAdd(3)">+ Pin</button>
+					<button type="button" class="secondary" onclick="dsAdd(4)">+ Nhiệt độ</button>
+					<button type="button" class="secondary" onclick="dsAdd(5)">+ Ngày tháng</button>
+					<button type="button" class="secondary" onclick="dsAdd(6)">+ Âm lịch</button>
+					<button type="button" class="secondary" onclick="dsAdd(7)">+ Lịch tháng</button>
+					<button type="button" class="secondary" onclick="dsAdd(8)">+ Chữ 1</button>
+					<button type="button" class="secondary" onclick="dsAdd(9)">+ Chữ 2</button>
+					<button type="button" class="secondary" onclick="dsAdd(11)">+ Thứ</button>
+					<button type="button" class="secondary" onclick="dsAdd(12)">+ Ngày</button>
+					<input type="file" id="dsIconFile" accept="image/*" style="display:none" onchange="dsIconFile(this)">
+					<button type="button" class="secondary" onclick="document.getElementById('dsIconFile').click()">+ Ảnh…</button>
+				</div>
+			</div>
+			<div class="canvas-container">
+				<canvas id="designerCanvas" width="424" height="208" style="width:424px;max-width:100%;touch-action:none;"></canvas>
+			</div>
+			<div class="flex-container">
+				<div class="flex-group">
+					<button type="button" class="secondary" onclick="dsCycleSize()">Đổi cỡ</button>
+					<button type="button" class="secondary" onclick="dsDelete()">Xóa thành phần</button>
+					<button type="button" class="secondary" onclick="dsClear()">Xóa hết</button>
+					<label for="dsFrame">Viền:</label>
+					<select id="dsFrame" onchange="dsSetFrame(this.value)">
+						<option value="0">Không</option>
+						<option value="1">Viền đơn</option>
+						<option value="2">Viền đôi</option>
+					</select>
+				</div>
+			</div>
+			<div class="flex-container">
+				<div class="flex-group">
+					<input type="text" id="dsText1" placeholder="Chữ 1 (tự do)" maxlength="30" style="width:200px" oninput="dsTexts()">
+					<input type="text" id="dsText2" placeholder="Chữ 2 (tự do)" maxlength="30" style="width:200px" oninput="dsTexts()">
+					<button id="dsuploadbutton" type="button" class="primary" onclick="dsUpload()">Gửi giao diện</button>
+				</div>
+			</div>
+		</fieldset>
+		<fieldset>
+			<legend>Truyền hình ảnh</legend>
+			<div class="flex-container">
+				<input type="file" id="imageFile" accept=".png,.jpg,.bmp,.webp,.jpeg" onchange="updateImage()">
+			</div>
+			<div class="flex-container options">
+				<div class="flex-group debug">
+					<label>Kích thước canvas:</label>
+					<label id="canvasSizeLabel">2.13" (212×104)</label>
+				</div>
+				<div class="flex-group debug">
+					<label for="ditherMode">Chế độ màu:</label>
+					<select id="ditherMode" onchange="applyDither()">
+						<option value="blackWhiteColor" selected>2 màu (đen trắng)</option>
+					</select>
+				</div>
+				<div class="flex-group">
+					<label for="ditherAlg">Thuật toán dithering:</label>
+					<select id="ditherAlg" onchange="applyDither()">
+						<option value="floydSteinberg">Floyd-Steinberg</option>
+						<option value="atkinson">Atkinson</option>
+						<option value="bayer">Bayer</option>
+						<option value="stucki">Stucki</option>
+						<option value="jarvis">Jarvis-Judice-Ninke</option>
+						<option value="none">Không dithering</option>
+					</select>
+				</div>
+				<div class="flex-group">
+					<label for="ditherStrength">Cường độ dithering:</label>
+					<input type="range" min="0" max="5" step="0.1" value="1.0" id="ditherStrength">
+					<label id="ditherStrengthValue">1.0</label>
+				</div>
+				<div class="flex-group">
+					<label for="ditherContrast">Tương phản:</label>
+					<input type="range" min="0.5" max="2" step="0.1" value="1.2" id="ditherContrast">
+					<label id="ditherContrastValue">1.2</label>
+				</div>
+			</div>
+			<div class="flex-container options">
+				<div class="flex-group debug">
+					<label for="mtusize">MTU:</label>
+					<input type="number" id="mtusize" value="244" min="20" max="255">
+				</div>
+			</div>
+			<div class="status-bar"><b>Trạng thái: </b><span id="status"></span></div>
+			<div class="flex-container">
+				<div class="flex-group">
+					<button type="button" class="secondary debug" onclick="rotateCanvas()">Xoay canvas</button>
+					<button type="button" class="secondary" onclick="clearCanvas()">Xóa canvas</button>
+					<button type="button" class="secondary debug" onclick="downloadDataArray()">Tải mảng dữ liệu</button>
+					<button id="sendimgbutton" type="button" class="primary" onclick="sendimg()">Gửi hình ảnh</button>
+					<button id="saveflashbutton" type="button" class="secondary" onclick="saveImageFlash()">Lưu ảnh vào flash</button>
+				</div>
+			</div>
+			<div class="flex-container">
+				<div class="flex-group">
+					<button type="button" class="secondary" onclick="reloadImage()">Tải lại</button>
+					<button type="button" class="secondary" onclick="stretchToScreen()">Kéo giãn đầy màn</button>
+					<button type="button" class="secondary" onclick="fitToScreen()">Vừa màn hình</button>
+					<button type="button" class="secondary" onclick="rotateImage(90)">Xoay 90°</button>
+					<button type="button" class="secondary" onclick="rotateImage(-90)">Xoay -90°</button>
+					<button type="button" class="secondary" onclick="rotateImage(0)">Đặt lại xoay</button>
+					<button type="button" class="secondary" onclick="cropImage()">Cắt ảnh</button>
+				</div>
+			</div>
+			<div class="flex-container options">
+				<div class="flex-group">
+					<label for="imgBrightness">Độ sáng:</label>
+					<input type="range" min="-100" max="100" step="1" value="0" id="imgBrightness">
+					<label id="imgBrightnessValue">0</label>
+				</div>
+				<div class="flex-group">
+					<label for="imgSaturation">Bão hòa:</label>
+					<input type="range" min="0" max="200" step="1" value="100" id="imgSaturation">
+					<label id="imgSaturationValue">100</label>
+				</div>
+			</div>
+			<div class="canvas-container">
+				<div class="canvas-title"></div>
+				<canvas id="canvas" width="212" height="104"></canvas>
+				<div class="flex-container canvas-tools">
+					<div class="flex-group tool-buttons">
+						<button id="brush-mode" title="Bút vẽ" class="tool-button">✏️</button>
+						<button id="eraser-mode" title="Tẩy" class="tool-button">🧽</button>
+						<button id="text-mode" title="Thêm chữ" class="tool-button">T</button>
+						<button id="undo-btn" title="Hoàn tác (Ctrl+Z)" class="tool-button hide">↶</button>
+						<button id="redo-btn" title="Làm lại (Ctrl+Y)" class="tool-button hide">↷</button>
+					</div>
+				</div>
+				<div class="flex-container canvas-tools">
+					<div class="flex-group brush-tools">
+						<label for="brush-color">Màu:</label>
+						<select id="brush-color">
+							<option value="#000000">Đen</option>
+							<option value="#FFFFFF">Trắng</option>
+						</select>
+						<label for="brush-size">Độ dày:</label>
+						<input type="number" id="brush-size" value="2" min="1" max="100">
+					</div>
+				</div>
+				<div class="flex-container canvas-tools">
+					<div class="flex-group text-tools">
+						<label for="font-family">Phông chữ:</label>
+						<select id="font-family">
+							<option value="Arial">Arial</option>
+							<option value="sans-serif">Sans-serif</option>
+							<option value="monospace">Monospace</option>
+							<option value="Times New Roman">Times New Roman</option>
+							<option value="Tahoma">Tahoma</option>
+							<option value="Verdana">Verdana</option>
+							<option value="Segoe UI">Segoe UI</option>
+							<option value="Georgia">Georgia</option>
+							<option value="Courier New">Courier New</option>
+						</select>
+						<label for="font-size">Cỡ chữ:</label>
+						<input type="number" id="font-size" value="16" min="1" max="100">
+					</div>
+					<div class="flex-group text-tools">
+						<input type="text" id="text-input" placeholder="Nhập văn bản" style="width:150px">
+						<button id="text-bold" title="Đậm">B</button>
+						<button id="text-italic" title="Nghiêng">I</button>
+						<button id="add-text-btn" class="primary">Thêm chữ</button>
+					</div>
+					<div class="flex-group crop-tools">
+						<button id="crop-zoom-in" title="Phóng to" class="secondary">+</button>
+						<button id="crop-zoom-out" title="Thu nhỏ" class="secondary">-</button>
+						<button id="crop-move-left" title="Sang trái">⇦</button>
+						<button id="crop-move-up" title="Lên trên">⇧</button>
+						<button id="crop-move-down" title="Xuống dưới">⇩</button>
+						<button id="crop-move-right" title="Sang phải">⇨</button>
+						<button class="primary" onclick="applyDither()">Xong</button>
+					</div>
+				</div>
+			</div>
+		</fieldset>        
+		<fieldset id="otaFieldset">
+			<legend>Cập nhật firmware (OTA)</legend>
+			<div class="flex-container">
+				<div class="flex-group">
+					<input type="file" id="otaFile" accept=".bin">
+					<button id="otabutton" type="button" class="secondary" onclick="otaUpdate()">Cập nhật firmware</button>
+					<span id="otaProgress" class="system-time"></span>
+				</div>
+			</div>
+			<p class="mode-gallery-hint">Nạp file <b>.bin</b> được tải về từ trang web cấu hình thiết bị. Không tắt nguồn thiết bị khi đang cập nhật.</p>
+		</fieldset>
+		<fieldset>
+			<legend>Danh sách firmware</legend>
+			<div style="overflow-x:auto">
+				<table class="fw-table">
+					<thead>
+						<tr>
+							<th>No</th>
+							<th>Version</th>
+							<th>Description</th>
+							<th>Release Date</th>
+							<th>Download Link</th>
+						</tr>
+					</thead>
+					<tbody>
+						<!-- Thêm firmware mới: chép dòng mẫu dưới, sửa nội dung; file .bin
+						     đặt trong thư mục "OTA firmware/" của repo, ví dụ:
+						<tr>
+							<td>2</td>
+							<td>1.1</td>
+							<td>Mô tả thay đổi</td>
+							<td>20/07/2026</td>
+							<td><a href="../OTA firmware/fw_2_13inch_v1.1.bin" download>Tải về</a></td>
+						</tr>
+						-->
+						<tr>
+							<td>0</td>
+							<td>0.1</td>
+							<td>Phiên bản public, chỉ cần cài là sử dụng ngay, có 1 chế độ màn hình cơ bản</td>
+							<td>12/07/2026</td>
+							<td><a href="../OTA firmware/fw_2_13inch_v0.1.bin" download>Tải về</a></td>
+						</tr>
+                        <tr>
+							<td>1</td>
+							<td>1.0</td>
+							<td>Phiên bản nâng cấp với 28 chế độ màn hình riêng biệt. [KHÔNG sử dụng phiên bản này do đã phát hiện lỗi treo màn hình sau khi chạy 1 thời gian hoặc màn hình hiển thị lỗi giao diện.]<br>
+							Phiên bản này không thể sử dụng chức năng Update OTA để nâng lên phiên bản cao hơn, hãy làm theo hướng dẫn của phiên bản 1.0.1 bên dưới</td>
+							<td>12/07/2026</td>
+							<td>🚫</td>
+							<!-- <td><a href="../OTA firmware/fw_2_13inch_v1.0.bin" download>Tải về</a></td> -->
+						</tr>
+						<tr>
+							<td>2</td>
+							<td>1.0.1</td>
+							<td>Bản vá sửa lỗi OTA cho phép update lên các phiên bản mới hơn, tải về sau đó sử dụng chức năng OTA để cập nhật, sau khi cập nhật thành công tiếp tục tải phiên bản 1.1 bên dưới để cập nhật tiếp.<br>
+							Phiên bản này chỉ có tác dụng duy nhất là bản vá lỗi để update lên phiên bản khác, không thể sử dụng các chức năng đồng hồ.</td>
+							<td>16/07/2026</td>
+                            <td>🚫</td>
+							<!-- <td><a href="../OTA firmware/fw_2_13inch_v1.0.1.bin" download>Tải về</a></td> -->
+						</tr>
+                        <tr>
+							<td>3</td>
+							<td>1.0.2</td>
+							<td>Bản vá sửa lỗi OTA cho phép update lên các phiên bản mới hơn, tải về sau đó sử dụng chức năng OTA để cập nhật, sau khi cập nhật thành công tiếp tục tải phiên bản 1.1 bên dưới để cập nhật tiếp.<br>
+							Phiên bản này chỉ có tác dụng duy nhất là bản vá lỗi để update lên phiên bản khác, không thể sử dụng các chức năng đồng hồ.</td>
+							<td>16/07/2026</td>
+							<td><a href="../OTA firmware/fw_2_13inch_v1.0.2.bin" download>Tải về</a></td>
+						</tr>
+                        <tr>
+							<td>3</td>
+							<td>1.1</td>
+							<td>Sửa lỗi phiên bản 1.0, hỗ trợ cả 2 độ phân giải của màn hình 2.13 inch (212x104 và 250x144), căn chỉnh lại các giao diện. Chỉ được cập nhật khi đã update phiên bản 1.0.1, nếu không mạch sẽ bị hỏng.<br>[Cần kích hoạt lại, 1 lần duy nhất, sau khi update lên các phiên bản sau sẽ không cần kích hoạt lại nữa, vui lòng nhắn tin cho shop để nhận mã kích hoạt]</td>
+							<td>16/07/2026</td>
+                            <td>🚫</td>
+							<!-- <td><a href="../OTA firmware/fw_2_13inch_v1.1.bin" download>Tải về</a></td> -->
+						</tr>
+                        <tr>
+							<td>4</td>
+							<td>1.2</td>
+							<td>Sửa lỗi thiết bị bị ngắt kết nối ngay sau khi ấn [Sync Time]. Chỉ được cập nhật từ phiên bản 1.0.1 hoặc 1.1, nếu không mạch sẽ bị hỏng.</td>
+							<td>16/07/2026</td>
+                            <td>🚫</td>
+							<!-- <td><a href="../OTA firmware/fw_2_13inch_v1.2.bin" download>Tải về</a></td> -->
+						</tr>
+                        <tr>
+							<td>5</td>
+							<td>1.3</td>
+							<td>Sửa lỗi thiết bị không nhận firmware mới sau khi update OTA. Chỉ được cập nhật từ phiên bản 1.0.2</td>
+							<td>17/07/2026</td>
+							<td><a href="../OTA firmware/fw_2_13inch_v1.3.bin" download>Tải về</a></td>
+						</tr>
+						<tr>
+							<td>6</td>
+							<td>1.4</td>
+							<td>Fix lỗi vạch đen bên trái màn hình</td>
+							<td>26/07/2026</td>
+							<td><a href="../OTA firmware/fw_2_13inch_v1.4.bin" download>Tải về</a></td>
+						</tr>
+                        <tr>
+							<td>7</td>
+							<td>1.5</td>
+							<td>Fix lỗi update OTA bị treo</td>
+							<td>27/07/2026</td>
+							<td><a href="../OTA firmware/fw_2_13inch_v1.5.bin" download>Tải về</a></td>
+						</tr>
+                        <tr>
+							<td>8</td>
+							<td>1.6</td>
+							<td>Cập nhật lại hiển thị % pin đúng với dung lượng pin thực tế</td>
+							<td>30/07/2026</td>
+							<td><a href="../OTA firmware/fw_2_13inch_v1.6.bin" download>Tải về</a></td>
+						</tr>
+                        <tr>
+							<td>9</td>
+							<td>1.7</td>
+							<td>Thêm tùy chọn «Hiển thị pin»: Không / Phần trăm / Điện áp (chỉnh trong mục «Cài đặt thiết bị» của trang web). <br>Âm lịch và tiết khí tính theo lịch Việt Nam (múi giờ UTC+7) thay cho lịch Trung Quốc — sửa các ngày âm bị lệch 1 ngày ở một số năm (ví dụ Tết 2030 đúng là 2/2)</td>
+							<td>10/08/2026</td>
+							<td><a href="../OTA firmware/fw_2_13inch_v1.7.bin" download>Tải về</a></td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+			<p class="mode-gallery-hint">Tải file .bin tương ứng về rồi nạp bằng khung «Cập nhật firmware (OTA)» phía trên. <br> Nếu gặp bất kì vấn đề hoặc yêu cầu nào về cập nhật firmware mới, vui lòng nhắn tin cho tôi qua kênh bán hàng và tôi sẽ cập nhật bản update ở đây.</p>
+		</fieldset>
