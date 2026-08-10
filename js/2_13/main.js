@@ -31,8 +31,9 @@ let timeSynced = false;     // đã đồng bộ giờ — mở khóa chọn gia
 const HM_SERVICE = '0000ff00-0000-1000-8000-00805f9b34fb';
 const HM_LONG_VALUE = '0000ff01-0000-1000-8000-00805f9b34fb';
 const HM_ADC = '0000ff02-0000-1000-8000-00805f9b34fb';
-// CHỈ chấp nhận thiết bị tên DIY-… (DIY-2_13-xxxx) — giống webtool 4_2inch.
-const BLE_NAME_PREFIX = 'DIY-';
+// CHỈ chấp nhận thiết bị 2.13" tên DIY-2_13-xxxx. Tên DLG-CLOCK-… chỉ dùng ở
+// hub gộp (elink-config.github.io), KHÔNG nhận ở webtool riêng 2_13inch này.
+const BLE_NAME_PREFIX = 'DIY-2_13-';
 const BLE_REQUEST_FILTERS = [
   { namePrefix: BLE_NAME_PREFIX },
 ];
@@ -146,6 +147,8 @@ async function readStatus(quiet = false) {
       hourlyFull: v.byteLength >= 15 ? v.getUint8(14) : null,
       // [15][16] phiên bản firmware major.minor (từ v1.5; bản cũ chỉ 15 byte)
       fwVer: v.byteLength >= 17 ? (v.getUint8(15) + '.' + v.getUint8(16)) : null,
+      // [17] hiển thị pin (0x9e, fw >= 1.7): 0 chỉ icon / 1 % / 2 điện áp
+      battStyle: v.byteLength >= 18 ? v.getUint8(17) : null,
     };
     if (!quiet) {
       addLog('Giờ thiết bị: ' + st.year + '-' + String(st.month + 1).padStart(2, '0') +
@@ -162,6 +165,18 @@ async function readStatus(quiet = false) {
     if (st.hourlyFull !== null) {
       const chk = document.getElementById('hourlyFullCHK');
       if (chk) chk.checked = st.hourlyFull !== 0;
+    }
+    // «Hiển thị pin» cần fw >= 1.7: máy mới gói trạng thái 18 byte có [17];
+    // máy cũ (gói ngắn hơn) -> mờ radio + hint nhắc cập nhật
+    {
+      const ok = st.battStyle !== null && st.battStyle <= 2;
+      document.querySelectorAll('input[name="battStyle"]').forEach(r => { r.disabled = !ok; });
+      const h = document.getElementById('battStyleHint');
+      if (h) h.textContent = ok ? 'Thiết bị vẽ lại ngay khi đổi.' : 'Cần firmware ≥ 1.7 — hãy cập nhật ở mục OTA.';
+      if (ok) {
+        const rb = document.querySelector(`input[name="battStyle"][value="${st.battStyle}"]`);
+        if (rb) rb.checked = true;
+      }
     }
     if (st.mode !== null) {
       deviceMode = st.mode;                 // SO MODE = VI TRI THE (28 = ảnh, thẻ 'img')
@@ -182,14 +197,26 @@ async function readStatus(quiet = false) {
   }
 }
 
-// Đọc điện áp pin (0xff02, uint16 LE mV)
+// % pin theo đường xả pin lithium CR2450/CR2477 (khớp firmware v1.7)
+function battPct(mv) {
+  const V = [2400, 2500, 2600, 2650, 2700, 2750, 2800, 2850, 2900, 2980, 3050];
+  const P = [0, 5, 12, 20, 30, 45, 60, 75, 85, 95, 100];
+  if (mv >= V[10]) return 100;
+  if (mv <= V[0]) return 0;
+  for (let i = 10; i > 0; i--)
+    if (mv >= V[i - 1]) return Math.round(P[i - 1] + (mv - V[i - 1]) * (P[i] - P[i - 1]) / (V[i] - V[i - 1]));
+  return 0;
+}
+
+// Đọc điện áp pin (0xff02, uint16 LE mV); % theo đường xả (khớp firmware)
 async function readVoltage() {
   if (!adcChar) return null;
   try {
     const v = await adcChar.readValue();
     const mv = v.getUint16(0, true);
     const el = document.getElementById('battVolt');
-    if (el) el.textContent = (mv / 1000).toFixed(2) + ' V';
+    const pct = battPct(mv);
+    if (el) el.textContent = (mv / 1000).toFixed(2) + ' V (' + pct + '%)';
     return mv;
   } catch (e) {
     console.error(e);
@@ -384,6 +411,16 @@ async function sendNote() {
 
 // Lịch làm mới TOÀN màn hình (0x9d): mỗi giờ hoặc chỉ lúc 00:00 —
 // giống tùy chọn của bản 4.2". Thiết bị lưu vào flash, báo lại ở status[14].
+// Hiển thị pin (0x9e, fw >= 1.7): 0 chỉ icon, 1 phần trăm, 2 điện áp —
+// thiết bị lưu flash và vẽ lại ngay
+async function setBattStyle() {
+  const sel = document.querySelector('input[name="battStyle"]:checked');
+  const style = sel ? parseInt(sel.value) : 2;
+  if (await write([0x9e, style])) {
+    addLog('Đã đặt hiển thị pin: ' + (style === 0 ? 'chỉ icon' : style === 1 ? 'phần trăm' : 'điện áp') + '.');
+  }
+}
+
 async function setHourlyFull() {
   const chk = document.getElementById('hourlyFullCHK');
   const enabled = chk.checked ? 1 : 0;
@@ -500,11 +537,8 @@ async function otaUpdate() {
     const buf = new Uint8Array(136);
     const dv = new DataView(buf.buffer);
     buf[0] = 0xa0; buf[1] = 0x00;
-    // size u32 (trước là u16): firmware > 64KB bị cắt 16 bit thấp -> thiết bị
-    // chỉ xoá 1 sector, các trang sau ghi vào flash CHƯA XOÁ -> bank hỏng
-    // nhưng header hợp lệ -> BRICK (mất BLE, chỉ cứu được bằng nạp dây).
-    // Tương thích ngược: fw cũ đọc u16 (2 byte thấp) vẫn đúng khi firmware
-    // đích < 64KB (vd bản "temp" cầu nối v1.0.2).
+    // size u32 (truoc u16): firmware > 64KB. Tuong thich nguoc: fw cu doc u16
+    // (2 byte thap) van dung khi firmware dich < 64KB (vd ban "temp" cau noi).
     dv.setUint32(2, firmSize, true);
     show('Đang xoá flash…');
     await write(buf, true);
@@ -807,7 +841,7 @@ async function preConnect() {
     } catch (e) {
       console.error(e);
       if (e.name === 'NotFoundError') {
-        addLog("Không tìm thấy thiết bị E-Ink (DIY-…)");
+        addLog("Không tìm thấy thiết bị E-Ink (DIY-2_13-xxxx)");
         addLog("Nếu danh sách trống: thiết bị có thể đang kết nối với máy khác — hãy ngắt ở đó trước.");
       } else if (e.message) {
         addLog("requestDevice: " + e.message);
@@ -819,9 +853,9 @@ async function preConnect() {
       return;
     }
 
-    // chỉ chấp nhận thiết bị DIY-… (trừ chế độ dev)
+    // chỉ chấp nhận thiết bị DIY-2_13-… (trừ chế độ dev)
     if (!debugMode && !(bleDevice.name || '').startsWith(BLE_NAME_PREFIX)) {
-      addLog('Thiết bị «' + (bleDevice.name || 'không tên') + '» không phải màn hình DIY-…');
+      addLog('Thiết bị «' + (bleDevice.name || 'không tên') + '» không phải màn hình DIY-2_13-…');
       addLog('Hãy chọn đúng thiết bị tên DIY-2_13-xxxx.');
       bleDevice = null;
       return;
