@@ -31,7 +31,7 @@ const HM_SERVICE = '0000ff00-0000-1000-8000-00805f9b34fb';
 const HM_LONG_VALUE = '0000ff01-0000-1000-8000-00805f9b34fb';
 const HM_ADC = '0000ff02-0000-1000-8000-00805f9b34fb';
 // CHỈ chấp nhận thiết bị tên DIY-… (DIY-2_9-xxxx) — giống webtool 2_13/4_2.
-const BLE_NAME_PREFIX = 'DIY-';
+const BLE_NAME_PREFIX = "DIY-2_9-";
 const BLE_REQUEST_FILTERS = [
   { namePrefix: BLE_NAME_PREFIX },
 ];
@@ -138,6 +138,8 @@ async function readStatus(quiet = false) {
       hourlyFull: v.byteLength >= 15 ? v.getUint8(14) : null,
       // [15] màn hình đang làm mới (firmware >= 0x0D) — chờ trước khi gửi ảnh
       refreshing: v.byteLength >= 16 ? v.getUint8(15) : 0,
+      // [16] hiển thị pin (0x96, fw >= 1.1): 0 chỉ icon / 1 % / 2 điện áp
+      battStyle: v.byteLength >= 17 ? v.getUint8(16) : null,
     };
     if (!quiet) {
       addLog('Giờ thiết bị: ' + st.year + '-' + String(st.month + 1).padStart(2, '0') +
@@ -150,6 +152,18 @@ async function readStatus(quiet = false) {
     if (st.hourlyFull !== null) {
       const chk = document.getElementById('hourlyFullCHK');
       if (chk) chk.checked = st.hourlyFull !== 0;
+    }
+    // «Hiển thị pin» cần fw >= 1.1: máy mới gói trạng thái 17 byte có [16];
+    // máy cũ (gói ngắn hơn) -> mờ radio + hint nhắc cập nhật
+    {
+      const ok = st.battStyle !== null && st.battStyle <= 2;
+      document.querySelectorAll('input[name="battStyle"]').forEach(r => { r.disabled = !ok; });
+      const h = document.getElementById('battStyleHint');
+      if (h) h.textContent = ok ? 'Thiết bị vẽ lại ngay khi đổi.' : 'Cần firmware ≥ 1.1 — hãy cập nhật ở mục OTA.';
+      if (ok) {
+        const rb = document.querySelector(`input[name="battStyle"][value="${st.battStyle}"]`);
+        if (rb) rb.checked = true;
+      }
     }
     if (st.mode !== null) {
       deviceMode = st.mode;                 // 1 = đồng hồ, 28 = ảnh (thẻ 'img')
@@ -164,14 +178,25 @@ async function readStatus(quiet = false) {
   }
 }
 
-// Đọc điện áp pin (0xff02, uint16 LE mV) — % pin tuyến tính 2.4V = 0%, 3.1V = 100%
+// % pin theo đường xả pin lithium CR2450/CR2477 (khớp firmware v1.1)
+function battPct(mv) {
+  const V = [2400, 2500, 2600, 2650, 2700, 2750, 2800, 2850, 2900, 2980, 3050];
+  const P = [0, 5, 12, 20, 30, 45, 60, 75, 85, 95, 100];
+  if (mv >= V[10]) return 100;
+  if (mv <= V[0]) return 0;
+  for (let i = 10; i > 0; i--)
+    if (mv >= V[i - 1]) return Math.round(P[i - 1] + (mv - V[i - 1]) * (P[i] - P[i - 1]) / (V[i] - V[i - 1]));
+  return 0;
+}
+
+// Đọc điện áp pin (0xff02, uint16 LE mV) — % theo đường xả (khớp firmware)
 async function readVoltage() {
   if (!adcChar) return null;
   try {
     const v = await adcChar.readValue();
     const mv = v.getUint16(0, true);
     const el = document.getElementById('battVolt');
-    const pct = Math.max(0, Math.min(100, Math.round((mv - 2400) / 7)));
+    const pct = battPct(mv);
     if (el) el.textContent = (mv / 1000).toFixed(2) + ' V · ' + pct + '%';
     return mv;
   } catch (e) {
@@ -365,6 +390,16 @@ async function applyMode(mode) {
 
 // Lịch làm mới TOÀN màn hình (0x9d): mỗi giờ hoặc chỉ lúc 00:00.
 // Thiết bị lưu vào flash, báo lại ở status[14].
+// Hiển thị pin (0x96, fw >= 1.1): 0 chỉ icon, 1 phần trăm, 2 điện áp —
+// thiết bị lưu flash và vẽ lại ngay (0x9e đã bị mặt ĐỎ ảnh chiếm nên dùng 0x96)
+async function setBattStyle() {
+  const sel = document.querySelector('input[name="battStyle"]:checked');
+  const style = sel ? parseInt(sel.value) : 2;
+  if (await write([0x96, style])) {
+    addLog('Đã đặt hiển thị pin: ' + (style === 0 ? 'chỉ icon' : style === 1 ? 'phần trăm' : 'điện áp') + '.');
+  }
+}
+
 async function setHourlyFull() {
   const chk = document.getElementById('hourlyFullCHK');
   const enabled = chk.checked ? 1 : 0;
@@ -878,6 +913,10 @@ async function reConnect() {
 
 async function connect() {
   if (bleDevice == null || longValueChar != null) return;
+  // nhắc cập nhật firmware (logic chung js/fw_check.js): firmware 2.9 hiện
+  // chưa tự khai phiên bản -> coi như 0.1; bảng «Danh sách firmware» có bản
+  // mới hơn sẽ popup sau khi kết nối
+  FwCheck.reset('0.1', bleDevice && bleDevice.name);
 
   try {
     addLog("Đang kết nối: " + bleDevice.name);
@@ -912,6 +951,7 @@ async function connect() {
   if (!timeSynced) {
     addLog('Bấm «Sync time» để đồng bộ giờ trước khi chọn giao diện.');
   }
+  FwCheck.schedule(1500);  // popup nếu bảng firmware có bản mới hơn
 }
 
 function setStatus(statusText) {
