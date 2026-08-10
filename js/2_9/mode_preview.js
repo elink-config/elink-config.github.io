@@ -1056,7 +1056,8 @@
       try { m.draw(ctx2d(card.querySelector('canvas'), vw, vh), now, vw, vh); }
       catch (e) { console.error('preview mode ' + m.mode, e); }
     }
-    if (deviceMode != null) window.highlightMode(deviceMode === 28 ? 'img' : deviceMode);
+    // deviceMode do main.js khai báo; script này nạp trước main.js nên phải kiểm typeof
+    if (typeof deviceMode !== 'undefined' && deviceMode != null) window.highlightMode(deviceMode === 28 ? 'img' : deviceMode);
     if (typeof updateButtonStatus === 'function') updateButtonStatus();
   }
 

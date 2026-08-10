@@ -124,6 +124,11 @@ async function readStatus(quiet = false) {
   try {
     const v = await longValueChar.readValue();
     if (v.byteLength < 11) return null;
+    // Sau bước kiểm tra kích hoạt (0x26), giá trị 0xff01 tạm là chuỗi ASCII
+    // "mac=... act=..." cho tới lần clock_push kế tiếp của thiết bị — KHÔNG
+    // phải gói trạng thái: bỏ qua để khỏi khóa nhầm radio «Hiển thị pin»
+    // (byte[17] rơi vào chữ 'a' = 97 > 2) và khỏi đọc giờ rác.
+    if (v.getUint8(0) === 0x6d && v.getUint8(1) === 0x61 && v.getUint8(2) === 0x63 && v.getUint8(3) === 0x3d) return null;
     const st = {
       year: v.getUint16(0, true),
       month: v.getUint8(2),          // 0-11
