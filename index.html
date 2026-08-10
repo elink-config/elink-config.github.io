@@ -23,7 +23,7 @@
 			<div class="app-header-icon"><span class="material-symbols-outlined">calendar_month</span></div>
 			<div class="app-header-text">
 				<h1>E-Ink DA14585</h1>
-				<p id="app-header-sub">Kết nối thiết bị 4.2", 2.13", 2.9" hoặc đồng hồ DLG — giao diện hiện theo loại thiết bị</p>
+				<p id="app-header-sub">Kết nối thiết bị 4.2", 7.5", 2.13", 2.9" hoặc đồng hồ DLG — giao diện hiện theo loại thiết bị</p>
 			</div>
 			<button type="button" class="theme-toggle-btn" id="theme-toggle" title="Đổi giao diện sáng/tối"
 				onclick="(function(){const h=document.documentElement;const dark=h.getAttribute('data-theme')==='dark';if(dark){h.removeAttribute('data-theme');localStorage.setItem('theme','light');}else{h.setAttribute('data-theme','dark');localStorage.setItem('theme','dark');}document.getElementById('theme-toggle-icon').textContent=dark?'dark_mode':'light_mode';})()">
@@ -43,9 +43,10 @@
 		<fieldset>
 			<legend>Kết nối Bluetooth</legend>
 			<p class="mode-gallery-hint">Bấm «Kết nối» và chọn thiết bị <b>DIY-4_2-xxxx</b> (màn 4.2"),
-				<b>DIY-4_2C-xxxx</b> (màn 4.2" bốn màu), <b>DIY-2_13-xxxx</b> (màn 2.13"),
-				<b>DIY-2_9-xxxx</b> (màn 2.9") hoặc <b>DLG-CLOCK-xxxx</b> (đồng hồ E-Ink)
-				— các mục điều khiển sẽ hiện ra sau khi kết nối thành công.</p>
+				<b>DIY-4_2C-xxxx</b> (màn 4.2" bốn màu), <b>DIY-7_5V-xxxx</b> (màn 7.5"),
+				<b>DIY-2_13-xxxx</b> (màn 2.13"), <b>DIY-2_9-xxxx</b> (màn 2.9")
+				hoặc <b>DLG-CLOCK-xxxx</b> (đồng hồ E-Ink) — các mục điều khiển
+				sẽ hiện ra sau khi kết nối thành công.</p>
 			<div class="flex-container">
 				<div class="flex-group">
 					<button id="connectbutton" type="button" class="primary" onclick="preConnect()">Kết nối</button>
@@ -55,13 +56,21 @@
 				<div class="flex-group right debug only-4_2">
 					<label for="epddriver">Driver</label>
 					<select id="epddriver" onchange="updateDitcherOptions()">
-						<!-- DA14585 firmware supports the 4.2" 400x300 models only -->
+						<!-- 01-04: DA14585 4.2" 400x300; 05-06: 4.2" bốn màu.
+						     LƯU Ý trùng mã: CC2640 7.5" 800x480 (UC8179) từng dùng 06/07 trên
+						     nhánh 7-5inch nhưng 06 đã thuộc 4c JD79668 — khi phát hành CC2640
+						     phải cấp mã mới (firmware + option) rồi mới thêm lại vào đây. -->
 						<option value="01" data-color="blackWhiteColor" data-size="4.2_400_300">4.2" (Đen trắng, UC8176)</option>
 						<option value="03" data-color="threeColor" data-size="4.2_400_300">4.2" (Ba màu, UC8176)</option>
 						<option value="04" data-color="blackWhiteColor" data-size="4.2_400_300">4.2" (Đen trắng, SSD1619)</option>
 						<option value="02" data-color="threeColor" data-size="4.2_400_300" selected>4.2" (Ba màu, SSD1619)</option>
 						<option value="05" data-color="fourColor" data-size="4.2_400_300">4.2" (Bốn màu, IST7158)</option>
 						<option value="06" data-color="fourColor" data-size="4.2_400_300">4.2" (Bốn màu, JD79668)</option>
+						<!-- 7.5" V1 640×384 (HINK-E075A01, board DA14585): driver 08/09 gửi ảnh
+						     dạng luồng 4bpp thô qua convertUC8159 (main.js) — dither 3 màu đầy đủ,
+						     firmware (>= build 2026-08-02 pass-through) phát thẳng vào panel -->
+						<option value="08" data-color="threeColor" data-size="7.5_640_384">7.5" V1 640×384 (Ba màu, UC8159)</option>
+						<option value="09" data-color="blackWhiteColor" data-size="7.5_640_384">7.5" V1 640×384 (Đen trắng, UC8159)</option>
 					</select>
 				</div>
 				<div class="flex-group debug only-4_2">
@@ -1665,8 +1674,8 @@
 			</span>
 		</div>
 	</div>
-	<script type="text/javascript" src="js/fw_check.js?v=20260729a"></script>
-	<script type="text/javascript" src="js/connector.js?v=20260810a"></script>
+	<script type="text/javascript" src="js/fw_check.js?v=20260810b"></script>
+	<script type="text/javascript" src="js/connector.js?v=20260810b"></script>
 	<script>
 		var _hmt = _hmt || [];
 		(function () {

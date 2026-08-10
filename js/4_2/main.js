@@ -40,12 +40,14 @@ const EpdCmd = {
 };
 
 const EPD_SERVICE = '62750001-d828-918d-fb46-b6c11c675aec';
-// Chỉ liệt kê đúng máy 4.2" (DIY-4_2-xxxx): các board 2.13"/2.9" quảng bá
-// DIY-2_13-/DIY-2_9- dùng giao thức khác (service 0xff00), hiện trong hộp
-// chọn chỉ gây nhầm. Board 4.2" chạy firmware quá cũ (tên chưa gắn cỡ màn)
-// vẫn kết nối được bằng chế độ dev (?debug=true).
+// Chỉ liệt kê đúng máy của app này: 4.2" (DIY-4_2-xxxx) và 7.5" (DIY-7_5-xxxx
+// CC2640 / DIY-7_5V-xxxx DA14585 640×384 — prefix 'DIY-7_5' khớp cả hai). Các
+// board 2.13"/2.9" quảng bá DIY-2_13-/DIY-2_9- dùng giao thức khác (service
+// 0xff00), hiện trong hộp chọn chỉ gây nhầm. Board 4.2" chạy firmware quá cũ
+// (tên chưa gắn cỡ màn) vẫn kết nối được bằng chế độ dev (?debug=true).
 const BLE_REQUEST_FILTERS = [
   { namePrefix: 'DIY-4_2' },
+  { namePrefix: 'DIY-7_5' },
 ];
 
 function sleep(ms) {
@@ -55,7 +57,7 @@ function sleep(ms) {
 function logBleConnectHelp(error) {
   addLog(`connect: ${error.name} - ${error.message}`);
   addLog('Gợi ý xử lý khi kết nối thất bại:');
-  addLog('1. Đảm bảo thiết bị đã nạp firmware mới nhất, tên Bluetooth là DIY-4_2-xxxx');
+  addLog('1. Đảm bảo thiết bị đã nạp firmware mới nhất, tên Bluetooth là DIY-4_2-xxxx / DIY-7_5-xxxx / DIY-7_5V-xxxx');
   addLog('2. Đặt thiết bị gần máy tính, màn hình chưa vào chế độ ngủ');
   addLog('3. Windows: xóa ghép nối cũ trong cài đặt Bluetooth rồi thử lại');
   addLog('4. Ngắt kết nối thiết bị khỏi điện thoại/máy tính khác');
@@ -526,8 +528,12 @@ function downloadDataArray() {
 function updateButtonStatus(forceDisabled = false) {
   const connected = gattServer != null && gattServer.connected;
   const status = forceDisabled ? 'disabled' : (connected ? null : 'disabled');
-  // mode selection additionally requires a valid device clock ([Sync time])
-  const modeStatus = forceDisabled ? 'disabled' : ((connected && timeSynced) ? null : 'disabled');
+  // mode selection KHÔNG còn đòi [Sync time] trước: lệnh chọn giao diện
+  // (0x02) tự mang timestamp nên thiết bị luôn nhận được giờ đúng. Gate cũ
+  // từng khóa chết người dùng khi mode ĐANG LƯU trên máy bị lỗi render
+  // (7.5" rst=P4): bấm Sync time là máy vẽ lại mode lỗi và reset ngay,
+  // không có cách nào thoát sang mode khác.
+  const modeStatus = status;
   document.getElementById("reconnectbutton").disabled = (gattServer == null || gattServer.connected) ? 'disabled' : null;
   document.getElementById("synctimebutton").disabled = status;
   document.getElementById("sendcmdbutton").disabled = status;
@@ -693,7 +699,7 @@ function handleNotify(value, idx) {
       if (deviceEpoch >= 1738281600) {
         timeSynced = true;
       } else {
-        addLog("Đồng hồ thiết bị chưa được đồng bộ — bấm «Sync time» để gửi ngày giờ trước khi chọn giao diện.");
+        addLog("Đồng hồ thiết bị chưa được đồng bộ — bấm «Sync time», hoặc chọn thẳng một giao diện (lệnh chọn giao diện tự gửi kèm ngày giờ).");
       }
       updateButtonStatus();
     } else if (msg.startsWith('img=') && imgRdyResolve) {
@@ -756,8 +762,11 @@ async function setImgAuto() {
 async function connect() {
   if (bleDevice == null || epdCharacteristic != null) return;
   // đời cũ không tự khai coi như 1.3.1; kèm tên thiết bị để popup nhắc
-  // tối đa 1 lần/ngày cho mỗi máy
-  FwCheck.reset('1.3.1', bleDevice && bleDevice.name);
+  // tối đa 1 lần/ngày cho mỗi máy. CẢ HAI bản 7.5" (DIY-7_5- CC2640 và
+  // DIY-7_5V- DA14585 640×384) không so với bảng firmware 4.2" — khỏi nhắc
+  // cập nhật nhầm (bảng «Danh sách firmware» hiện chỉ có file 4.2").
+  const is75 = bleDevice && bleDevice.name && /^DIY-7_5V?-/.test(bleDevice.name);
+  if (!is75) FwCheck.reset('1.3.1', bleDevice && bleDevice.name);
 
   try {
     addLog("Đang kết nối: " + bleDevice.name);
@@ -784,7 +793,9 @@ async function connect() {
     appVersion = 0x15;
   }
 
-  if (appVersion < 0x16) {
+  // is75: cả hai bản 7.5" đánh số APP_VERSION riêng từ 0x01 (không có đời
+  // EPD-nRF5 cũ) — ngưỡng 0x16 của dòng 4.2" không áp dụng, khỏi báo nhầm
+  if (appVersion < 0x16 && !is75) {
     const oldURL = "https://tsl0922.github.io/EPD-nRF5/v1.5";
     alert("!!! Chú ý !!!\nPhiên bản firmware quá cũ, một số chức năng có thể không hoạt động. Nên cập nhật firmware.");
     if (confirm('Mở phiên bản web tool cũ?')) location.href = oldURL;
@@ -814,7 +825,7 @@ async function connect() {
   await write(EpdCmd.INIT);
 
   // firmware <= 1.3.1 không gửi 'fw=' — sau 3s vẫn nhắc nếu bảng có bản mới
-  FwCheck.schedule(3000);
+  if (!is75) FwCheck.schedule(3000);
 
   document.getElementById("connectbutton").innerHTML = 'Ngắt kết nối';
   updateButtonStatus();
