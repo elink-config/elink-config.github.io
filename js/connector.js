@@ -1,19 +1,12 @@
-// Hub for the combined 4.2" / 2.13" / 2.9" / DLG-CLOCK webtool.
-//
-// The page starts with only the [Kết nối Bluetooth] fieldset. This script
-// owns the connect button: it scans with the 'DIY-' and 'DLG-CLOCK-' name
-// prefixes, detects the device type from the advertised name, then
-// instantiates the matching app (HTML from its <template>, scripts from
-// js/4_2, js/2_13, js/2_9 or js/dlg) and hands the already-selected device
-// over to the app's own connect().
-//
-// Each app's scripts are the unmodified per-device tools, so they are only
-// loaded once and only one type can be active per page load — connecting a
-// device of another type afterwards requires a page reload (the hub asks).
+// Hub v2: moi dong may mot fragment HTML rieng trong apps/ (4_2 / 4_2c /
+// 7_5 / 2_13 / 2_9 / dlg). Nut [Ket noi] quet ten BLE, nhan dang dong may,
+// fetch fragment cua app do vao #appMount roi nap js/<app>/ va trao thiet bi
+// cho connect() cua app. Ho 4_2 (4_2 / 4_2c / 7_5) dung chung js/4_2/ —
+// khac nhau o fragment (select driver, bang firmware rieng tung may).
 (function () {
   'use strict';
 
-  const VER = '20260811b'; // cache-buster, keep in sync with index.html
+  const VER = '20260811c'; // cache-buster, keep in sync with index.html
 
   const EPD42_SERVICE = '62750001-d828-918d-fb46-b6c11c675aec';
   const HM213_SERVICE = '0000ff00-0000-1000-8000-00805f9b34fb';
@@ -26,30 +19,47 @@
 
   const APPS = {
     '4_2': {
-      label: '4.2" / 7.5"',
-      sub: 'Màn 4.2" (400×300, DA14585) / 7.5" (800×480, CC2640) / 7.5" V1 (640×384, DA14585): kết nối, cấu hình và truyền hình ảnh',
-      template: 'tpl-4_2',
+      label: '4.2" (3 màu / đen trắng)',
+      sub: 'Màn 4.2" 400×300 (DA14585): kết nối, cấu hình và truyền hình ảnh',
+      fragment: 'apps/4_2.html',
+      family: '4_2',
+      scripts: ['js/dithering.js', 'js/paint.js', 'js/crop.js',
+        'js/4_2/mode_preview.js', 'js/4_2/designer.js', 'js/4_2/main.js'],
+    },
+    '4_2c': {
+      label: '4.2" BỐN MÀU',
+      sub: 'Màn 4.2" 400×300 BỐN MÀU (DIY-4_2C, DA14585): kết nối, cấu hình và truyền hình ảnh',
+      fragment: 'apps/4_2c.html',
+      family: '4_2',
+      scripts: ['js/dithering.js', 'js/paint.js', 'js/crop.js',
+        'js/4_2/mode_preview.js', 'js/4_2/designer.js', 'js/4_2/main.js'],
+    },
+    '7_5': {
+      label: '7.5"',
+      sub: 'Màn 7.5" V1 640×384 (DIY-7_5V, DA14585): kết nối, cấu hình và truyền hình ảnh',
+      fragment: 'apps/7_5.html',
+      family: '4_2',
       scripts: ['js/dithering.js', 'js/paint.js', 'js/crop.js',
         'js/4_2/mode_preview.js', 'js/4_2/designer.js', 'js/4_2/main.js'],
     },
     '2_13': {
       label: '2.13" (212×104)',
       sub: 'DA14585 — 2.13" (212×104): kết nối, cấu hình và truyền hình ảnh',
-      template: 'tpl-2_13',
+      fragment: 'apps/2_13.html',
       scripts: ['js/dithering.js', 'js/paint.js', 'js/crop.js',
         'js/2_13/designer.js', 'js/2_13/mode_preview.js', 'js/2_13/main.js'],
     },
     '2_9': {
       label: '2.9" (296×128)',
       sub: 'DA14585 — 2.9" (296×128 BWR): kết nối, cấu hình và truyền hình ảnh',
-      template: 'tpl-2_9',
+      fragment: 'apps/2_9.html',
       scripts: ['js/dithering.js', 'js/paint.js', 'js/crop.js',
         'js/2_9/designer.js', 'js/2_9/mode_preview.js', 'js/2_9/main.js'],
     },
     'dlg': {
       label: 'Đồng hồ DLG-CLOCK',
       sub: 'Đồng hồ E-Ink DLG-CLOCK: đặt giờ, đếm ngược, truyền hình ảnh và thiết kế mẫu',
-      template: 'tpl-dlg',
+      fragment: 'apps/dlg.html',
       scripts: ['js/dlg/image.js', 'js/dlg/qrcode.min.js', 'js/dlg/main.js', 'js/dlg/editor.js'],
     },
   };
@@ -74,10 +84,10 @@
     if (name.startsWith('DLG-CLOCK-')) return 'dlg';
     if (name.startsWith('DIY-2_13-')) return '2_13';
     if (name.startsWith('DIY-2_9-')) return '2_9';
-    if (name.startsWith('DIY-4_2C-')) return '4_2';
+    if (name.startsWith('DIY-4_2C-')) return '4_2c';
     if (name.startsWith('DIY-4_2-')) return '4_2';
-    if (name.startsWith('DIY-7_5V-')) return '4_2'; // 7.5" V1 (DA14585) cùng giao thức 4.2"
-    if (name.startsWith('DIY-7_5-')) return '4_2';  // firmware CC2640 7.5" nói giao thức 4.2"
+    if (name.startsWith('DIY-7_5V-')) return '7_5'; // 7.5" V1 (DA14585) cùng giao thức 4.2"
+    if (name.startsWith('DIY-7_5-')) return '7_5';  // firmware CC2640 7.5" nói giao thức 4.2"
     if (name.startsWith('DIY-')) return '4_2';
     return null;
   }
@@ -110,9 +120,12 @@
 
     // instantiate the app's sections (templates keep the duplicate element
     // ids of the apps out of the document until one is chosen)
-    const tpl = document.getElementById(cfg.template);
-    document.getElementById('appMount').appendChild(tpl.content.cloneNode(true));
+    const resp = await fetch(cfg.fragment + '?v=' + VER);
+    if (!resp.ok) throw new Error('Không tải được ' + cfg.fragment);
+    document.getElementById('appMount').insertAdjacentHTML('beforeend', await resp.text());
     document.body.classList.add('app-' + type);
+    // họ 4_2 (4_2c / 7_5) dùng chung CSS gating .only-4_2 của app 4_2
+    if (cfg.family && cfg.family !== type) document.body.classList.add('app-' + cfg.family);
 
     for (const src of cfg.scripts) {
       await loadScript(src);
@@ -243,7 +256,7 @@
         const s = await act213Query();
         return !/act=off/.test(s);
       }
-      if (type === '4_2') {
+      if (type === '4_2' || type === '4_2c' || type === '7_5') {
         // the status burst arrives with the connect notifications; give a
         // slow link a moment before deciding
         const st = await actWaitFor(() => actState, 2500);
