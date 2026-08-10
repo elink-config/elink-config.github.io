@@ -26,10 +26,20 @@ window.FwCheck = (function () {
     }
     return 0;
   }
+  // Dòng máy theo tên thiết bị: bảng 4.2" chứa cả firmware của dòng khác
+  // (hàng có data-fw-variant="4c"/"7_5") — chỉ tính hàng đúng dòng máy đang
+  // kết nối, tránh nhắc máy 3 màu cập nhật bản 4 màu.
+  function variantOf(name) {
+    if (String(name).indexOf('DIY-4_2C-') === 0) return '4c';
+    if (/^DIY-7_5V?-/.test(String(name))) return '7_5';
+    return '';
+  }
   // bản lớn nhất trong bảng «Danh sách firmware» (cột 2 = Version)
   function latest() {
     let best = null;
+    const variant = variantOf(devKey);
     document.querySelectorAll('.fw-table tbody tr').forEach(tr => {
+      if ((tr.getAttribute('data-fw-variant') || '') !== variant) return;
       if (tr.cells && tr.cells.length > 1) {
         const v = parse(tr.cells[1].textContent);
         if (v.some(x => x > 0) && (!best || cmp(v, best.ver) > 0)) {
