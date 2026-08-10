@@ -914,18 +914,29 @@
 			<p class="mode-gallery-hint">Chọn giao diện màn hình bên dưới rồi bấm «Áp dụng». Phần <b>màu đỏ</b> trên thẻ xem trước là phần firmware vẽ bằng mực đỏ của panel BWR. Chưa đồng bộ giờ thì webtool tự gửi «Sync time» trước. Giao diện đã chọn được lưu trong flash thiết bị — mất nguồn vẫn nhớ.</p>
 			<div class="mode-gallery" id="modeGallery"></div>
 			<div class="flex-container">
+				<div class="flex-group">
+					<button id="resetdevicebutton" type="button" class="secondary" onclick="resetDevice()">Khởi động lại thiết bị</button>
+				</div>
+			</div>
+		</fieldset>
+		<fieldset>
+			<legend>Cài đặt thiết bị</legend>
+			<div class="flex-container">
 				<div class="flex-group" style="flex:1 1 100%">
 					<label style="display:flex;align-items:center;gap:6px;cursor:pointer">
 						<input type="checkbox" id="hourlyFullCHK" checked onchange="setHourlyFull()">
 						Làm mới toàn màn hình mỗi giờ — nếu tắt, chỉ làm mới toàn màn lúc 00:00 (ít chớp hơn nhưng bóng mờ tích tụ nhiều hơn)
 					</label>
 				</div>
-			</div>
-			<div class="flex-container">
-				<div class="flex-group">
-					<button id="resetdevicebutton" type="button" class="secondary" onclick="resetDevice()">Khởi động lại thiết bị</button>
+				<div class="flex-group" style="flex:1 1 100%" id="battStyleRow">
+					<span>Hiển thị pin:</span>
+					<label><input type="radio" name="battStyle" value="0" onchange="setBattStyle()"> Không (chỉ icon với mức pin)</label>
+					<label><input type="radio" name="battStyle" value="1" onchange="setBattStyle()"> Phần trăm</label>
+					<label><input type="radio" name="battStyle" value="2" checked onchange="setBattStyle()"> Điện áp</label>
+					<span class="mode-gallery-hint" style="margin:0" id="battStyleHint">Cần firmware ≥ 1.1.</span>
 				</div>
 			</div>
+			<p class="mode-gallery-hint">Các cài đặt trong mục này được lưu theo thiết bị (flash) — mất nguồn không mất.</p>
 		</fieldset>
 		<fieldset>
 			<legend>Cấu hình giao diện</legend>
