@@ -552,17 +552,47 @@ function crc32buf(buf) {
   return (crc ^ -1) | 0;
 }
 
-async function otaUpdate() {
-  const fileInput = document.getElementById('otaFile');
-  if (!fileInput || fileInput.files.length === 0) {
-    addLog('Vui lòng chọn file firmware .bin trước.');
+// Nút «Cài ngay» trong bảng «Danh sách firmware»: tải file .bin cùng origin
+// rồi chạy thẳng luồng OTA — khách không cần tải về máy rồi chọn file thủ công.
+async function fwInstallRow(btn) {
+  const tr = btn.closest('tr');
+  const link = tr && tr.querySelector('a[download]');
+  if (!link) { addLog('Hàng này không có file firmware để cài.'); return; }
+  if (!longValueChar) { addLog('Chưa kết nối thiết bị — bấm «Kết nối» rồi thử lại.'); return; }
+  const ver = (tr.cells && tr.cells[1]) ? tr.cells[1].textContent.trim() : '?';
+  if (!confirm('Cài firmware phiên bản ' + ver + ' vào thiết bị đang kết nối?' + String.fromCharCode(10) +
+               'Thiết bị sẽ khởi động lại sau khi cập nhật — KHÔNG tắt nguồn giữa chừng!')) return;
+  let buf;
+  try {
+    const r = await fetch(link.getAttribute('href'), { cache: 'no-store' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    buf = await r.arrayBuffer();
+  } catch (e) {
+    addLog('Không tải được file firmware: ' + e.message);
     return;
   }
+  addLog('Đã tải ' + link.getAttribute('href').split('/').pop() + ' (' + buf.byteLength + ' byte) — bắt đầu OTA.');
+  await otaUpdate(buf);
+}
+
+async function otaUpdate(preBuf) {
+  // preBuf (ArrayBuffer): từ nút «Cài ngay» của bảng firmware (đã confirm
+  // ở fwInstallRow) — không truyền thì đọc file chọn ở ô Upload như cũ
   if (!longValueChar) {
     addLog('Chưa kết nối thiết bị.');
     return;
   }
-  const firmBuf = new Uint8Array(await fileInput.files[0].arrayBuffer());
+  let firmBuf;
+  if (preBuf) {
+    firmBuf = new Uint8Array(preBuf);
+  } else {
+    const fileInput = document.getElementById('otaFile');
+    if (!fileInput || fileInput.files.length === 0) {
+      addLog('Vui lòng chọn file firmware .bin trước.');
+      return;
+    }
+    firmBuf = new Uint8Array(await fileInput.files[0].arrayBuffer());
+  }
   const firmSize = firmBuf.length;
 
   // tìm magic phiên bản (epd_version[]: 79 13 a5 f9 86 ec 5a 06 + version 4B)
@@ -581,7 +611,7 @@ async function otaUpdate() {
   const firmCrc = crc32buf(firmBuf);
   addLog('Firmware: ' + firmSize + ' byte, phiên bản 0x' + (firmVer >>> 0).toString(16) + '.');
 
-  if (!confirm('Cập nhật firmware qua BLE?\nKhông tắt nguồn thiết bị trong quá trình cập nhật!')) return;
+  if (!preBuf && !confirm('Cập nhật firmware qua BLE?\nKhông tắt nguồn thiết bị trong quá trình cập nhật!')) return;
 
   const otaStatus = document.getElementById('otaProgress');
   const show = (t) => { if (otaStatus) otaStatus.textContent = t; };
