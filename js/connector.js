@@ -25,6 +25,13 @@
   const ALL_SERVICES = [EPD42_SERVICE, HM213_SERVICE, DLG_EPD_SERVICE, DLG_RXTX_SERVICE, DLG_OTA_SERVICE];
 
   const APPS = {
+    '7_3': {
+      label: '7.3" sáu màu',
+      sub: 'Màn 7.3" E Ink Spectra 6 SÁU MÀU 800×480 (DA14585): kết nối, cấu hình và truyền hình ảnh',
+      template: 'tpl-7_3',
+      scripts: ['js/dithering.js', 'js/paint.js', 'js/crop.js',
+        'js/7_3/preset.js', 'js/7_3/mode_preview.js', 'js/7_3/designer.js', 'js/7_3/main.js'],
+    },
     '4_2': {
       label: '4.2" (400×300)',
       sub: 'DA14585 — 4.2" (400×300): kết nối, cấu hình và truyền hình ảnh',
@@ -64,6 +71,7 @@
   }
 
   // DIY-2_13-xxxx → 2.13", DIY-2_9-xxxx → 2.9", DIY-4_2-xxxx → 4.2",
+// DIY-7_3-xxxx → 7.3" Spectra 6 SÁU MÀU 800×480 (DA14585, epd_7_3inch — model 0A),
   // DIY-4_2C-xxxx → 4.2" BỐN MÀU (epd_4_2inch_4c — cùng app 4_2, driver 05/06),
   // DLG-CLOCK-xxxx → đồng hồ DLG.
   // Plain DIY-xxxx = 4.2" board on older firmware without the size tag.
@@ -72,7 +80,8 @@
     if (name.startsWith('DLG-CLOCK-')) return 'dlg';
     if (name.startsWith('DIY-2_13-')) return '2_13';
     if (name.startsWith('DIY-2_9-')) return '2_9';
-    if (name.startsWith('DIY-4_2C-')) return '4_2';
+    if (name.startsWith('DIY-7_3-')) return '7_3';  // 7.3" sáu màu (epd_7_3inch, app riêng)
+  if (name.startsWith('DIY-4_2C-')) return '4_2';
     if (name.startsWith('DIY-4_2-')) return '4_2';
     if (name.startsWith('DIY-')) return '4_2';
     return null;
