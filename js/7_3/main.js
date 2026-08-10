@@ -506,41 +506,22 @@ function updateButtonStatus(forceDisabled = false) {
   // (rst=P4): bấm Sync time là máy vẽ lại mode lỗi và reset ngay, không có
   // cách nào thoát sang mode khác.
   const modeStatus = status;
-  document.getElementById("reconnectbutton").disabled = (gattServer == null || gattServer.connected) ? 'disabled' : null;
-  document.getElementById("synctimebutton").disabled = status;
-  document.getElementById("sendcmdbutton").disabled = status;
-  document.getElementById("calendarmodebutton").disabled = modeStatus;
-  document.getElementById("clockmodebutton").disabled = modeStatus;
-  document.getElementById("combomodebutton").disabled = modeStatus;
-  document.getElementById("redcombomodebutton").disabled = modeStatus;
-  document.getElementById("vncalendarmodebutton").disabled = modeStatus;
-  document.getElementById("digitalmodebutton").disabled = modeStatus;
-  document.getElementById("analogmodebutton").disabled = modeStatus;
-  document.getElementById("dayblocmodebutton").disabled = modeStatus;
-  document.getElementById("weekmodebutton").disabled = modeStatus;
-  document.getElementById("digitalcalmodebutton").disabled = modeStatus;
-  document.getElementById("analogdaymodebutton").disabled = modeStatus;
-  document.getElementById("minimalmodebutton").disabled = modeStatus;
-  document.getElementById("vanniemodebutton").disabled = modeStatus;
-  document.getElementById("countdownmodebutton").disabled = modeStatus;
-  document.getElementById("twomonthmodebutton").disabled = modeStatus;
-  document.getElementById("yearmodebutton").disabled = modeStatus;
-  document.getElementById("thermomodebutton").disabled = modeStatus;
-  document.getElementById("moonmodebutton").disabled = modeStatus;
-  document.getElementById("notemodebutton").disabled = modeStatus;
-  document.getElementById("custommodebutton").disabled = modeStatus;
-  document.getElementById("retromtnmodebutton").disabled = modeStatus;
-  document.getElementById("retrosunsetmodebutton").disabled = modeStatus;
-  document.getElementById("retrowinmodebutton").disabled = modeStatus;
-  document.getElementById("retrocitymodebutton").disabled = modeStatus;
-  document.getElementById("uploadlayoutbutton").disabled = status;
-  document.getElementById("sendnotebutton").disabled = status;
-  document.getElementById("clearscreenbutton").disabled = status;
-  document.getElementById("sendimgbutton").disabled = status;
-  document.getElementById("sendimgbutton2").disabled = status;
-  document.getElementById("sendimgbutton3").disabled = status;
-  document.getElementById("setDriverbutton").disabled = status;
-  document.getElementById("otabutton").disabled = status;
+  // NULL-SAFE (bẫy 2026-08-10): bản 7.3 KHÔNG tạo card mode 2/18 và chỉ có
+  // MỘT nút gửi ảnh — getElementById trả null với id vắng mặt; bản cũ gán
+  // .disabled thẳng nên ném TypeError NGAY GIỮA updateButtonStatus, nuốt
+  // luôn sendimg (bấm «Gửi ảnh» không thấy gì). Mọi id đi qua setDis.
+  const setDis = (id, v) => { const el = document.getElementById(id); if (el) el.disabled = v; };
+  setDis("reconnectbutton", (gattServer == null || gattServer.connected) ? 'disabled' : null);
+  setDis("synctimebutton", status);
+  setDis("sendcmdbutton", status);
+  // nút «Áp dụng» của các card gallery (mode 2/18 không tồn tại — setDis bỏ qua)
+  document.querySelectorAll('#modeGallery .mode-card button').forEach(b => { b.disabled = modeStatus; });
+  setDis("uploadlayoutbutton", status);
+  setDis("sendnotebutton", status);
+  setDis("clearscreenbutton", status);
+  setDis("sendimgbutton", status);
+  setDis("setDriverbutton", status);
+  setDis("otabutton", status);
 }
 
 // live system-time display in the [Thời gian] section
