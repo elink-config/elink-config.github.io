@@ -515,6 +515,10 @@
 					<button id="sendnotebutton" type="button" class="primary" onclick="sendNote()">Gửi ghi chú</button>
 				</div>
 			</div>
+			<p class="mode-gallery-hint">Nội dung gửi xuống được lưu trong flash thiết bị (mất nguồn không mất). Sửa các ô trên là thẻ xem trước «Đếm ngược sự kiện» / «Bảng tên» đổi theo. Tối đa 43 byte UTF-8 mỗi dòng (khoảng 25-30 ký tự tiếng Việt).</p>
+		</fieldset>
+		<fieldset>
+			<legend>Cài đặt thiết bị</legend>
 			<div class="flex-container">
 				<div class="flex-group" style="flex:1 1 100%">
 					<label style="display:flex;align-items:center;gap:6px;cursor:pointer">
@@ -522,8 +526,15 @@
 						Làm mới toàn màn hình mỗi giờ — nếu tắt, chỉ làm mới toàn màn lúc 00:00 (ít chớp hơn nhưng bóng mờ tích tụ nhiều hơn)
 					</label>
 				</div>
+				<div class="flex-group" style="flex:1 1 100%" id="battStyleRow">
+					<span>Hiển thị pin:</span>
+					<label><input type="radio" name="battStyle" value="0" onchange="setBattStyle()"> Không (chỉ icon với mức pin)</label>
+					<label><input type="radio" name="battStyle" value="1" onchange="setBattStyle()"> Phần trăm</label>
+					<label><input type="radio" name="battStyle" value="2" checked onchange="setBattStyle()"> Điện áp</label>
+					<span class="mode-gallery-hint" style="margin:0" id="battStyleHint">Cần firmware ≥ 1.7.</span>
+				</div>
 			</div>
-			<p class="mode-gallery-hint">Nội dung gửi xuống được lưu trong flash thiết bị (mất nguồn không mất). Sửa các ô trên là thẻ xem trước «Đếm ngược sự kiện» / «Bảng tên» đổi theo. Tối đa 43 byte UTF-8 mỗi dòng (khoảng 25-30 ký tự tiếng Việt).</p>
+			<p class="mode-gallery-hint">Các cài đặt trong mục này được lưu theo thiết bị (flash) — mất nguồn không mất.</p>
 		</fieldset>
 		<fieldset>
 			<legend>Thiết kế màn hình</legend>
@@ -1563,7 +1574,7 @@
 		</div>
 	</div>
 	<script type="text/javascript" src="js/fw_check.js?v=20260725a"></script>
-	<script type="text/javascript" src="js/connector.js?v=20260803a"></script>
+	<script type="text/javascript" src="js/connector.js?v=20260806a"></script>
 	<script>
 		var _hmt = _hmt || [];
 		(function () {
