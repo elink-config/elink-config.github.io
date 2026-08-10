@@ -29,6 +29,7 @@ const EpdCmd = {
   SET_ICON: 0x25, // MODE_CUSTOM 1-bit icon, chunked: [0x00,w,h,data...] then [0x01,data...]
   IMG_SLOT: 0x27, // 3 khe ảnh (fw >= 1.5): [01 slot] mở khe / [02] chốt / [03 auto interval]
   DARK_BOOST: 0x28, // [0/1] chữ đậm cho màn lô in nhạt (ép 0°C khi làm mới toàn màn)
+  BATT_STYLE: 0x29, // [0/1/2] hiển thị pin: chỉ icon / phần trăm / điện áp (fw >= 1.9)
 
   WRITE_IMG: 0x30, // v1.6
 
@@ -294,6 +295,20 @@ async function setDarkBoost() {
       : 'Đã tắt «Chữ đậm».');
   } else {
     chk.checked = !chk.checked;
+  }
+}
+
+// Hiển thị pin (fw >= 1.9): 0 chỉ icon, 1 phần trăm, 2 điện áp — lưu theo
+// thiết bị, máy vẽ lại ngay khi đổi
+async function setBattStyle() {
+  const sel = document.querySelector('input[name="battStyle"]:checked');
+  const style = sel ? parseInt(sel.value) : 2;
+  if (!FwCheck.atLeast('1.9')) {
+    addLog('Firmware thiết bị chưa hỗ trợ tùy chọn hiển thị pin (cần v1.9) — hãy cập nhật firmware ở mục OTA.');
+    return;
+  }
+  if (await write(EpdCmd.BATT_STYLE, [style])) {
+    addLog('Đã đặt hiển thị pin: ' + (style === 0 ? 'chỉ icon' : style === 1 ? 'phần trăm' : 'điện áp') + '.');
   }
 }
 
@@ -651,6 +666,11 @@ function handleNotify(value, idx) {
     if (data.length > 216) {
       document.getElementById('darkBoostCHK').checked = data[216] === 1;
     }
+    // «Hiển thị pin» (fw >= 1.9) tại offset 217: 0 icon / 1 % / 2 điện áp
+    if (data.length > 217 && data[217] <= 2) {
+      const rb = document.querySelector(`input[name="battStyle"][value="${data[217]}"]`);
+      if (rb) rb.checked = true;
+    }
   } else {
     if (textDecoder == null) textDecoder = new TextDecoder();
     const msg = textDecoder.decode(data);
@@ -690,6 +710,13 @@ function handleNotify(value, idx) {
       // preview mới CHỈ hiện khi firmware thiết bị khớp — máy cũ giữ preview cũ
       window.__fw17 = FwCheck.atLeast('1.7');
       if (window.refreshModeGallery) window.refreshModeGallery();
+      // «Hiển thị pin» cần fw >= 1.9 — máy cũ mờ radio + giữ hint nhắc cập nhật
+      {
+        const ok19 = FwCheck.atLeast('1.9');
+        document.querySelectorAll('input[name="battStyle"]').forEach(r => { r.disabled = !ok19; });
+        const h = document.getElementById('battStyleHint');
+        if (h) h.textContent = ok19 ? 'Thiết bị vẽ lại ngay khi đổi.' : 'Cần firmware ≥ 1.9 — hãy cập nhật ở mục OTA bên dưới.';
+      }
     }
   }
 }
