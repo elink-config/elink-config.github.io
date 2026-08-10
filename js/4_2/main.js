@@ -715,6 +715,11 @@ function handleNotify(value, idx) {
       // giao diện v1.7 (chữ đậm/đỏ, số 12-3-6-9 đỏ, bỏ mode 2 & 18, hắc đạo):
       // preview mới CHỈ hiện khi firmware thiết bị khớp — máy cũ giữ preview cũ
       window.__fw17 = FwCheck.atLeast('1.7');
+      // mode «Lịch dương + âm» (card 13, id 14) thay Đếm ngược: BWR cần fw
+      // >= 2.0; bản BỐN MÀU (DIY-4_2C, đánh số 2.x riêng) cần >= 2.9
+      const devNm = (bleDevice && bleDevice.name) || '';
+      window.__fwCal = /^DIY-7_5V?-/.test(devNm) ? false   // 7.5" chua co mode nay
+        : FwCheck.atLeast(devNm.indexOf('DIY-4_2C') === 0 ? '2.9' : '2.0');
       if (window.refreshModeGallery) window.refreshModeGallery();
       // «Hiển thị pin» cần fw >= 1.9 — máy cũ mờ radio + giữ hint nhắc cập nhật
       {

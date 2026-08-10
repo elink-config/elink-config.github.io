@@ -16,6 +16,10 @@
   // chỉ bật khi thiết bị ĐÃ khai 'fw=' >= 1.7 — main.js đặt cờ window.__fw17
   // rồi gọi refreshModeGallery(); máy firmware cũ giữ nguyên preview cũ.
   function v17() { return !!window.__fw17; }
+  // Mode lịch dương+âm (card 13, mode id 14) thay «Đếm ngược sự kiện»:
+  // chỉ hiện khi firmware có mode mới — main.js đặt cờ __fwCal
+  // (BWR >= 2.0, bản 4 màu DIY-4_2C >= 2.9).
+  function fwCal() { return !!window.__fwCal; }
   const WD_SHORT = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
   const WD_FULL = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'];
   const WD_BAR = ['CN', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
@@ -443,7 +447,106 @@
       font(x, 12, 0); x.fillStyle = RED; x.fillText(nf.name, 196, 270); x.fillText('còn ' + nf.days + ' ngày', 196, 290);
     }
   }
-  function m14(x, now) { // Đếm ngược — v1.7: all text bold
+  // Âm lịch VIỆT NAM (UTC+7, thuật toán Hồ Ngọc Đức) — bản rút gọn cho preview
+  // mode lịch dương+âm (các card khác vẫn dùng chuỗi minh họa như cũ).
+  function lunarVN(now) {
+    const TZ = 7, PI = Math.PI, INT = Math.floor;
+    function jd(dd, mm, yy) {
+      const a = INT((14 - mm) / 12), y = yy + 4800 - a, m = mm + 12 * a - 3;
+      return dd + INT((153 * m + 2) / 5) + 365 * y + INT(y / 4) - INT(y / 100) + INT(y / 400) - 32045;
+    }
+    function newMoon(k) {
+      const T = k / 1236.85, T2 = T * T, T3 = T2 * T, dr = PI / 180;
+      let Jd1 = 2415020.75933 + 29.53058868 * k + 0.0001178 * T2 - 0.000000155 * T3;
+      Jd1 += 0.00033 * Math.sin((166.56 + 132.87 * T - 0.009173 * T2) * dr);
+      const M = 359.2242 + 29.10535608 * k - 0.0000333 * T2 - 0.00000347 * T3;
+      const Mpr = 306.0253 + 385.81691806 * k + 0.0107306 * T2 + 0.00001236 * T3;
+      const F = 21.2964 + 390.67050646 * k - 0.0016528 * T2 - 0.00000239 * T3;
+      let C1 = (0.1734 - 0.000393 * T) * Math.sin(M * dr) + 0.0021 * Math.sin(2 * dr * M);
+      C1 = C1 - 0.4068 * Math.sin(Mpr * dr) + 0.0161 * Math.sin(dr * 2 * Mpr);
+      C1 = C1 - 0.0004 * Math.sin(dr * 3 * Mpr);
+      C1 = C1 + 0.0104 * Math.sin(dr * 2 * F) - 0.0051 * Math.sin(dr * (M + Mpr));
+      C1 = C1 - 0.0074 * Math.sin(dr * (M - Mpr)) + 0.0004 * Math.sin(dr * (2 * F + M));
+      C1 = C1 - 0.0004 * Math.sin(dr * (2 * F - M)) - 0.0006 * Math.sin(dr * (2 * F + Mpr));
+      C1 = C1 + 0.0010 * Math.sin(dr * (2 * F - Mpr)) + 0.0005 * Math.sin(dr * (2 * Mpr + M));
+      const dt = (T < -11)
+        ? 0.001 + 0.000839 * T + 0.0002261 * T2 - 0.00000845 * T3 - 0.000000081 * T * T3
+        : -0.000278 + 0.000265 * T + 0.000262 * T2;
+      return Jd1 + C1 - dt;
+    }
+    function nmDay(k) { return INT(newMoon(k) + 0.5 + TZ / 24); }
+    function sunLong(jdn) {
+      const T = (jdn - 2451545.0) / 36525, T2 = T * T, dr = PI / 180;
+      const M = 357.52910 + 35999.05030 * T - 0.0001559 * T2 - 0.00000048 * T * T2;
+      const L0 = 280.46645 + 36000.76983 * T + 0.0003032 * T2;
+      let DL = (1.914600 - 0.004817 * T - 0.000014 * T2) * Math.sin(dr * M);
+      DL += (0.019993 - 0.000101 * T) * Math.sin(dr * 2 * M) + 0.000290 * Math.sin(dr * 3 * M);
+      const L = (L0 + DL) * dr;
+      return L - PI * 2 * INT(L / (PI * 2));
+    }
+    function sunSector(d) { return INT(sunLong(d - 0.5 - TZ / 24) / PI * 6); }
+    function month11(yy) {
+      const k = INT((jd(31, 12, yy) - 2415021) / 29.530588853);
+      let nm = nmDay(k);
+      if (sunSector(nm) >= 9) nm = nmDay(k - 1);
+      return nm;
+    }
+    function leapOffset(a11) {
+      const k = INT((a11 - 2415021.076998695) / 29.530588853 + 0.5);
+      let last, i = 1, arc = sunSector(nmDay(k + i));
+      do { last = arc; i++; arc = sunSector(nmDay(k + i)); } while (arc !== last && i < 14);
+      return i - 1;
+    }
+    const yy = now.getFullYear();
+    const dayNumber = jd(now.getDate(), now.getMonth() + 1, yy);
+    const k = INT((dayNumber - 2415021.076998695) / 29.530588853);
+    let monthStart = nmDay(k + 1);
+    if (monthStart > dayNumber) monthStart = nmDay(k);
+    let a11 = month11(yy), b11 = a11, lunarYear;
+    if (a11 >= monthStart) { lunarYear = yy; a11 = month11(yy - 1); }
+    else { lunarYear = yy + 1; b11 = month11(yy + 1); }
+    const diff = INT((monthStart - a11) / 29);
+    let leap = 0, lunarMonth = diff + 11;
+    if (b11 - a11 > 365) {
+      const lo = leapOffset(a11);
+      if (diff >= lo) { lunarMonth = diff + 10; if (diff === lo) leap = 1; }
+    }
+    if (lunarMonth > 12) lunarMonth -= 12;
+    if (lunarMonth >= 11 && diff < 4) lunarYear -= 1;
+    return { day: dayNumber - monthStart + 1, month: lunarMonth, leap: leap, year: lunarYear };
+  }
+  const CAN = ['Giáp', 'Ất', 'Bính', 'Đinh', 'Mậu', 'Kỷ', 'Canh', 'Tân', 'Nhâm', 'Quý'];
+  const CHI = ['Tý', 'Sửu', 'Dần', 'Mão', 'Thìn', 'Tỵ', 'Ngọ', 'Mùi', 'Thân', 'Dậu', 'Tuất', 'Hợi'];
+
+  function m14(x, now) { // card 13: fw mới = Lịch dương + âm; fw cũ = Đếm ngược
+    if (fwCal()) {
+      let lu = { day: 27, month: 6, leap: 0, year: now.getFullYear() };
+      try { lu = lunarVN(now); } catch (e) { console.error('lunarVN', e); }
+      const yName = CAN[(lu.year + 6) % 10] + ' ' + CHI[(lu.year + 8) % 12];
+      // băng đen trên cùng: thứ trong tuần (chung cho cả hai lịch) + pin
+      x.fillStyle = BK; x.fillRect(0, 0, 400, 44);
+      font(x, 24, 1); center(x, WD_FULL[now.getDay()], 200, 31, WH);
+      battery(x, 366, 17, WH);
+      if (is4c()) { x.fillStyle = YE; x.fillRect(0, 44, 400, 3); }  // BWRY: chỉ vàng
+      line(x, 200, 58, 200, 262, BK, 2);
+      // cột TRÁI — DƯƠNG LỊCH (đen)
+      font(x, 16, 1); center(x, 'DƯƠNG LỊCH', 100, 79, BK);
+      font(x, 104, 1); center(x, String(now.getDate()), 100, 186, BK);
+      font(x, 24, 1); center(x, 'Tháng ' + (now.getMonth() + 1), 100, 227, BK);
+      font(x, 17, 1); center(x, 'Năm ' + now.getFullYear(), 100, 255, BK);
+      // cột PHẢI — ÂM LỊCH (đỏ)
+      font(x, 16, 1); center(x, 'ÂM LỊCH', 300, 79, RED);
+      font(x, 104, 1); center(x, String(lu.day), 300, 186, RED);
+      font(x, 24, 1); center(x, 'Tháng ' + lu.month + (lu.leap ? ' nhuận' : ''), 300, 227, RED);
+      font(x, 17, 1); center(x, 'Năm ' + yName, 300, 255, BK);
+      // chân trang: ngày đầy đủ của cả hai lịch
+      font(x, 13, 1);
+      multi(x, [[pad2(now.getDate()) + '/' + pad2(now.getMonth() + 1) + '/' + now.getFullYear(), BK],
+                ['   •   ', BK],
+                ['Âm ' + lu.day + '/' + lu.month + (lu.leap ? ' nhuận' : '') + ' ' + yName, RED]], 200, 288);
+      return;
+    }
+    // firmware cũ: giữ preview «Đếm ngược sự kiện»
     font(x, 14, v17() ? 1 : 0); x.fillStyle = BK;
     x.fillText(WD_FULL[now.getDay()] + ', ' + pad2(now.getDate()) + '/' + pad2(now.getMonth() + 1) + '/' + now.getFullYear(), 14, 30);
     battery(x, 362, 14, BK);
@@ -758,7 +861,7 @@
     { mode: 11, name: 'Kim + thẻ ngày', tick: 'Làm mới mỗi phút', id: 'analogdaymodebutton', draw: m11 },
     { mode: 12, name: 'Tối giản', tick: 'Cập nhật lúc 0h', id: 'minimalmodebutton', draw: m12 },
     { mode: 13, name: 'Lịch vạn niên', tick: 'Cập nhật lúc 0h', id: 'vanniemodebutton', draw: m13 },
-    { mode: 14, name: 'Đếm ngược sự kiện', tick: 'Cập nhật lúc 0h', id: 'countdownmodebutton', draw: m14 },
+    { mode: 14, name: 'Đếm ngược sự kiện', nameNew: 'Lịch dương + âm', tick: 'Cập nhật lúc 0h', id: 'countdownmodebutton', draw: m14 },
     { mode: 15, name: 'Hai tháng', tick: 'Cập nhật lúc 0h', id: 'twomonthmodebutton', draw: m15 },
     { mode: 16, name: 'Lịch cả năm', tick: 'Cập nhật lúc 0h', id: 'yearmodebutton', draw: m16 },
     { mode: 17, name: 'Nhiệt kế', tick: 'Làm mới mỗi phút', id: 'thermomodebutton', draw: m17 },
@@ -788,7 +891,7 @@
       card.dataset.mode = m.mode;
       card.innerHTML =
         '<canvas width="400" height="300"></canvas>' +
-        '<div class="mode-name">' + m.name + '</div>' +
+        '<div class="mode-name">' + ((m.nameNew && fwCal()) ? m.nameNew : m.name) + '</div>' +
         '<div class="mode-tick">' + m.tick + '</div>' +
         '<button id="' + m.id + '" type="button" class="primary" onclick="syncTime(' + m.mode + ')">Áp dụng</button>';
       gallery.appendChild(card);
@@ -810,6 +913,10 @@
         // mode 2 + 18 đã bỏ ở firmware v1.7 — ẩn/hiện lại theo cờ fw hiện tại
         const gone = MODE_LIST[i].mode === 2 || MODE_LIST[i].mode === 18;
         card.style.display = (v17() && gone) ? 'none' : '';
+        // tên card đổi theo firmware (vd card 13: Đếm ngược -> Lịch dương + âm)
+        const nEl = card.querySelector('.mode-name');
+        const nTxt = (MODE_LIST[i].nameNew && fwCal()) ? MODE_LIST[i].nameNew : MODE_LIST[i].name;
+        if (nEl && nEl.textContent !== nTxt) nEl.textContent = nTxt;
         try { MODE_LIST[i].draw(ctx2d(card.querySelector('canvas')), t); }
         catch (e) { console.error('preview mode ' + MODE_LIST[i].mode, e); }
       }
