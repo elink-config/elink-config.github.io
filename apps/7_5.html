@@ -70,6 +70,12 @@
 					<label><input type="radio" name="battStyle" value="2" checked onchange="setBattStyle()"> Điện áp</label>
 					<span class="mode-gallery-hint" style="margin:0" id="battStyleHint">Cần firmware ≥ 1.9.</span>
 				</div>
+				<div class="flex-group" style="flex:1 1 100%" id="timeFmtRow">
+					<span>Định dạng giờ:</span>
+					<label><input type="radio" name="timeFmt" value="0" checked onchange="setTimeFmt()"> 24 giờ</label>
+					<label><input type="radio" name="timeFmt" value="1" onchange="setTimeFmt()"> 12 giờ</label>
+					<span class="mode-gallery-hint" style="margin:0" id="timeFmtHint">Cần firmware ≥ 0.3.</span>
+				</div>
 			</div>
 		</fieldset>
 		<fieldset>

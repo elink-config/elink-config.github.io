@@ -78,6 +78,12 @@
 					<label><input type="radio" name="battStyle" value="2" checked onchange="setBattStyle()"> Điện áp</label>
 					<span class="mode-gallery-hint" style="margin:0" id="battStyleHint">Cần firmware ≥ 1.7.</span>
 				</div>
+				<div class="flex-group" style="flex:1 1 100%" id="timeFmtRow">
+					<span>Định dạng giờ:</span>
+					<label><input type="radio" name="timeFmt" value="0" checked onchange="setTimeFmt()"> 24 giờ</label>
+					<label><input type="radio" name="timeFmt" value="1" onchange="setTimeFmt()"> 12 giờ</label>
+					<span class="mode-gallery-hint" style="margin:0" id="timeFmtHint">Cần firmware ≥ 1.8.</span>
+				</div>
 			</div>
 			<p class="mode-gallery-hint">Các cài đặt trong mục này được lưu theo thiết bị (flash) — mất nguồn không mất.</p>
 		</fieldset>

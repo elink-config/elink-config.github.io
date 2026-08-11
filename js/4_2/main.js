@@ -30,6 +30,7 @@ const EpdCmd = {
   IMG_SLOT: 0x27, // 3 khe ảnh (fw >= 1.5): [01 slot] mở khe / [02] chốt / [03 auto interval]
   DARK_BOOST: 0x28, // [0/1] chữ đậm cho màn lô in nhạt (ép 0°C khi làm mới toàn màn)
   BATT_STYLE: 0x29, // [0/1/2] hiển thị pin: chỉ icon / phần trăm / điện áp (fw >= 1.9)
+  TIME_FMT: 0x2A, // [0/1] định dạng giờ: 24h / 12h (BWR >= 2.1, 4 màu >= 3.0, 7.5" V1 >= 0.3)
 
   WRITE_IMG: 0x30, // v1.6
 
@@ -302,6 +303,20 @@ async function setDarkBoost() {
 
 // Hiển thị pin (fw >= 1.9): 0 chỉ icon, 1 phần trăm, 2 điện áp — lưu theo
 // thiết bị, máy vẽ lại ngay khi đổi
+// «Định dạng giờ» (0x2A): 0 = 24h, 1 = 12h — radio bị mờ khi firmware chưa
+// hỗ trợ (gate __fwTimeOk đặt trong handler fw=)
+async function setTimeFmt() {
+  const sel = document.querySelector('input[name="timeFmt"]:checked');
+  const v = sel ? parseInt(sel.value) : 0;
+  if (!window.__fwTimeOk) {
+    addLog('Firmware thiết bị chưa hỗ trợ chọn 12h/24h — hãy cập nhật firmware ở mục OTA.');
+    return;
+  }
+  if (await write(EpdCmd.TIME_FMT, [v])) {
+    addLog('Đã đặt định dạng giờ: ' + (v === 1 ? '12 giờ' : '24 giờ') + '.');
+  }
+}
+
 async function setBattStyle() {
   const sel = document.querySelector('input[name="battStyle"]:checked');
   const style = sel ? parseInt(sel.value) : 2;
@@ -720,6 +735,16 @@ function handleNotify(value, idx) {
       const devNm = (bleDevice && bleDevice.name) || '';
       window.__fwCal = /^DIY-7_5V?-/.test(devNm) ? false   // 7.5" chua co mode nay
         : FwCheck.atLeast(devNm.indexOf('DIY-4_2C') === 0 ? '2.9' : '2.0');
+      // «Định dạng giờ» 12h/24h: BWR >= 2.1, 4 màu >= 3.0, 7.5" V1 >= 0.3;
+      // CC2640 (DIY-7_5-) chưa hỗ trợ
+      window.__fwTimeOk = /^DIY-7_5-/.test(devNm) ? false
+        : FwCheck.atLeast(devNm.indexOf('DIY-4_2C') === 0 ? '3.0'
+          : /^DIY-7_5V-/.test(devNm) ? '0.3' : '2.1');
+      {
+        document.querySelectorAll('input[name="timeFmt"]').forEach(r => { r.disabled = !window.__fwTimeOk; });
+        const th = document.getElementById('timeFmtHint');
+        if (th && window.__fwTimeOk) th.textContent = 'Thiết bị vẽ lại ngay khi đổi.';
+      }
       if (window.refreshModeGallery) window.refreshModeGallery();
       // «Hiển thị pin» cần fw >= 1.9 — máy cũ mờ radio + giữ hint nhắc cập nhật
       {

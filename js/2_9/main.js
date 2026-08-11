@@ -145,6 +145,8 @@ async function readStatus(quiet = false) {
       refreshing: v.byteLength >= 16 ? v.getUint8(15) : 0,
       // [16] hiển thị pin (0x96, fw >= 1.1): 0 chỉ icon / 1 % / 2 điện áp
       battStyle: v.byteLength >= 17 ? v.getUint8(16) : null,
+      // [17] định dạng giờ (0x90 + tham số, fw >= 1.2): 0 = 24h, 1 = 12h
+      timeFmt: v.byteLength >= 18 ? v.getUint8(17) : null,
     };
     if (!quiet) {
       addLog('Giờ thiết bị: ' + st.year + '-' + String(st.month + 1).padStart(2, '0') +
@@ -167,6 +169,17 @@ async function readStatus(quiet = false) {
       if (h) h.textContent = ok ? 'Thiết bị vẽ lại ngay khi đổi.' : 'Cần firmware ≥ 1.1 — hãy cập nhật ở mục OTA.';
       if (ok) {
         const rb = document.querySelector(`input[name="battStyle"][value="${st.battStyle}"]`);
+        if (rb) rb.checked = true;
+      }
+    }
+    // «Định dạng giờ» 12h/24h cần fw >= 1.2: gói trạng thái 18 byte có [17]
+    {
+      const ok = st.timeFmt !== null && st.timeFmt <= 1;
+      document.querySelectorAll('input[name="timeFmt"]').forEach(r => { r.disabled = !ok; });
+      const h = document.getElementById('timeFmtHint');
+      if (h) h.textContent = ok ? 'Thiết bị vẽ lại ngay khi đổi.' : 'Cần firmware ≥ 1.2 — hãy cập nhật ở mục OTA.';
+      if (ok) {
+        const rb = document.querySelector(`input[name="timeFmt"][value="${st.timeFmt}"]`);
         if (rb) rb.checked = true;
       }
     }
@@ -447,6 +460,16 @@ async function applyMode(mode) {
 // Thiết bị lưu vào flash, báo lại ở status[14].
 // Hiển thị pin (0x96, fw >= 1.1): 0 chỉ icon, 1 phần trăm, 2 điện áp —
 // thiết bị lưu flash và vẽ lại ngay (0x9e đã bị mặt ĐỎ ảnh chiếm nên dùng 0x96)
+// «Định dạng giờ» (0x90 + tham số, fw >= 1.2): 0 = 24h, 1 = 12h — thiết bị
+// lưu flash và vẽ lại ngay
+async function setTimeFmt() {
+  const sel = document.querySelector('input[name="timeFmt"]:checked');
+  const v = sel ? parseInt(sel.value) : 0;
+  if (await write([0x90, v])) {
+    addLog('Đã đặt định dạng giờ: ' + (v === 1 ? '12 giờ' : '24 giờ') + '.');
+  }
+}
+
 async function setBattStyle() {
   const sel = document.querySelector('input[name="battStyle"]:checked');
   const style = sel ? parseInt(sel.value) : 2;

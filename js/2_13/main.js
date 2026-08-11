@@ -154,6 +154,8 @@ async function readStatus(quiet = false) {
       fwVer: v.byteLength >= 17 ? (v.getUint8(15) + '.' + v.getUint8(16)) : null,
       // [17] hiển thị pin (0x9e, fw >= 1.7): 0 chỉ icon / 1 % / 2 điện áp
       battStyle: v.byteLength >= 18 ? v.getUint8(17) : null,
+      // [18] định dạng giờ (0x90 + tham số, fw >= 1.8): 0 = 24h, 1 = 12h
+      timeFmt: v.byteLength >= 19 ? v.getUint8(18) : null,
     };
     if (!quiet) {
       addLog('Giờ thiết bị: ' + st.year + '-' + String(st.month + 1).padStart(2, '0') +
@@ -185,6 +187,19 @@ async function readStatus(quiet = false) {
       if (h) h.textContent = ok ? 'Thiết bị vẽ lại ngay khi đổi.' : 'Cần firmware ≥ 1.7 — hãy cập nhật ở mục OTA.';
       if (ok && st.battStyle !== null && st.battStyle <= 2) {
         const rb = document.querySelector(`input[name="battStyle"][value="${st.battStyle}"]`);
+        if (rb) rb.checked = true;
+      }
+    }
+    // «Định dạng giờ» 12h/24h cần fw >= 1.8 (0x90 + tham số) — gate theo
+    // phiên bản tự khai như trên; giá trị hiện tại ở byte [18] (gói 19B)
+    {
+      const p = st.fwVer !== null ? st.fwVer.split('.').map(Number) : null;
+      const ok = p !== null && (p[0] > 1 || (p[0] === 1 && p[1] >= 8));
+      document.querySelectorAll('input[name="timeFmt"]').forEach(r => { r.disabled = !ok; });
+      const h = document.getElementById('timeFmtHint');
+      if (h) h.textContent = ok ? 'Thiết bị vẽ lại ngay khi đổi.' : 'Cần firmware ≥ 1.8 — hãy cập nhật ở mục OTA.';
+      if (ok && st.timeFmt !== null && st.timeFmt <= 1) {
+        const rb = document.querySelector(`input[name="timeFmt"][value="${st.timeFmt}"]`);
         if (rb) rb.checked = true;
       }
     }
@@ -473,6 +488,16 @@ async function sendNote() {
 // giống tùy chọn của bản 4.2". Thiết bị lưu vào flash, báo lại ở status[14].
 // Hiển thị pin (0x9e, fw >= 1.7): 0 chỉ icon, 1 phần trăm, 2 điện áp —
 // thiết bị lưu flash và vẽ lại ngay
+// «Định dạng giờ» (0x90 + tham số, fw >= 1.8): 0 = 24h, 1 = 12h — thiết bị
+// lưu flash và vẽ lại ngay
+async function setTimeFmt() {
+  const sel = document.querySelector('input[name="timeFmt"]:checked');
+  const v = sel ? parseInt(sel.value) : 0;
+  if (await write([0x90, v])) {
+    addLog('Đã đặt định dạng giờ: ' + (v === 1 ? '12 giờ' : '24 giờ') + '.');
+  }
+}
+
 async function setBattStyle() {
   const sel = document.querySelector('input[name="battStyle"]:checked');
   const style = sel ? parseInt(sel.value) : 2;
