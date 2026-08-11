@@ -857,6 +857,27 @@ async function connect() {
 
   await write(EpdCmd.INIT);
 
+  // 'fw=' nằm CUỐI loạt notify mở màn — một số máy/điện thoại làm rơi gói
+  // cuối (radio 12/24h + gallery mới không mở dù máy chạy bản mới). Chưa
+  // nhận sau 1.2s thì ép thiết bị GỬI LẠI loạt bằng cách ghi lại CCCD
+  // (stop -> start), tối đa 3 lần; biết version rồi thì thôi ngay.
+  (async () => {
+    for (let i = 0; i < 3; i++) {
+      await sleep(1200);
+      if (FwCheck.atLeast('0.0')) return;  // đã nhận fw= (deviceVer != null)
+      if (!epdCharacteristic || !gattServer || !gattServer.connected) return;
+      addLog('(Chưa nhận phiên bản firmware — yêu cầu thiết bị gửi lại...)');
+      try {
+        await epdCharacteristic.stopNotifications();
+        msgIndex = 0;  // loạt gửi lại bắt đầu bằng config (idx 0)
+        await epdCharacteristic.startNotifications();
+      } catch (e) {
+        console.error(e);
+        return;
+      }
+    }
+  })();
+
   // firmware <= 1.3.1 không gửi 'fw=' — sau 3s vẫn nhắc nếu bảng có bản mới
   if (!is75) FwCheck.schedule(3000);
 
