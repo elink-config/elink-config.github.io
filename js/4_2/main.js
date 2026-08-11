@@ -309,8 +309,9 @@ async function setTimeFmt() {
   const sel = document.querySelector('input[name="timeFmt"]:checked');
   const v = sel ? parseInt(sel.value) : 0;
   if (!window.__fwTimeOk) {
-    addLog('Firmware thiết bị chưa hỗ trợ chọn 12h/24h — hãy cập nhật firmware ở mục OTA.');
-    return;
+    // như setBattStyle: không chặn cứng — chưa chắc do máy cũ, có thể chỉ là
+    // chưa nhận 'fw='; firmware cũ sẽ bỏ qua lệnh 0x2A vô hại
+    addLog('(Chưa rõ phiên bản thiết bị — vẫn gửi lệnh; firmware cũ hơn sẽ bỏ qua.)');
   }
   if (await write(EpdCmd.TIME_FMT, [v])) {
     addLog('Đã đặt định dạng giờ: ' + (v === 1 ? '12 giờ' : '24 giờ') + '.');
@@ -320,9 +321,11 @@ async function setTimeFmt() {
 async function setBattStyle() {
   const sel = document.querySelector('input[name="battStyle"]:checked');
   const style = sel ? parseInt(sel.value) : 2;
+  // KHÔNG chặn cứng theo atLeast: vài giây đầu sau kết nối thiết bị chưa kịp
+  // khai 'fw=' — chặn sẽ từ chối nhầm cả máy mới (đã gặp trên v2.1). Firmware
+  // cũ nhận lệnh lạ sẽ bỏ qua vô hại; radio vẫn bị mờ khi biết rõ máy quá cũ.
   if (!FwCheck.atLeast('1.9')) {
-    addLog('Firmware thiết bị chưa hỗ trợ tùy chọn hiển thị pin (cần v1.9) — hãy cập nhật firmware ở mục OTA.');
-    return;
+    addLog('(Chưa rõ phiên bản thiết bị — vẫn gửi lệnh; firmware cũ hơn v1.9 sẽ bỏ qua.)');
   }
   if (await write(EpdCmd.BATT_STYLE, [style])) {
     addLog('Đã đặt hiển thị pin: ' + (style === 0 ? 'chỉ icon' : style === 1 ? 'phần trăm' : 'điện áp') + '.');
