@@ -20,6 +20,9 @@
   // chỉ hiện khi firmware có mode mới — main.js đặt cờ __fwCal
   // (BWR >= 2.0, bản 4 màu DIY-4_2C >= 2.9).
   function fwCal() { return !!window.__fwCal; }
+  // bản 2 của mode lịch dương+âm (giờ:phút + đếm ngược): fw BWR >= 2.1 /
+  // 4 màu >= 3.0 — dùng lại cờ __fwTimeOk của tính năng 12h/24h (cùng mốc)
+  function fwTime() { return !!window.__fwTimeOk; }
   const WD_SHORT = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
   const WD_FULL = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'];
   const WD_BAR = ['CN', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
@@ -526,6 +529,10 @@
       // băng đen trên cùng: thứ trong tuần (chung cho cả hai lịch) + pin
       x.fillStyle = BK; x.fillRect(0, 0, 400, 44);
       font(x, 24, 1); center(x, WD_FULL[now.getDay()], 200, 31, WH);
+      if (fwTime()) {  // bản 2: giờ:phút góc trái (cùng font thứ)
+        x.fillStyle = WH; x.textAlign = 'left';
+        x.fillText(pad2(now.getHours()) + ':' + pad2(now.getMinutes()), 10, 31);
+      }
       battery(x, 366, 17, WH);
       if (is4c()) { x.fillStyle = YE; x.fillRect(0, 44, 400, 3); }  // BWRY: chỉ vàng
       line(x, 200, 58, 200, 262, BK, 2);
@@ -539,11 +546,21 @@
       font(x, 104, 1); center(x, String(lu.day), 300, 186, RED);
       font(x, 24, 1); center(x, 'Tháng ' + lu.month + (lu.leap ? ' nhuận' : ''), 300, 227, RED);
       font(x, 17, 1); center(x, 'Năm ' + yName, 300, 255, BK);
-      // chân trang: ngày đầy đủ của cả hai lịch
+      // chân trang — bản 2: đếm ngược sự kiện kế tiếp; bản đầu: ngày kép
       font(x, 13, 1);
-      multi(x, [[pad2(now.getDate()) + '/' + pad2(now.getMonth() + 1) + '/' + now.getFullYear(), BK],
-                ['   •   ', BK],
-                ['Âm ' + lu.day + '/' + lu.month + (lu.leap ? ' nhuận' : '') + ' ' + yName, RED]], 200, 288);
+      if (fwTime()) {
+        const nf = nextSolarFest(now);
+        if (nf.days === 0) {
+          multi(x, [['Hôm nay: ', BK], [nf.name, RED]], 200, 288);
+        } else {
+          multi(x, [['Còn ' + nf.days + ' ngày nữa đến ', BK],
+                    [nf.name + ' (' + pad2(nf.dt.getDate()) + '/' + pad2(nf.dt.getMonth() + 1) + ')', RED]], 200, 288);
+        }
+      } else {
+        multi(x, [[pad2(now.getDate()) + '/' + pad2(now.getMonth() + 1) + '/' + now.getFullYear(), BK],
+                  ['   •   ', BK],
+                  ['Âm ' + lu.day + '/' + lu.month + (lu.leap ? ' nhuận' : '') + ' ' + yName, RED]], 200, 288);
+      }
       return;
     }
     // firmware cũ: giữ preview «Đếm ngược sự kiện»
@@ -861,7 +878,7 @@
     { mode: 11, name: 'Kim + thẻ ngày', tick: 'Làm mới mỗi phút', id: 'analogdaymodebutton', draw: m11 },
     { mode: 12, name: 'Tối giản', tick: 'Cập nhật lúc 0h', id: 'minimalmodebutton', draw: m12 },
     { mode: 13, name: 'Lịch vạn niên', tick: 'Cập nhật lúc 0h', id: 'vanniemodebutton', draw: m13 },
-    { mode: 14, name: 'Đếm ngược sự kiện', nameNew: 'Lịch dương + âm', tick: 'Cập nhật lúc 0h', id: 'countdownmodebutton', draw: m14 },
+    { mode: 14, name: 'Đếm ngược sự kiện', nameNew: 'Lịch dương + âm', tick: 'Cập nhật lúc 0h', tickNew: 'Làm mới mỗi phút', id: 'countdownmodebutton', draw: m14 },
     { mode: 15, name: 'Hai tháng', tick: 'Cập nhật lúc 0h', id: 'twomonthmodebutton', draw: m15 },
     { mode: 16, name: 'Lịch cả năm', tick: 'Cập nhật lúc 0h', id: 'yearmodebutton', draw: m16 },
     { mode: 17, name: 'Nhiệt kế', tick: 'Làm mới mỗi phút', id: 'thermomodebutton', draw: m17 },
@@ -892,7 +909,7 @@
       card.innerHTML =
         '<canvas width="400" height="300"></canvas>' +
         '<div class="mode-name">' + ((m.nameNew && fwCal()) ? m.nameNew : m.name) + '</div>' +
-        '<div class="mode-tick">' + m.tick + '</div>' +
+        '<div class="mode-tick">' + ((m.tickNew && fwTime()) ? m.tickNew : m.tick) + '</div>' +
         '<button id="' + m.id + '" type="button" class="primary" onclick="syncTime(' + m.mode + ')">Áp dụng</button>';
       gallery.appendChild(card);
       // mode 2 + 18 đã bỏ ở firmware v1.7: ẩn card khi thiết bị khai fw >= 1.7
@@ -917,6 +934,9 @@
         const nEl = card.querySelector('.mode-name');
         const nTxt = (MODE_LIST[i].nameNew && fwCal()) ? MODE_LIST[i].nameNew : MODE_LIST[i].name;
         if (nEl && nEl.textContent !== nTxt) nEl.textContent = nTxt;
+        const tEl = card.querySelector('.mode-tick');
+        const tTxt = (MODE_LIST[i].tickNew && fwTime()) ? MODE_LIST[i].tickNew : MODE_LIST[i].tick;
+        if (tEl && tEl.textContent !== tTxt) tEl.textContent = tTxt;
         try { MODE_LIST[i].draw(ctx2d(card.querySelector('canvas')), t); }
         catch (e) { console.error('preview mode ' + MODE_LIST[i].mode, e); }
       }
