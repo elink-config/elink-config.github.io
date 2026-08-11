@@ -159,6 +159,9 @@ async function readStatus(quiet = false) {
       addLog('Giờ thiết bị: ' + st.year + '-' + String(st.month + 1).padStart(2, '0') +
         '-' + String(st.mday).padStart(2, '0') + ' ' + String(st.hour).padStart(2, '0') +
         ':' + String(st.minute).padStart(2, '0') + ':' + String(st.second).padStart(2, '0'), '⇓');
+      // chế độ dev: hiện độ dài gói để chẩn đoán máy trả gói thiếu byte
+      if (new URLSearchParams(window.location.search).get('debug') === 'true')
+        addLog('Gói trạng thái: ' + v.byteLength + ' byte', '⇓');
     }
     // giờ đã từng được đặt (firmware khởi động ở 2025-01) → mở khóa giao diện
     if (st.year >= 2026) timeSynced = true;
@@ -171,14 +174,16 @@ async function readStatus(quiet = false) {
       const chk = document.getElementById('hourlyFullCHK');
       if (chk) chk.checked = st.hourlyFull !== 0;
     }
-    // «Hiển thị pin» cần fw >= 1.7: máy mới gói trạng thái 18 byte có [17];
-    // máy cũ (gói ngắn hơn) -> mờ radio + hint nhắc cập nhật
+    // «Hiển thị pin» cần fw >= 1.7 (0x9e). Gate theo phiên bản thiết bị tự
+    // khai ([15][16]) thay vì độ dài gói: có máy v1.7 thực địa trả gói thiếu
+    // byte [17] — dựa độ dài sẽ khóa nhầm radio dù máy vẫn nhận 0x9e tốt.
     {
-      const ok = st.battStyle !== null && st.battStyle <= 2;
+      const p = st.fwVer !== null ? st.fwVer.split('.').map(Number) : null;
+      const ok = p !== null && (p[0] > 1 || (p[0] === 1 && p[1] >= 7));
       document.querySelectorAll('input[name="battStyle"]').forEach(r => { r.disabled = !ok; });
       const h = document.getElementById('battStyleHint');
       if (h) h.textContent = ok ? 'Thiết bị vẽ lại ngay khi đổi.' : 'Cần firmware ≥ 1.7 — hãy cập nhật ở mục OTA.';
-      if (ok) {
+      if (ok && st.battStyle !== null && st.battStyle <= 2) {
         const rb = document.querySelector(`input[name="battStyle"][value="${st.battStyle}"]`);
         if (rb) rb.checked = true;
       }

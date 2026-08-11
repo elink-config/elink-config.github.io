@@ -1,4 +1,4 @@
-// Hub v2: moi dong may mot fragment HTML rieng trong apps/ (4_2 / 4_2c /
+﻿// Hub v2: moi dong may mot fragment HTML rieng trong apps/ (4_2 / 4_2c /
 // 7_5 / 2_13 / 2_9 / dlg). Nut [Ket noi] quet ten BLE, nhan dang dong may,
 // fetch fragment cua app do vao #appMount roi nap js/<app>/ va trao thiet bi
 // cho connect() cua app. Ho 4_2 (4_2 / 4_2c / 7_5) dung chung js/4_2/ —
@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  const VER = '20260812a'; // cache-buster, keep in sync with index.html
+  const VER = '20260812b'; // cache-buster, keep in sync with index.html
 
   const EPD42_SERVICE = '62750001-d828-918d-fb46-b6c11c675aec';
   const HM213_SERVICE = '0000ff00-0000-1000-8000-00805f9b34fb';
