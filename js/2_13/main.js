@@ -946,10 +946,7 @@ async function preConnect() {
     try {
       // namePrefix hoạt động tốt cả trên Bluefy (4_2inch dùng y hệt) —
       // lỗi Bluefy trước đây là do UUID dạng số trong optionalServices
-      bleDevice = await navigator.bluetooth.requestDevice(debugMode ? {
-        acceptAllDevices: true,
-        optionalServices: [HM_SERVICE],
-      } : {
+      bleDevice = await navigator.bluetooth.requestDevice({ // ?debug=true vẫn LỌC THEO TÊN thiết bị (yêu cầu user) — hết acceptAllDevices
         filters: BLE_REQUEST_FILTERS,
         optionalServices: [HM_SERVICE],
       });

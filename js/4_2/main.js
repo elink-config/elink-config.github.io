@@ -620,10 +620,7 @@ async function preConnect() {
       // debug mode (?debug=true): list all BLE devices, useful to check
       // whether the board advertises the EPD service UUID at all
       const debugMode = new URLSearchParams(window.location.search).get('debug') === 'true';
-      bleDevice = await navigator.bluetooth.requestDevice(debugMode ? {
-        acceptAllDevices: true,
-        optionalServices: [EPD_SERVICE],
-      } : {
+      bleDevice = await navigator.bluetooth.requestDevice({ // ?debug=true vẫn LỌC THEO TÊN thiết bị (yêu cầu user) — hết acceptAllDevices
         filters: BLE_REQUEST_FILTERS,
         optionalServices: [EPD_SERVICE],
       });

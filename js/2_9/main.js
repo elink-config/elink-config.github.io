@@ -976,10 +976,7 @@ async function preConnect() {
     // chế độ dev (?debug=true): liệt kê mọi thiết bị BLE, bỏ kiểm tra tên
     const debugMode = new URLSearchParams(window.location.search).get('debug') === 'true';
     try {
-      bleDevice = await navigator.bluetooth.requestDevice(debugMode ? {
-        acceptAllDevices: true,
-        optionalServices: [HM_SERVICE],
-      } : {
+      bleDevice = await navigator.bluetooth.requestDevice({ // ?debug=true vẫn LỌC THEO TÊN thiết bị (yêu cầu user) — hết acceptAllDevices
         filters: BLE_REQUEST_FILTERS,
         optionalServices: [HM_SERVICE],
       });
