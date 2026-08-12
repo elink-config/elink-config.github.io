@@ -754,12 +754,15 @@ function handleNotify(value, idx) {
         if (th && window.__fwTimeOk) th.textContent = 'Thiết bị vẽ lại ngay khi đổi.';
       }
       if (window.refreshModeGallery) window.refreshModeGallery();
-      // «Hiển thị pin» cần fw >= 1.9 — máy cũ mờ radio + giữ hint nhắc cập nhật
+      // «Hiển thị pin»: BWR/4 màu cần fw >= 1.9, màn 10.2" (đánh số 0.x
+      // riêng) có từ v0.4 — máy cũ mờ radio + giữ hint nhắc cập nhật
       {
-        const ok19 = FwCheck.atLeast('1.9');
-        document.querySelectorAll('input[name="battStyle"]').forEach(r => { r.disabled = !ok19; });
+        const need = /^DIY-10_2-/.test(devNm) ? '0.4' : '1.9';
+        const okBatt = FwCheck.atLeast(need);
+        document.querySelectorAll('input[name="battStyle"]').forEach(r => { r.disabled = !okBatt; });
         const h = document.getElementById('battStyleHint');
-        if (h) h.textContent = ok19 ? 'Thiết bị vẽ lại ngay khi đổi.' : 'Cần firmware ≥ 1.9 — hãy cập nhật ở mục OTA bên dưới.';
+        if (h) h.textContent = okBatt ? 'Thiết bị vẽ lại ngay khi đổi.'
+                                      : 'Cần firmware ≥ ' + need + ' — hãy cập nhật ở mục OTA bên dưới.';
       }
     }
   }

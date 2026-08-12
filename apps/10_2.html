@@ -62,8 +62,8 @@
 						Làm mới toàn màn hình mỗi giờ (chế độ đồng hồ) — nếu tắt, chỉ làm mới toàn màn lúc 00:00 (ít chớp hơn nhưng bóng mờ tích tụ nhiều hơn)
 					</label>
 				</div>
-				<!-- firmware 10.2" KHÔNG có «chữ đậm» (0x28) lẫn «hiển thị pin»
-				     (offset 217 là time_fmt) — ẩn nhưng giữ phần tử cho main.js -->
+				<!-- firmware 10.2" không có «chữ đậm» (0x28) — ẩn nhưng giữ phần
+				     tử cho main.js dùng chung; «hiển thị pin» thì CÓ từ v0.4 -->
 				<div class="flex-group" style="flex:1 1 100%; display:none" id="darkBoostRow">
 					<label style="display:flex;align-items:center;gap:6px;cursor:pointer">
 						<input type="checkbox" id="darkBoostCHK" onchange="setDarkBoost()">
@@ -73,12 +73,12 @@
 					<div class="flex-group" style="flex:1 1 100%; display:none" id="fourColorHint">
 						<span class="mode-gallery-hint" style="margin:0"></span>
 					</div>
-				<div class="flex-group" style="flex:1 1 100%; display:none" id="battStyleRow">
+				<div class="flex-group" style="flex:1 1 100%" id="battStyleRow">
 					<span>Hiển thị pin:</span>
 					<label><input type="radio" name="battStyle" value="0" onchange="setBattStyle()"> Không (chỉ icon với mức pin)</label>
 					<label><input type="radio" name="battStyle" value="1" onchange="setBattStyle()"> Phần trăm</label>
 					<label><input type="radio" name="battStyle" value="2" checked onchange="setBattStyle()"> Điện áp</label>
-					<span class="mode-gallery-hint" style="margin:0" id="battStyleHint"></span>
+					<span class="mode-gallery-hint" style="margin:0" id="battStyleHint">Cần firmware ≥ 0.4.</span>
 				</div>
 				<div class="flex-group" style="flex:1 1 100%" id="timeFmtRow">
 					<span>Định dạng giờ:</span>
