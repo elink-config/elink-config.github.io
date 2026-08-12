@@ -736,7 +736,11 @@ function handleNotify(value, idx) {
       // mode «Lịch dương + âm» (card 13, id 14) thay Đếm ngược: BWR cần fw
       // >= 2.0; bản BỐN MÀU (DIY-4_2C, đánh số 2.x riêng) cần >= 2.9
       const devNm = (bleDevice && bleDevice.name) || '';
-      window.__fwCal = /^DIY-(7_5V?|10_2)-/.test(devNm) ? false   // 7.5"/10.2" chua co mode nay
+      // 7.5" V1 có «Lịch dương + âm» từ v0.4, 10.2" từ v0.2 (cùng bản port
+      // 2026-08-12); CC2640 (DIY-7_5-) chưa có
+      window.__fwCal = /^DIY-7_5-/.test(devNm) ? false
+        : /^DIY-7_5V-/.test(devNm) ? FwCheck.atLeast('0.4')
+        : /^DIY-10_2-/.test(devNm) ? FwCheck.atLeast('0.2')
         : FwCheck.atLeast(devNm.indexOf('DIY-4_2C') === 0 ? '2.9' : '2.0');
       // «Định dạng giờ» 12h/24h: BWR >= 2.1, 4 màu >= 3.0, 7.5" V1 >= 0.3,
       // 10.2" >= 0.1 (có từ bản đầu); CC2640 (DIY-7_5-) chưa hỗ trợ
