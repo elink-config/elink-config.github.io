@@ -736,13 +736,14 @@ function handleNotify(value, idx) {
       // mode «Lịch dương + âm» (card 13, id 14) thay Đếm ngược: BWR cần fw
       // >= 2.0; bản BỐN MÀU (DIY-4_2C, đánh số 2.x riêng) cần >= 2.9
       const devNm = (bleDevice && bleDevice.name) || '';
-      window.__fwCal = /^DIY-7_5V?-/.test(devNm) ? false   // 7.5" chua co mode nay
+      window.__fwCal = /^DIY-(7_5V?|10_2)-/.test(devNm) ? false   // 7.5"/10.2" chua co mode nay
         : FwCheck.atLeast(devNm.indexOf('DIY-4_2C') === 0 ? '2.9' : '2.0');
-      // «Định dạng giờ» 12h/24h: BWR >= 2.1, 4 màu >= 3.0, 7.5" V1 >= 0.3;
-      // CC2640 (DIY-7_5-) chưa hỗ trợ
+      // «Định dạng giờ» 12h/24h: BWR >= 2.1, 4 màu >= 3.0, 7.5" V1 >= 0.3,
+      // 10.2" >= 0.1 (có từ bản đầu); CC2640 (DIY-7_5-) chưa hỗ trợ
       window.__fwTimeOk = /^DIY-7_5-/.test(devNm) ? false
         : FwCheck.atLeast(devNm.indexOf('DIY-4_2C') === 0 ? '3.0'
-          : /^DIY-7_5V-/.test(devNm) ? '0.3' : '2.1');
+          : /^DIY-7_5V-/.test(devNm) ? '0.3'
+          : /^DIY-10_2-/.test(devNm) ? '0.1' : '2.1');
       {
         document.querySelectorAll('input[name="timeFmt"]').forEach(r => { r.disabled = !window.__fwTimeOk; });
         const th = document.getElementById('timeFmtHint');
@@ -796,9 +797,10 @@ async function connect() {
   if (bleDevice == null || epdCharacteristic != null) return;
   // đời cũ không tự khai coi như 1.3.1; kèm tên thiết bị để popup nhắc
   // tối đa 1 lần/ngày cho mỗi máy. CẢ HAI bản 7.5" (DIY-7_5- CC2640 và
-  // DIY-7_5V- DA14585 640×384) không so với bảng firmware 4.2" — khỏi nhắc
-  // cập nhật nhầm (bảng «Danh sách firmware» hiện chỉ có file 4.2").
-  const is75 = bleDevice && bleDevice.name && /^DIY-7_5V?-/.test(bleDevice.name);
+  // DIY-7_5V- DA14585 640×384) LẪN bản 10.2" (DIY-10_2-, đánh số 0.x riêng)
+  // không dùng sàn 1.3.1 của 4.2" — khỏi nhắc cập nhật nhầm (chỉ so với
+  // bảng «Danh sách firmware» trong fragment của chính máy đó khi tự khai).
+  const is75 = bleDevice && bleDevice.name && /^DIY-(7_5V?|10_2)-/.test(bleDevice.name);
   if (!is75) FwCheck.reset('1.3.1', bleDevice && bleDevice.name);
 
   try {
@@ -1161,11 +1163,14 @@ function updateDitcherOptions() {
   // «làm mới mỗi giờ» và «chữ đậm» của bản BWR không áp dụng — ẩn 2 tùy
   // chọn, hiện ghi chú nhịp cập nhật thay thế
   const is4c = epdDriverSelect.value === '05' || epdDriverSelect.value === '06';
+  // 10.2" (model 11/12 = hex 0b/0c, epd_10_2inch): firmware KHÔNG có «chữ
+  // đậm» (0x28) — giữ hàng này ẩn, đừng để nhánh else bật lại phần tử đã giấu
+  const is102 = epdDriverSelect.value === '0b' || epdDriverSelect.value === '0c';
   const hfRow = document.getElementById('hourlyFullRow');
   const dbRow = document.getElementById('darkBoostRow');
   const hint = document.getElementById('fourColorHint');
   if (hfRow) hfRow.style.display = is4c ? 'none' : '';
-  if (dbRow) dbRow.style.display = is4c ? 'none' : '';
+  if (dbRow) dbRow.style.display = (is4c || is102) ? 'none' : '';
   if (hint) hint.style.display = is4c ? '' : 'none';
 
   // gallery preview vẽ điểm nhấn VÀNG khi driver là màn 4 màu — vẽ lại

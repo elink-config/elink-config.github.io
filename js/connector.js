@@ -1,12 +1,12 @@
 ﻿// Hub v2: moi dong may mot fragment HTML rieng trong apps/ (4_2 / 4_2c /
-// 7_5 / 2_13 / 2_9 / dlg). Nut [Ket noi] quet ten BLE, nhan dang dong may,
-// fetch fragment cua app do vao #appMount roi nap js/<app>/ va trao thiet bi
-// cho connect() cua app. Ho 4_2 (4_2 / 4_2c / 7_5) dung chung js/4_2/ —
-// khac nhau o fragment (select driver, bang firmware rieng tung may).
+// 7_5 / 10_2 / 2_13 / 2_9 / dlg). Nut [Ket noi] quet ten BLE, nhan dang dong
+// may, fetch fragment cua app do vao #appMount roi nap js/<app>/ va trao
+// thiet bi cho connect() cua app. Ho 4_2 (4_2 / 4_2c / 7_5 / 10_2) dung chung
+// js/4_2/ — khac nhau o fragment (select driver, bang firmware rieng).
 (function () {
   'use strict';
 
-  const VER = '20260812f'; // cache-buster, keep in sync with index.html
+  const VER = '20260812g'; // cache-buster, keep in sync with index.html
 
   const EPD42_SERVICE = '62750001-d828-918d-fb46-b6c11c675aec';
   const HM213_SERVICE = '0000ff00-0000-1000-8000-00805f9b34fb';
@@ -38,6 +38,14 @@
       label: '7.5"',
       sub: 'Màn 7.5" V1 640×384 (DIY-7_5V, DA14585): kết nối, cấu hình và truyền hình ảnh',
       fragment: 'apps/7_5.html',
+      family: '4_2',
+      scripts: ['js/dithering.js', 'js/paint.js', 'js/crop.js',
+        'js/4_2/mode_preview.js', 'js/4_2/designer.js', 'js/4_2/main.js'],
+    },
+    '10_2': {
+      label: '10.2"',
+      sub: 'Màn 10.2" 960×640 (DIY-10_2, DA14585): kết nối, cấu hình và truyền hình ảnh',
+      fragment: 'apps/10_2.html',
       family: '4_2',
       scripts: ['js/dithering.js', 'js/paint.js', 'js/crop.js',
         'js/4_2/mode_preview.js', 'js/4_2/designer.js', 'js/4_2/main.js'],
@@ -77,6 +85,7 @@
   // DIY-4_2C-xxxx → 4.2" BỐN MÀU (epd_4_2inch_4c — cùng app 4_2, driver 05/06),
   // DIY-7_5-xxxx → 7.5" (CC2640 800×480, cùng giao thức + app với 4.2"),
   // DIY-7_5V-xxxx → 7.5" V1 640×384 (DA14585, epd_7_5inch — model 08/09),
+  // DIY-10_2-xxxx → 10.2" 960×640 (DA14585, epd_10_2inch — model 11/12),
   // DLG-CLOCK-xxxx → đồng hồ DLG.
   // Plain DIY-xxxx = 4.2" board on older firmware without the size tag.
   function detectType(name) {
@@ -86,6 +95,7 @@
     if (name.startsWith('DIY-2_9-')) return '2_9';
     if (name.startsWith('DIY-4_2C-')) return '4_2c';
     if (name.startsWith('DIY-4_2-')) return '4_2';
+    if (name.startsWith('DIY-10_2-')) return '10_2'; // 10.2" (DA14585) cùng giao thức 4.2"
     if (name.startsWith('DIY-7_5V-')) return '7_5'; // 7.5" V1 (DA14585) cùng giao thức 4.2"
     if (name.startsWith('DIY-7_5-')) return '7_5';  // firmware CC2640 7.5" nói giao thức 4.2"
     if (name.startsWith('DIY-')) return '4_2';
@@ -256,7 +266,7 @@
         const s = await act213Query();
         return !/act=off/.test(s);
       }
-      if (type === '4_2' || type === '4_2c' || type === '7_5') {
+      if (type === '4_2' || type === '4_2c' || type === '7_5' || type === '10_2') {
         // the status burst arrives with the connect notifications; give a
         // slow link a moment before deciding
         const st = await actWaitFor(() => actState, 2500);
@@ -416,7 +426,7 @@
     } catch (e) {
       console.error(e);
       if (e.name === 'NotFoundError') {
-        addLog('Không tìm thấy thiết bị E-Ink (DIY-4_2-xxxx / DIY-4_2C-xxxx / DIY-7_5V-xxxx / DIY-2_13-xxxx / DIY-2_9-xxxx / DLG-CLOCK-xxxx)');
+        addLog('Không tìm thấy thiết bị E-Ink (DIY-4_2-xxxx / DIY-4_2C-xxxx / DIY-7_5V-xxxx / DIY-10_2-xxxx / DIY-2_13-xxxx / DIY-2_9-xxxx / DLG-CLOCK-xxxx)');
       } else if (e.message) {
         addLog('requestDevice: ' + e.message);
       }
@@ -452,7 +462,7 @@
       }
     }
     if (!type) {
-      addLog('Thiết bị "' + (device.name || '?') + '" không phải DIY-4_2-xxxx / DIY-4_2C-xxxx / DIY-7_5V-xxxx / DIY-2_13-xxxx / DIY-2_9-xxxx / DLG-CLOCK-xxxx.');
+      addLog('Thiết bị "' + (device.name || '?') + '" không phải DIY-4_2-xxxx / DIY-4_2C-xxxx / DIY-7_5V-xxxx / DIY-10_2-xxxx / DIY-2_13-xxxx / DIY-2_9-xxxx / DLG-CLOCK-xxxx.');
       return;
     }
 

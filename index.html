@@ -7,7 +7,7 @@
 	<title>E-Ink DA14585</title>
 	<link rel="shortcut icon" type="image/png" href="favicon.png">
 	<link rel="shortcut icon" type="image/png" href="favicon.png">
-	<link rel="stylesheet" href="css/main.css?v=20260812f">
+	<link rel="stylesheet" href="css/main.css?v=20260812g">
 	<script>
 		// apply the saved theme before first paint to avoid a flash
 		(function () {
@@ -23,7 +23,7 @@
 			<div class="app-header-icon"><span class="material-symbols-outlined">calendar_month</span></div>
 			<div class="app-header-text">
 				<h1>E-Ink DA14585</h1>
-				<p id="app-header-sub">Kết nối thiết bị 4.2", 7.5", 2.13", 2.9" hoặc đồng hồ DLG — giao diện hiện theo loại thiết bị</p>
+				<p id="app-header-sub">Kết nối thiết bị 4.2", 7.5", 10.2", 2.13", 2.9" hoặc đồng hồ DLG — giao diện hiện theo loại thiết bị</p>
 			</div>
 			<button type="button" class="theme-toggle-btn" id="theme-toggle" title="Đổi giao diện sáng/tối"
 				onclick="(function(){const h=document.documentElement;const dark=h.getAttribute('data-theme')==='dark';if(dark){h.removeAttribute('data-theme');localStorage.setItem('theme','light');}else{h.setAttribute('data-theme','dark');localStorage.setItem('theme','dark');}document.getElementById('theme-toggle-icon').textContent=dark?'dark_mode':'light_mode';})()">
@@ -44,9 +44,9 @@
 			<legend>Kết nối Bluetooth</legend>
 			<p class="mode-gallery-hint">Bấm «Kết nối» và chọn thiết bị <b>DIY-4_2-xxxx</b> (màn 4.2"),
 				<b>DIY-4_2C-xxxx</b> (màn 4.2" bốn màu), <b>DIY-7_5V-xxxx</b> (màn 7.5"),
-				<b>DIY-2_13-xxxx</b> (màn 2.13"), <b>DIY-2_9-xxxx</b> (màn 2.9")
-				hoặc <b>DLG-CLOCK-xxxx</b> (đồng hồ E-Ink) — các mục điều khiển
-				sẽ hiện ra sau khi kết nối thành công.</p>
+				<b>DIY-10_2-xxxx</b> (màn 10.2"), <b>DIY-2_13-xxxx</b> (màn 2.13"),
+				<b>DIY-2_9-xxxx</b> (màn 2.9") hoặc <b>DLG-CLOCK-xxxx</b> (đồng hồ E-Ink)
+				— các mục điều khiển sẽ hiện ra sau khi kết nối thành công.</p>
 			<div class="flex-container">
 				<div class="flex-group">
 					<button id="connectbutton" type="button" class="primary" onclick="preConnect()">Kết nối</button>
@@ -116,8 +116,8 @@
 			</span>
 		</div>
 	</div>
-	<script type="text/javascript" src="js/fw_check.js?v=20260812f"></script>
-	<script type="text/javascript" src="js/connector.js?v=20260812f"></script>
+	<script type="text/javascript" src="js/fw_check.js?v=20260812g"></script>
+	<script type="text/javascript" src="js/connector.js?v=20260812g"></script>
 	<script>
 		var _hmt = _hmt || [];
 		(function () {
