@@ -612,6 +612,10 @@ async function fwInstallRow(btn) {
   const ver = (tr.cells && tr.cells[1]) ? tr.cells[1].textContent.trim() : '?';
   if (!confirm('Cài firmware phiên bản ' + ver + ' vào thiết bị đang kết nối?' + String.fromCharCode(10) +
                'Thiết bị sẽ khởi động lại sau khi cập nhật — KHÔNG tắt nguồn giữa chừng!')) return;
+  // cuộn lên khu «Cập nhật firmware (OTA)» để người dùng thấy tiến trình
+  const otaBox = document.getElementById('otaProgress');
+  if (otaBox && otaBox.closest('fieldset'))
+    otaBox.closest('fieldset').scrollIntoView({ behavior: 'smooth', block: 'start' });
   let buf;
   try {
     const r = await fetch(link.getAttribute('href'), { cache: 'no-store' });
