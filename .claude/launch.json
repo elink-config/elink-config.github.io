@@ -1,0 +1,15 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "hub-7-5inch-nrf",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "-m",
+        "http.server"
+      ],
+      "port": 8592,
+      "autoPort": true
+    }
+  ]
+}

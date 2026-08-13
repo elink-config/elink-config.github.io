@@ -42,6 +42,14 @@
       scripts: ['js/dithering.js', 'js/paint.js', 'js/crop.js',
         'js/4_2/mode_preview.js', 'js/4_2/designer.js', 'js/4_2/main.js'],
     },
+    '7_5n': {
+      label: '7.5" 800×480 (nRF52811)',
+      sub: 'Màn 7.5" ba màu 800×480 (DIY-7_5N, nRF52811): kết nối, cấu hình và truyền hình ảnh',
+      fragment: 'apps/7_5n.html',
+      family: '4_2',
+      scripts: ['js/dithering.js', 'js/paint.js', 'js/crop.js',
+        'js/4_2/mode_preview.js', 'js/4_2/designer.js', 'js/4_2/main.js'],
+    },
     '2_13': {
       label: '2.13" (212×104)',
       sub: 'DA14585 — 2.13" (212×104): kết nối, cấu hình và truyền hình ảnh',
@@ -78,6 +86,8 @@
   // DIY-4_2C-xxxx → 4.2" BỐN MÀU (epd_4_2inch_4c — cùng app 4_2, driver 05/06),
   // DIY-7_5-xxxx → 7.5" (CC2640 800×480, cùng giao thức + app với 4.2"),
   // DIY-7_5V-xxxx → 7.5" V1 640×384 (DA14585, epd_7_5inch — model 08/09),
+  // DIY-7_5N-xxxx → 7.5" 800×480 (nRF52811, EPD-nRF52811/epd_7_5inch — UC8179
+  //                 model 07/06; KHÔNG có OTA nên fragment riêng apps/7_5n.html),
   // DLG-CLOCK-xxxx → đồng hồ DLG.
   // Plain DIY-xxxx = 4.2" board on older firmware without the size tag.
   function detectType(name) {
@@ -87,6 +97,7 @@
     if (name.startsWith('DIY-2_9-')) return '2_9';
     if (name.startsWith('DIY-4_2C-')) return '4_2c';
     if (name.startsWith('DIY-4_2-')) return '4_2';
+    if (name.startsWith('DIY-7_5N-')) return '7_5n'; // 7.5" 800×480 nRF52811 (UC8179, model 07/06)
     if (name.startsWith('DIY-7_5V-')) return '7_5'; // 7.5" V1 (DA14585) cùng giao thức 4.2"
     if (name.startsWith('DIY-7_5-')) return '7_5';  // firmware CC2640 7.5" nói giao thức 4.2"
     if (name.startsWith('DIY-')) return '4_2';
