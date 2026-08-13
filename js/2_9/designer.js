@@ -65,6 +65,10 @@
     const oc = document.createElement('canvas');
     oc.width = w; oc.height = h;
     const og = oc.getContext('2d');
+    // thu nho CHAT LUONG CAO (noi suy muot) de anh giu net nhu ban goc;
+    // chuyen 1-bit ben duoi dung NGUONG do sang, KHONG dithering
+    og.imageSmoothingEnabled = true;
+    og.imageSmoothingQuality = 'high';
     og.fillStyle = '#fff'; og.fillRect(0, 0, w, h);
     og.drawImage(iconEl, 0, 0, w, h);
     const d = og.getImageData(0, 0, w, h).data;

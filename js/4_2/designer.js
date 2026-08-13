@@ -138,7 +138,8 @@
     return iconImg;
   }
 
-  // convert any image file to a 1-bit icon (max 128px, luminance threshold)
+  // Anh -> icon 1-bit (toi da 128px): chuyen bang NGUONG do sang, KHONG
+  // dithering — giu dung hinh goc, khong ra hat lam tam tren e-ink.
   window.dsIconFileChange = function (input) {
     const f = input.files && input.files[0];
     if (!f) return;
@@ -150,6 +151,9 @@
       const oc = document.createElement('canvas');
       oc.width = w; oc.height = h;
       const og = oc.getContext('2d');
+      // thu nho CHAT LUONG CAO (noi suy muot) de anh giu net nhu ban goc
+      og.imageSmoothingEnabled = true;
+      og.imageSmoothingQuality = 'high';
       og.fillStyle = '#fff'; og.fillRect(0, 0, w, h);
       og.drawImage(img, 0, 0, w, h);
       const d = og.getImageData(0, 0, w, h).data;
