@@ -2,8 +2,8 @@ let bleDevice, gattServer;
 let hmService;                 // service HMCLOCK 0xff00
 let longValueChar;             // 0xff01 — ghi lệnh + đọc trạng thái
 let adcChar;                   // 0xff02 — đọc điện áp pin
-let startTime, msgIndex;
-let canvas, ctx, textDecoder;
+let startTime;
+let canvas, ctx;
 let paintManager, cropManager;
 let deviceMode = null;      // chế độ thiết bị báo về (SỐ = VỊ TRÍ THẺ; 28 = ảnh)
 let timeSynced = false;     // đã đồng bộ giờ — mở khóa chọn giao diện màn hình
@@ -16,7 +16,10 @@ let timeSynced = false;     // đã đồng bộ giờ — mở khóa chọn gia
 //     0x93 <offset u16 LE> <data…>  ghi khối ảnh
 //     0x94 [01]   hiển thị ảnh (01 = nạp ảnh đã lưu từ flash)
 //     0x95 lưu ảnh vào flash · 0x96 <idx> đổi phân giải · 0x97 đọc nhiệt độ
-//     0x98 <mode> chọn giao diện (1-27, 29 — ẢNH 28 đặt bằng 0x94)
+//     0x98 <mode> chọn giao diện (1-27 và 29 — ẢNH 28 phải đặt bằng 0x94;
+//          29 = «Đồng hồ tối giản», firmware còn nhận nhưng đã bỏ thẻ)
+//     0x9d <0|1> lịch làm mới toàn màn · 0x9e <0|1|2> kiểu hiển thị pin
+//     0x9b <158B> bố cục Tự thiết kế · 0x9c ảnh cho Tự thiết kế (chia khối)
 //     0x99 <năm 2 LE> <tháng 1-12> <ngày> <tên UTF-8>  đặt sự kiện đếm ngược
 //     0x9a <idx 0-2, bit7 = dòng cuối> <text UTF-8>    đặt dòng ghi chú
 //     0x9F khởi động lại · 0xA0/A2/A3/A4 OTA firmware
@@ -38,7 +41,7 @@ const BLE_REQUEST_FILTERS = [
   { namePrefix: BLE_NAME_PREFIX },
 ];
 
-// Hai loại panel 2.13", đổi bằng 1 nút (lệnh 0xE4, firmware lưu vào flash):
+// Hai loại panel 2.13", đổi bằng 1 nút (lệnh 0x96, firmware lưu vào flash):
 //   0: HINK-E0213A41/A55 — 212×104 (canvas ngang 212×104, buffer 2756 byte)
 //   1: OPM021B1 / HINK-E0213A67 — 250×122 (canvas ngang 250×122, buffer 4000 byte)
 const RESOLUTIONS = [
@@ -102,7 +105,6 @@ function resetVariables() {
   hmService = null;
   longValueChar = null;
   adcChar = null;
-  msgIndex = 0;
   document.getElementById("log").innerHTML = '';
 }
 
@@ -165,6 +167,9 @@ async function readStatus(quiet = false) {
       if (new URLSearchParams(window.location.search).get('debug') === 'true')
         addLog('Gói trạng thái: ' + v.byteLength + ' byte', '⇓');
     }
+    // Phiên bản thiết bị tự khai (fw >= 1.5) — đặt TRƯỚC các cổng kiểm tra
+    // bên dưới vì chúng gọi fwAtLeast() đọc biến này.
+    window.deviceFwVer = st.fwVer;
     // giờ đã từng được đặt (firmware khởi động ở 2025-01) → mở khóa giao diện
     if (st.year >= 2026) timeSynced = true;
     if (st.resIdx === 0 || st.resIdx === 1) {
@@ -180,8 +185,7 @@ async function readStatus(quiet = false) {
     // khai ([15][16]) thay vì độ dài gói: có máy v1.7 thực địa trả gói thiếu
     // byte [17] — dựa độ dài sẽ khóa nhầm radio dù máy vẫn nhận 0x9e tốt.
     {
-      const p = st.fwVer !== null ? st.fwVer.split('.').map(Number) : null;
-      const ok = p !== null && (p[0] > 1 || (p[0] === 1 && p[1] >= 7));
+      const ok = fwAtLeast(1, 7);
       document.querySelectorAll('input[name="battStyle"]').forEach(r => { r.disabled = !ok; });
       const h = document.getElementById('battStyleHint');
       if (h) h.textContent = ok ? 'Thiết bị vẽ lại ngay khi đổi.' : 'Cần firmware ≥ 1.7 — hãy cập nhật ở mục OTA.';
@@ -193,8 +197,7 @@ async function readStatus(quiet = false) {
     // «Định dạng giờ» 12h/24h cần fw >= 1.8 (0x90 + tham số) — gate theo
     // phiên bản tự khai như trên; giá trị hiện tại ở byte [18] (gói 19B)
     {
-      const p = st.fwVer !== null ? st.fwVer.split('.').map(Number) : null;
-      const ok = p !== null && (p[0] > 1 || (p[0] === 1 && p[1] >= 8));
+      const ok = fwAtLeast(1, 8);
       document.querySelectorAll('input[name="timeFmt"]').forEach(r => { r.disabled = !ok; });
       const h = document.getElementById('timeFmtHint');
       if (h) h.textContent = ok ? 'Thiết bị vẽ lại ngay khi đổi.' : 'Cần firmware ≥ 1.8 — hãy cập nhật ở mục OTA.';
@@ -205,12 +208,11 @@ async function readStatus(quiet = false) {
     }
     if (st.mode !== null) {
       deviceMode = st.mode;                 // SO MODE = VI TRI THE (28 = ảnh, thẻ 'img')
-      if (typeof highlightMode === 'function') highlightMode(st.mode === 28 ? 'img' : st.mode);
+      if (typeof highlightMode === 'function') highlightMode(st.mode === IMG_MODE ? 'img' : st.mode);
     }
-    // thiết bị tự khai phiên bản (fw >= 1.5) → ghi log; KHÔNG gọi
-    // FwCheck.report vì popup nhắc firmware đang TẮT (xem ghi chú ở connect)
+    // KHÔNG gọi FwCheck.report vì popup nhắc firmware đang TẮT (xem ghi chú
+    // ở connect); biến window.deviceFwVer đã đặt ở đầu hàm.
     if (st.fwVer !== null) {
-      window.deviceFwVer = st.fwVer;   // designer.js gate ảnh nền toàn màn (≥1.9)
       if (!quiet) addLog('Firmware thiết bị: v' + st.fwVer, '⇓');
       // if (typeof FwCheck !== 'undefined') FwCheck.report(st.fwVer);
     }
@@ -223,16 +225,7 @@ async function readStatus(quiet = false) {
   }
 }
 
-// % pin theo đường xả pin lithium CR2450/CR2477 (khớp firmware v1.7)
-function battPct(mv) {
-  const V = [2400, 2500, 2600, 2650, 2700, 2750, 2800, 2850, 2900, 2980, 3050];
-  const P = [0, 5, 12, 20, 30, 45, 60, 75, 85, 95, 100];
-  if (mv >= V[10]) return 100;
-  if (mv <= V[0]) return 0;
-  for (let i = 10; i > 0; i--)
-    if (mv >= V[i - 1]) return Math.round(P[i - 1] + (mv - V[i - 1]) * (P[i] - P[i - 1]) / (V[i] - V[i - 1]));
-  return 0;
-}
+// battPct() ở common.js (dùng chung với bản xem trước + Thiết kế màn hình)
 
 // Đọc điện áp pin (0xff02, uint16 LE mV); % theo đường xả (khớp firmware)
 async function readVoltage() {
@@ -772,8 +765,11 @@ async function sendimg() {
     if (st && st.mode === 28) { shown = true; break; }
   }
   if (shown) {
-    deviceMode = 3;
-    if (typeof highlightMode === 'function') highlightMode(3);
+    // chế độ ẢNH của firmware là 28; thẻ tương ứng trong thư viện là 'img'.
+    // (Trước đây ghi 3 — số thẻ của bản đánh số CŨ — nên sau khi gửi ảnh
+    // thư viện tô sáng nhầm thẻ «Đồng hồ lật».)
+    deviceMode = IMG_MODE;
+    if (typeof highlightMode === 'function') highlightMode('img');
     addLog('Thiết bị xác nhận đã hiển thị ảnh. Bấm «Lưu ảnh vào flash» nếu muốn giữ sau khi mất nguồn.');
     setStatus('Đã hiển thị ảnh!');
   } else {
@@ -796,7 +792,7 @@ async function saveImageFlash() {
 // ------- đổi phân giải màn hình (1 nút): 212×104 <-> 250×122 -------
 
 // Cập nhật canvas + nhãn theo phân giải idx. Gọi khi người dùng đổi hoặc khi
-// thiết bị báo phân giải hiện tại (notify E4xx).
+// thiết bị báo phân giải hiện tại trong gói trạng thái, byte [11]).
 function applyResolution(idx, quiet = false) {
   if (idx !== 0 && idx !== 1) return;
   const r = RESOLUTIONS[idx];
@@ -1435,7 +1431,6 @@ function checkDebugMode() {
 }
 
 document.body.onload = () => {
-  textDecoder = null;
   canvas = document.getElementById('canvas');
   ctx = canvas.getContext("2d");
 

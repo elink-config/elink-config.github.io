@@ -8,9 +8,8 @@
  * — chế độ mới thêm TRƯỚC nhóm này. Thẻ «Đồng hồ tối giản» (2) đã bỏ theo yêu cầu.
  */
 (function () {
-  const BK = '#151515', WH = '#f6f4ec', GY = '#555';
-  const WD_FULL = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'];
-  const WD_HDR = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+  // BK/WH/GY, WD_FULL, WD_HDR, pad2, dateLine, voltValue, panelTempVal,
+  // lunarText, IMG_MODE... đều nằm ở js/2_13/common.js (nạp trước file này)
 
   // panel landscape size — theo phân giải đang chọn (212×104 hoặc 250×122)
   function panelSize() {
@@ -74,36 +73,13 @@
     if (p > 0) x.fillRect(bx + 12 - p, by + 2, p + 1, 5);   // đầy từ bên phải
     if (label) { font(x, 8, 0); right(x, label, bx - 4, by + 7.5, col); }
   }
-  function voltValue() {
-    const el = document.getElementById('battVolt');
-    if (el && /\d/.test(el.textContent)) {
-      const v = parseFloat(el.textContent);
-      if (v > 0) return v;
-    }
-    return 3.1;
-  }
-  function voltLabel() { return voltValue().toFixed(1) + 'v'; }
-  function panelTempVal() {
-    const el = document.getElementById('panelTemp');
-    if (el && /-?\d/.test(el.textContent)) return parseInt(el.textContent);
-    return 28;
-  }
   function statusBatt(x, W) { battery(x, W - 16, 3, BK, voltLabel()); }
   function tempCorner(x, col) {
     font(x, 9, 0); x.fillStyle = col || BK; x.fillText(panelTempVal() + '°C', 4, 11);
   }
 
-  function pad2(n) { return String(n).padStart(2, '0'); }
-  function dateLine(now) {
-    return WD_FULL[now.getDay()] + ' ' + pad2(now.getDate()) + '/' + pad2(now.getMonth() + 1) + '/' + now.getFullYear();
-  }
-  // âm lịch hôm nay "Âm lịch d/m" — dùng lunarToday() của main.js nếu có
-  function lunarStr(now) {
-    try {
-      const l = lunarToday(now);
-      return 'Âm lịch ' + l.day + '/' + (l.month & 0x7f) + ((l.month & 0x80) ? 'n' : '');
-    } catch (e) { return 'Âm lịch 27/5'; }
-  }
+  // pad2/dateLine ở common.js; lunarStr = lunarText với tiền tố mặc định
+  function lunarStr(now) { return lunarText(now); }
   function weekOfYear(now) {
     const jan1 = new Date(now.getFullYear(), 0, 1);
     const yday = Math.floor((now - jan1) / 86400000);
@@ -127,17 +103,8 @@
     right(x, panelTempVal() + '°C', W - 4, H - 3, BK);
   }
 
-  // --- mode 2: Đồng hồ tối giản ---
-  function m2(x, now, W, H) {
-    tempCorner(x);
-    statusBatt(x, W);
-    const th = (W >= 250) ? 66 : 50;
-    const u = th / 9;
-    const s = pad2(now.getHours()) + ':' + pad2(now.getMinutes());
-    segStr(x, (W - segWidth(u, s)) / 2, 14 + (H - 32 - th) / 2, u, s, BK);
-    font(x, 10, 0);
-    center(x, dateLine(now) + ' - ' + lunarStr(now), W / 2, H - 10, BK);
-  }
+  // (thẻ «Đồng hồ tối giản» đã bỏ theo yêu cầu — hàm vẽ m2 xóa kèm; firmware
+  //  vẫn còn mode 29 nhận lệnh 0x98 29 để tương thích ngược)
 
   // --- mode 3: Lịch tháng ---
   function m3(x, now, W, H) {
@@ -930,7 +897,11 @@
       catch (e) { console.error('preview mode ' + m.mode, e); }
     }
     // deviceMode do main.js khai báo; script này nạp trước main.js nên phải kiểm typeof
-    if (typeof deviceMode !== 'undefined' && deviceMode != null) window.highlightMode(deviceMode === 1 ? 'img' : deviceMode);
+    // ẢNH = mode 28 (số 1 là «Đồng hồ + lịch âm»). Bản chép từ máy 2.9" ghi
+    // nhầm là 1 nên mỗi lần dựng lại thư viện (đổi phân giải) khi máy đang ở
+    // giao diện đồng hồ mặc định lại tô sáng nhầm thẻ «Ảnh đã lưu».
+    if (typeof deviceMode !== 'undefined' && deviceMode != null)
+      window.highlightMode(deviceMode === IMG_MODE ? 'img' : deviceMode);
     if (typeof updateButtonStatus === 'function') updateButtonStatus();
   }
 

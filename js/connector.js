@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  const VER = '20260813b'; // cache-buster, keep in sync with index.html
+  const VER = '20260813c'; // cache-buster, keep in sync with index.html
 
   const EPD42_SERVICE = '62750001-d828-918d-fb46-b6c11c675aec';
   const HM213_SERVICE = '0000ff00-0000-1000-8000-00805f9b34fb';
@@ -47,6 +47,7 @@
       sub: 'DA14585 — 2.13" (212×104): kết nối, cấu hình và truyền hình ảnh',
       fragment: 'apps/2_13.html',
       scripts: ['js/dithering.js', 'js/paint.js', 'js/crop.js',
+        'js/2_13/common.js',
         'js/2_13/designer.js', 'js/2_13/mode_preview.js', 'js/2_13/main.js'],
     },
     '2_9': {

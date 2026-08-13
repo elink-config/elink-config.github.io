@@ -11,9 +11,8 @@
 (function () {
   const LS_KEY = 'customLayout_2_13_v1';
   const MAXW = 10;
-  const BK = '#151515', WH = '#f6f4ec';
-  const WD_SUN = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
-  const WD_FULL = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'];
+  // BK/WH, WD_SUN, WD_FULL, pad2, lunarText, voltValue, panelTempVal:
+  // js/2_13/common.js (nạp trước file này)
 
   function panelW() { return (typeof RESOLUTIONS !== 'undefined') ? RESOLUTIONS[resIdx].w : 212; }
   function panelH() { return (typeof RESOLUTIONS !== 'undefined') ? RESOLUTIONS[resIdx].h : 104; }
@@ -178,12 +177,7 @@
     x.fillStyle = BK; x.beginPath(); x.arc(cx, cy, 2, 0, 7); x.fill();
   }
 
-  function pad2(n) { return String(n).padStart(2, '0'); }
-
-  function lunarTxt() {
-    try { const l = lunarToday(new Date()); return 'Âm lịch ' + l.day + '/' + (l.month & 0x7f); }
-    catch (e) { return 'Âm lịch 24/5'; }
-  }
+  function lunarTxt() { return lunarText(new Date()); }
 
   function drawWidget(x, w, now) {
     const s = w.size;
@@ -212,8 +206,7 @@
       } break;
       case 3: {
         fnt(8, false); x.fillStyle = BK;
-        const v = (typeof voltValue === 'function') ? voltValue().toFixed(1) : '3.1';
-        x.fillText(v + 'v', w.x, w.y + 8);
+        x.fillText(voltLabel(), w.x, w.y + 8);
         x.strokeStyle = BK; x.lineWidth = 1;
         x.strokeRect(w.x + 32.5, w.y + 0.5, 14, 9);
         x.fillRect(w.x + 30, w.y + 3, 2, 3);
@@ -221,8 +214,8 @@
       } break;
       case 4: case 5: case 6: case 8: case 9: case 11: case 12: {
         let t;
-        if (w.type === 4) t = ((typeof panelTempVal === 'function') ? panelTempVal() : 28) + '°C';
-        else if (w.type === 5) t = WD_FULL[now.getDay()] + ' ' + pad2(now.getDate()) + '/' + pad2(now.getMonth() + 1) + '/' + now.getFullYear();
+        if (w.type === 4) t = panelTempVal() + '°C';
+        else if (w.type === 5) t = dateLine(now);
         else if (w.type === 11) t = WD_FULL[now.getDay()];
         else if (w.type === 12) t = pad2(now.getDate()) + '/' + pad2(now.getMonth() + 1) + '/' + now.getFullYear();
         else if (w.type === 6) t = lunarTxt();
@@ -380,13 +373,10 @@
     if (iconW) {
       // ảnh nền toàn màn cần firmware >= v1.9 (fw cũ giới hạn ảnh 120px,
       // sẽ từ chối gói 0x9c và giữ ảnh cũ) — cảnh báo trước khi gửi
-      if (iconW.size >= 3 && typeof window.deviceFwVer === 'string') {
-        const p = window.deviceFwVer.split('.').map(Number);
-        if (!(p[0] > 1 || (p[0] === 1 && p[1] >= 9))) {
-          if (!confirm('Ảnh TOÀN MÀN HÌNH cần firmware ≥ v1.9 (thiết bị đang chạy v' +
-              window.deviceFwVer + ') — thiết bị sẽ KHÔNG nhận được ảnh này.\n' +
-              'Hãy cập nhật firmware ở mục OTA trước. Vẫn gửi phần còn lại?')) return;
-        }
+      if (iconW.size >= 3 && typeof window.deviceFwVer === 'string' && !fwAtLeast(1, 9)) {
+        if (!confirm('Ảnh TOÀN MÀN HÌNH cần firmware ≥ v1.9 (thiết bị đang chạy v' +
+            window.deviceFwVer + ') — thiết bị sẽ KHÔNG nhận được ảnh này.\n' +
+            'Hãy cập nhật firmware ở mục OTA trước. Vẫn gửi phần còn lại?')) return;
       }
       const ic = iconBitsFor(iconW.size);
       if (!ic) { alert('Thiết kế có «Ảnh» nhưng chưa chọn tệp ảnh cho nó.'); return; }
@@ -432,8 +422,8 @@
     if (await write(buf)) {
       addLog('Đã gửi giao diện tự thiết kế (' + st.widgets.length + ' thành phần).');
       addLog('Thiết bị tự chuyển sang «Tự thiết kế» và đang vẽ lại…');
-      deviceMode = 27;
-      if (typeof highlightMode === 'function') highlightMode(27);
+      deviceMode = CUSTOM_MODE;
+      if (typeof highlightMode === 'function') highlightMode(CUSTOM_MODE);
       if (typeof window.rebuildModeGallery === 'function') window.rebuildModeGallery();
     }
   };
