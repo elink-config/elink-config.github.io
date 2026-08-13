@@ -29,13 +29,17 @@
     7: { name: 'Lịch tháng', sizes: 3, dim: s => [[70, 66], [91, 78], [112, 90]][s] },
     8: { name: 'Chữ 1', sizes: 2, dim: null },
     9: { name: 'Chữ 2', sizes: 2, dim: null },
-    10: { name: 'Ảnh', sizes: 3, dim: s => iconDim(s) },
+    10: { name: 'Ảnh', sizes: 5, dim: s => iconDim(s) },
     11: { name: 'Thứ', sizes: 2, dim: s => s ? [130, 28] : [66, 15] },
     12: { name: 'Ngày', sizes: 2, dim: s => s ? [162, 28] : [82, 15] },
   };
 
-  // kích thước tối đa của Ảnh theo size (đổi cỡ = mã hoá lại từ ảnh gốc)
+  // kích thước tối đa của Ảnh theo size (đổi cỡ = mã hoá lại từ ảnh gốc);
+  // size 3 = TOÀN MÀN giữ tỉ lệ (căn giữa), 4 = TOÀN MÀN kéo dãn — ảnh nền,
+  // tự chuyển xuống đáy để các thành phần khác đè lên trên (fw >= v1.9)
   const ICON_DIMS = [40, 64, 96];
+  const ICON_SIZE_LBL = ['Nhỏ (≤40px)', 'Vừa (≤64px)', 'Lớn (≤96px)',
+    'Toàn màn hình — giữ tỉ lệ', 'Toàn màn hình — kéo dãn'];
 
   let st = { widgets: [], frame: 0, t1: '', t2: '' };   // st.icon = dataURL ảnh gốc
   let sel = -1, canvas, ctx, dragOff = null;
@@ -50,6 +54,13 @@
   /* ---- Ảnh (icon) 1-bit: giữ ảnh gốc, mã hoá lại theo size đã chọn ---- */
 
   function iconDim(s) {
+    if (s === 4) return [panelW(), panelH()];   // kéo dãn phủ kín màn
+    if (s === 3) {                              // toàn màn giữ tỉ lệ gốc
+      if (!iconEl || !iconEl.complete || !iconEl.naturalWidth) return [panelW(), panelH()];
+      const k = Math.min(panelW() / iconEl.naturalWidth, panelH() / iconEl.naturalHeight);
+      return [Math.max(1, Math.round(iconEl.naturalWidth * k)),
+              Math.max(1, Math.round(iconEl.naturalHeight * k))];
+    }
     const m = ICON_DIMS[s];
     if (!iconEl || !iconEl.complete || !iconEl.naturalWidth) return [m, m];
     const k = Math.min(1, m / iconEl.naturalWidth, m / iconEl.naturalHeight);
@@ -74,13 +85,34 @@
     pv.width = w; pv.height = h;
     const pg = pv.getContext('2d');
     const pid = pg.createImageData(w, h);
+    // độ sáng từng điểm (nền trong suốt = trắng)
+    const lum = new Float32Array(w * h);
+    for (let p = 0; p < w * h; p++) {
+      const i = p * 4;
+      lum[p] = (d[i + 3] > 127) ? 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2] : 255;
+    }
+    const dither = s >= 3;   // ảnh nền toàn màn (thường là ảnh chụp): dither
     for (let yy = 0; yy < h; yy++)
       for (let xx = 0; xx < w; xx++) {
-        const i = (yy * w + xx) * 4;
-        const lum = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
-        if (lum < 140 && d[i + 3] > 127) {
+        const p = yy * w + xx;
+        let black;
+        if (dither) {
+          // Floyd–Steinberg trên kênh xám — giữ chi tiết ảnh chụp
+          const v = lum[p] < 128 ? 0 : 255;
+          const err = lum[p] - v;
+          black = v === 0;
+          if (xx + 1 < w) lum[p + 1] += err * 7 / 16;
+          if (yy + 1 < h) {
+            if (xx > 0) lum[p + w - 1] += err * 3 / 16;
+            lum[p + w] += err * 5 / 16;
+            if (xx + 1 < w) lum[p + w + 1] += err * 1 / 16;
+          }
+        } else {
+          black = lum[p] < 140;   // icon/logo: ngưỡng như cũ
+        }
+        if (black) {
           bits[yy * stride + (xx >> 3)] |= 0x80 >> (xx & 7);
-          const j = (yy * w + xx) * 4;
+          const j = p * 4;
           pid.data[j] = 21; pid.data[j + 1] = 21; pid.data[j + 2] = 21; pid.data[j + 3] = 255;
         }
       }
@@ -106,7 +138,7 @@
       loadIconEl();
       if (!st.widgets.some(w => w.type === 10)) dsAdd(10);
       save(); redraw();
-      addLog('Ảnh đã sẵn sàng — «Đổi cỡ» để chọn 1 trong 3 cỡ, gửi cùng thiết kế.');
+      addLog('Ảnh đã sẵn sàng — «Đổi cỡ» để chọn: nhỏ / vừa / lớn / TOÀN MÀN giữ tỉ lệ / TOÀN MÀN kéo dãn.');
     };
     rd.readAsDataURL(f);
     input.value = '';
@@ -277,6 +309,12 @@
 
   function clampW(w) {
     const [bw, bh] = dimOf(w);
+    if (w.type === 10 && w.size >= 3) {
+      // ảnh nền toàn màn: kéo dãn ghim (0,0); giữ tỉ lệ căn giữa màn
+      w.x = (w.size === 4) ? 0 : Math.round((panelW() - bw) / 2);
+      w.y = (w.size === 4) ? 0 : Math.round((panelH() - bh) / 2);
+      return;
+    }
     w.x = Math.round(Math.max(0, Math.min(panelW() - bw, w.x)));
     w.y = Math.round(Math.max(0, Math.min(panelH() - bh, w.y)));
   }
@@ -297,6 +335,15 @@
     if (sel < 0 || !st.widgets[sel]) return;
     const w = st.widgets[sel];
     w.size = (w.size + 1) % TYPES[w.type].sizes;
+    if (w.type === 10) {
+      if (w.size >= 3) {
+        // ảnh nền: chuyển xuống ĐÁY danh sách (vẽ trước) để mọi thành
+        // phần khác chèn đè lên trên — cả preview lẫn firmware vẽ theo thứ tự
+        const i = st.widgets.indexOf(w);
+        if (i > 0) { st.widgets.splice(i, 1); st.widgets.unshift(w); sel = 0; }
+      }
+      addLog('Cỡ ảnh: ' + ICON_SIZE_LBL[w.size] + '.');
+    }
     clampW(w); save(); redraw();
   };
 
@@ -324,9 +371,23 @@
   window.dsUpload = async function () {
     if (!st.widgets.length) { alert('Thiết kế còn trống — hãy thêm ít nhất một thành phần.'); return; }
 
+    // ảnh nền toàn màn phải nằm ĐÁY danh sách (firmware vẽ theo thứ tự)
+    const bg = st.widgets.findIndex(w => w.type === 10 && w.size >= 3);
+    if (bg > 0) { const w = st.widgets.splice(bg, 1)[0]; st.widgets.unshift(w); save(); redraw(); }
+
     // Ảnh đi trước (0x9c, chia khối) — cỡ theo size của thành phần Ảnh
     const iconW = st.widgets.find(w => w.type === 10);
     if (iconW) {
+      // ảnh nền toàn màn cần firmware >= v1.9 (fw cũ giới hạn ảnh 120px,
+      // sẽ từ chối gói 0x9c và giữ ảnh cũ) — cảnh báo trước khi gửi
+      if (iconW.size >= 3 && typeof window.deviceFwVer === 'string') {
+        const p = window.deviceFwVer.split('.').map(Number);
+        if (!(p[0] > 1 || (p[0] === 1 && p[1] >= 9))) {
+          if (!confirm('Ảnh TOÀN MÀN HÌNH cần firmware ≥ v1.9 (thiết bị đang chạy v' +
+              window.deviceFwVer + ') — thiết bị sẽ KHÔNG nhận được ảnh này.\n' +
+              'Hãy cập nhật firmware ở mục OTA trước. Vẫn gửi phần còn lại?')) return;
+        }
+      }
       const ic = iconBitsFor(iconW.size);
       if (!ic) { alert('Thiết kế có «Ảnh» nhưng chưa chọn tệp ảnh cho nó.'); return; }
       const mtu = parseInt(document.getElementById('mtusize').value) || 244;
@@ -349,7 +410,9 @@
     }
 
     const enc = new TextEncoder();
-    const t1 = enc.encode(st.t1), t2 = enc.encode(st.t2);
+    // lọc ký tự ngoài font (fw cũ < v1.8 gặp ký tự lạ khi vẽ sẽ TREO MÁY)
+    const safe = (typeof window.fontSafe === 'function') ? window.fontSafe : (s => s);
+    const t1 = enc.encode(safe(st.t1)), t2 = enc.encode(safe(st.t2));
     if (t1.length > 47 || t2.length > 47) {
       alert('Ô chữ quá dài (tối đa 47 byte; chữ có dấu chiếm 2-3 byte mỗi chữ).');
       return;
@@ -383,6 +446,7 @@
     canvas.height = panelH() * 2;
     ctx = canvas.getContext('2d');
     ctx.setTransform(2, 0, 0, 2, 0, 0);
+    iconCache = {};   // cỡ toàn-màn phụ thuộc phân giải — mã hoá lại
     st.widgets.forEach(clampW);
     redraw();
   }

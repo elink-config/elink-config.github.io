@@ -210,6 +210,7 @@ async function readStatus(quiet = false) {
     // thiết bị tự khai phiên bản (fw >= 1.5) → ghi log; KHÔNG gọi
     // FwCheck.report vì popup nhắc firmware đang TẮT (xem ghi chú ở connect)
     if (st.fwVer !== null) {
+      window.deviceFwVer = st.fwVer;   // designer.js gate ảnh nền toàn màn (≥1.9)
       if (!quiet) addLog('Firmware thiết bị: v' + st.fwVer, '⇓');
       // if (typeof FwCheck !== 'undefined') FwCheck.report(st.fwVer);
     }
@@ -401,13 +402,32 @@ async function manualSyncTime() {
   }
 }
 
+// Lọc chuỗi theo bộ glyph unifont VN của firmware: thay ký tự typographic
+// phổ biến bằng bản ASCII, BỎ ký tự ngoài font (emoji, chữ Hán…) — firmware
+// cũ (≤ v1.8) gặp ký tự không có trong font khi vẽ sẽ TREO MÁY phải rút nguồn.
+const FONT_MAP = {
+  '–': '-', '—': '-', '−': '-', '‘': "'", '’': "'",
+  '‚': "'", '“': '"', '”': '"', '„': '"', '…': '...',
+  ' ': ' ', '•': '-', '·': ' - ', '₫': 'd',
+};
+const FONT_OK = /[\x20-\x7E°À-ÃÈ-ÊÌÍÒ-ÕÙÚÝà-ãè-êìíò-õùúýĂăĐđĨĩŨũƠơƯưẠ-ỹ]/;
+window.fontSafe = function (s) {
+  let out = '';
+  for (const ch of String(s || '')) {
+    if (FONT_MAP[ch] !== undefined) out += FONT_MAP[ch];
+    else if (FONT_OK.test(ch)) out += ch;
+    // ký tự khác: bỏ
+  }
+  return out;
+};
+
 // Cắt chuỗi theo giới hạn BYTE UTF-8 (không cắt giữa ký tự có dấu)
 function utf8Trunc(s, maxBytes) {
   const enc = new TextEncoder();
-  let b = enc.encode(s);
+  let b = enc.encode(fontSafe(s));
   while (b.length > maxBytes) {
     s = s.slice(0, -1);
-    b = enc.encode(s);
+    b = enc.encode(fontSafe(s));
   }
   return b;
 }
