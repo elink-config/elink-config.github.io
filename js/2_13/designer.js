@@ -37,6 +37,8 @@
   // size 3 = TOÀN MÀN giữ tỉ lệ (căn giữa), 4 = TOÀN MÀN kéo dãn — ảnh nền,
   // tự chuyển xuống đáy để các thành phần khác đè lên trên (fw >= v1.9)
   const ICON_DIMS = [40, 64, 96];
+  // ngưỡng độ sáng chuyển ảnh sang 1-bit (0-255): nhỏ hơn = ít vùng đen hơn
+  const ICON_THRESHOLD = 140;
   const ICON_SIZE_LBL = ['Nhỏ (≤40px)', 'Vừa (≤64px)', 'Lớn (≤96px)',
     'Toàn màn hình — giữ tỉ lệ', 'Toàn màn hình — kéo dãn'];
 
@@ -75,6 +77,9 @@
     const oc = document.createElement('canvas');
     oc.width = w; oc.height = h;
     const og = oc.getContext('2d');
+    // thu nhỏ CHẤT LƯỢNG CAO (nội suy mượt) để ảnh giữ nét như bản gốc
+    og.imageSmoothingEnabled = true;
+    og.imageSmoothingQuality = 'high';
     og.fillStyle = '#fff'; og.fillRect(0, 0, w, h);
     og.drawImage(iconEl, 0, 0, w, h);
     const d = og.getImageData(0, 0, w, h).data;
@@ -84,35 +89,19 @@
     pv.width = w; pv.height = h;
     const pg = pv.getContext('2d');
     const pid = pg.createImageData(w, h);
-    // độ sáng từng điểm (nền trong suốt = trắng)
-    const lum = new Float32Array(w * h);
-    for (let p = 0; p < w * h; p++) {
-      const i = p * 4;
-      lum[p] = (d[i + 3] > 127) ? 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2] : 255;
-    }
-    const dither = s >= 3;   // ảnh nền toàn màn (thường là ảnh chụp): dither
+    // KHÔNG dithering (theo yêu cầu): chuyển 1-bit bằng NGƯỠNG độ sáng, giữ
+    // đúng hình gốc — mảng màu nào tối hơn ngưỡng thì đen, còn lại trắng.
+    // Dithering (Floyd–Steinberg) tạo hạt lấm tấm, trên màn 2.13" nhìn rối.
+    // Muốn ảnh chụp có sắc độ thì dùng khu «Truyền hình ảnh» (có đủ thuật
+    // toán dither) rồi gửi như ảnh toàn màn, đừng bật lại dither ở đây.
     for (let yy = 0; yy < h; yy++)
       for (let xx = 0; xx < w; xx++) {
-        const p = yy * w + xx;
-        let black;
-        if (dither) {
-          // Floyd–Steinberg trên kênh xám — giữ chi tiết ảnh chụp
-          const v = lum[p] < 128 ? 0 : 255;
-          const err = lum[p] - v;
-          black = v === 0;
-          if (xx + 1 < w) lum[p + 1] += err * 7 / 16;
-          if (yy + 1 < h) {
-            if (xx > 0) lum[p + w - 1] += err * 3 / 16;
-            lum[p + w] += err * 5 / 16;
-            if (xx + 1 < w) lum[p + w + 1] += err * 1 / 16;
-          }
-        } else {
-          black = lum[p] < 140;   // icon/logo: ngưỡng như cũ
-        }
-        if (black) {
+        const p = yy * w + xx, i = p * 4;
+        // nền trong suốt tính là trắng
+        const lum = (d[i + 3] > 127) ? 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2] : 255;
+        if (lum < ICON_THRESHOLD) {
           bits[yy * stride + (xx >> 3)] |= 0x80 >> (xx & 7);
-          const j = p * 4;
-          pid.data[j] = 21; pid.data[j + 1] = 21; pid.data[j + 2] = 21; pid.data[j + 3] = 255;
+          pid.data[i] = 21; pid.data[i + 1] = 21; pid.data[i + 2] = 21; pid.data[i + 3] = 255;
         }
       }
     pg.putImageData(pid, 0, 0);
