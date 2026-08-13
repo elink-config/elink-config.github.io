@@ -31,7 +31,21 @@
   let sel = -1, canvas, ctx, dragOff = null;
   let iconImg = null; // offscreen canvas cache built from st.icon
 
-  try { const s = JSON.parse(localStorage.getItem(LS_KEY)); if (s && s.widgets) st = s; } catch (e) {}
+  // Nap bo cuc da luu. KEP size ve khoang hop le cua tung loai: bo cuc cu
+  // (hoac cua may khac neu ai do dung chung trinh duyet) co the mang size
+  // vuot khoang -> ICON_DIMS[size] = undefined -> getImageData nem loi va
+  // designer khong ve duoc gi.
+  try {
+    const s = JSON.parse(localStorage.getItem(LS_KEY));
+    if (s && s.widgets) {
+      st = s;
+      st.widgets = st.widgets.filter(w => TYPES[w.type]).map(w => {
+        const max = TYPES[w.type].sizes - 1;
+        w.size = Math.max(0, Math.min(max, w.size | 0));
+        return w;
+      });
+    }
+  } catch (e) {}
 
   function save() { try { localStorage.setItem(LS_KEY, JSON.stringify(st)); } catch (e) {} }
 

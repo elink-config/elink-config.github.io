@@ -9,7 +9,7 @@
  *   [62..109] text1 (UTF-8, đệm NUL, 48B)  [110..157] text2 (48B)
  */
 (function () {
-  const LS_KEY = 'customLayout_2_13_v1';
+  const LS_KEY = 'customLayout_2_9_v1';
   const MAXW = 10;
   const BK = '#151515', WH = '#f6f4ec';
   const WD_SUN = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
@@ -41,7 +41,21 @@
   let sel = -1, canvas, ctx, dragOff = null;
   let iconEl = null, iconCache = {};                    // ảnh gốc + bitmap 1-bit theo size
 
-  try { const s = JSON.parse(localStorage.getItem(LS_KEY)); if (s && s.widgets) st = s; } catch (e) {}
+  // Nap bo cuc da luu. KEP size ve khoang hop le cua tung loai: bo cuc cu
+  // (hoac cua may khac neu ai do dung chung trinh duyet) co the mang size
+  // vuot khoang -> ICON_DIMS[size] = undefined -> getImageData nem loi va
+  // designer khong ve duoc gi.
+  try {
+    const s = JSON.parse(localStorage.getItem(LS_KEY));
+    if (s && s.widgets) {
+      st = s;
+      st.widgets = st.widgets.filter(w => TYPES[w.type]).map(w => {
+        const max = TYPES[w.type].sizes - 1;
+        w.size = Math.max(0, Math.min(max, w.size | 0));
+        return w;
+      });
+    }
+  } catch (e) {}
 
   function save() { try { localStorage.setItem(LS_KEY, JSON.stringify(st)); } catch (e) {} }
 

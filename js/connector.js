@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  const VER = '20260813e'; // cache-buster, keep in sync with index.html
+  const VER = '20260813f'; // cache-buster, keep in sync with index.html
 
   const EPD42_SERVICE = '62750001-d828-918d-fb46-b6c11c675aec';
   const HM213_SERVICE = '0000ff00-0000-1000-8000-00805f9b34fb';
@@ -489,43 +489,11 @@
     }
   }
 
-  /* ---- minimal globals for the connect fieldset before an app is loaded
-     (the DIY apps redefine addLog/clearLog identically on load) ---- */
+  /* ---- minimal globals for the connect fieldset before an app is loaded ----
+     addLog/clearLog nay o js/log.js (nap truoc file nay) — dung chung cho
+     hub lan moi app, khong con ban chep rieng o tung main.js. */
 
-  window.addLog = function (logTXT, action = '') {
-    const log = document.getElementById('log');
-    const now = new Date();
-    const time = String(now.getHours()).padStart(2, '0') + ':' +
-      String(now.getMinutes()).padStart(2, '0') + ':' +
-      String(now.getSeconds()).padStart(2, '0') + ' ';
-
-    const logEntry = document.createElement('div');
-    const timeSpan = document.createElement('span');
-    logEntry.className = 'log-line';
-    timeSpan.className = 'time';
-    timeSpan.textContent = time;
-    logEntry.appendChild(timeSpan);
-
-    if (action !== '') {
-      const actionSpan = document.createElement('span');
-      actionSpan.className = 'action';
-      actionSpan.innerHTML = action;
-      logEntry.appendChild(actionSpan);
-    }
-    logEntry.appendChild(document.createTextNode(logTXT));
-
-    log.appendChild(logEntry);
-    log.scrollTop = log.scrollHeight;
-
-    while (log.childNodes.length > 20) {
-      log.removeChild(log.firstChild);
-    }
-  };
   hubAddLog = window.addLog;
-
-  window.clearLog = function () {
-    document.getElementById('log').innerHTML = '';
-  };
 
   window.preConnect = hubPreConnect;
   window.reConnect = function () { addLog('Chưa kết nối thiết bị nào.'); };

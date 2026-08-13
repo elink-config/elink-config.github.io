@@ -886,39 +886,8 @@ function setStatus(statusText) {
   document.getElementById("status").innerHTML = statusText;
 }
 
-function addLog(logTXT, action = '') {
-  const log = document.getElementById("log");
-  const now = new Date();
-  const time = String(now.getHours()).padStart(2, '0') + ":" +
-    String(now.getMinutes()).padStart(2, '0') + ":" +
-    String(now.getSeconds()).padStart(2, '0') + " ";
-
-  const logEntry = document.createElement('div');
-  const timeSpan = document.createElement('span');
-  logEntry.className = 'log-line';
-  timeSpan.className = 'time';
-  timeSpan.textContent = time;
-  logEntry.appendChild(timeSpan);
-
-  if (action !== '') {
-    const actionSpan = document.createElement('span');
-    actionSpan.className = 'action';
-    actionSpan.innerHTML = action;
-    logEntry.appendChild(actionSpan);
-  }
-  logEntry.appendChild(document.createTextNode(logTXT));
-
-  log.appendChild(logEntry);
-  log.scrollTop = log.scrollHeight;
-
-  while (log.childNodes.length > 20) {
-    log.removeChild(log.firstChild);
-  }
-}
-
-function clearLog() {
-  document.getElementById("log").innerHTML = '';
-}
+// addLog() / clearLog(): js/log.js (dung chung ca hub lan cac app).
+// Ban standalone trong EPD-DA14585/webtools/ van giu ban rieng cua no.
 
 function fillCanvas(style) {
   ctx.fillStyle = style;
