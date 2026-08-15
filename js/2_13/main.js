@@ -3,6 +3,7 @@ let hmService;                 // service HMCLOCK 0xff00
 let longValueChar;             // 0xff01 — ghi lệnh + đọc trạng thái
 let adcChar;                   // 0xff02 — đọc điện áp pin
 let startTime;
+let statusRetry = false;    // chống đọc lại chồng nhau khi gặp chuỗi kích hoạt
 let canvas, ctx;
 let paintManager, cropManager;
 let deviceMode = null;      // chế độ thiết bị báo về (SỐ = VỊ TRÍ THẺ; 28 = ảnh)
@@ -138,7 +139,16 @@ async function readStatus(quiet = false) {
     // "mac=... act=..." cho tới lần clock_push kế tiếp của thiết bị — KHÔNG
     // phải gói trạng thái: bỏ qua để khỏi khóa nhầm radio «Hiển thị pin»
     // (byte[17] rơi vào chữ 'a' = 97 > 2) và khỏi đọc giờ rác.
-    if (v.getUint8(0) === 0x6d && v.getUint8(1) === 0x61 && v.getUint8(2) === 0x63 && v.getUint8(3) === 0x3d) return null;
+    if (v.getUint8(0) === 0x6d && v.getUint8(1) === 0x61 && v.getUint8(2) === 0x63 && v.getUint8(3) === 0x3d) {
+      // ĐỌC LẠI sau khi thiết bị đẩy gói trạng thái thật, nếu không thì lần
+      // đọc này mất trắng: các cổng kiểm tra bên dưới (radio pin, 12/24h)
+      // không bao giờ chạy và người dùng thấy chúng bị khóa vĩnh viễn.
+      if (!statusRetry) {
+        statusRetry = true;
+        setTimeout(() => { statusRetry = false; readStatus(true); }, 1200);
+      }
+      return null;
+    }
     const st = {
       year: v.getUint16(0, true),
       month: v.getUint8(2),          // 0-11
@@ -163,9 +173,11 @@ async function readStatus(quiet = false) {
       addLog('Giờ thiết bị: ' + st.year + '-' + String(st.month + 1).padStart(2, '0') +
         '-' + String(st.mday).padStart(2, '0') + ' ' + String(st.hour).padStart(2, '0') +
         ':' + String(st.minute).padStart(2, '0') + ':' + String(st.second).padStart(2, '0'), '⇓');
-      // chế độ dev: hiện độ dài gói để chẩn đoán máy trả gói thiếu byte
-      if (new URLSearchParams(window.location.search).get('debug') === 'true')
-        addLog('Gói trạng thái: ' + v.byteLength + ' byte', '⇓');
+      // Độ dài gói + phiên bản: in LUÔN (không chỉ chế độ dev) vì đây là thứ
+      // quyết định các cổng kiểm tra tính năng — có nó thì mọi báo lỗi kiểu
+      // «máy v1.7 mà không chỉnh được pin» đọc log là biết ngay nguyên nhân.
+      addLog('Gói trạng thái: ' + v.byteLength + ' byte' +
+        (st.fwVer !== null ? ', máy báo v' + st.fwVer : ', máy KHÔNG báo phiên bản'), '⇓');
     }
     // Phiên bản thiết bị tự khai (fw >= 1.5) — đặt TRƯỚC các cổng kiểm tra
     // bên dưới vì chúng gọi fwAtLeast() đọc biến này.
@@ -181,27 +193,35 @@ async function readStatus(quiet = false) {
       const chk = document.getElementById('hourlyFullCHK');
       if (chk) chk.checked = st.hourlyFull !== 0;
     }
-    // «Hiển thị pin» cần fw >= 1.7 (0x9e). Gate theo phiên bản thiết bị tự
-    // khai ([15][16]) thay vì độ dài gói: có máy v1.7 thực địa trả gói thiếu
-    // byte [17] — dựa độ dài sẽ khóa nhầm radio dù máy vẫn nhận 0x9e tốt.
+    // Cổng kiểm tra tính năng theo phiên bản — FAIL-OPEN khi KHÔNG đọc được
+    // phiên bản (gói ngắn / firmware chưa tự khai): chỉ KHOÁ khi biết CHẮC máy
+    // cũ hơn mức yêu cầu. Trước đây fail-closed nên máy v1.7 thực địa nào trả
+    // gói thiếu byte là bị khoá vĩnh viễn dù vẫn nhận lệnh tốt. Gửi lệnh lạ
+    // cho firmware cũ là vô hại (handler bỏ qua opcode không biết).
+    // Hint kèm luôn thứ đọc được để lần báo lỗi sau không phải đoán.
     {
-      const ok = fwAtLeast(1, 7);
+      const ok = fwAtLeast(1, 7) || st.fwVer === null;
       document.querySelectorAll('input[name="battStyle"]').forEach(r => { r.disabled = !ok; });
       const h = document.getElementById('battStyleHint');
-      if (h) h.textContent = ok ? 'Thiết bị vẽ lại ngay khi đổi.' : 'Cần firmware ≥ 1.7 — hãy cập nhật ở mục OTA.';
-      if (ok && st.battStyle !== null && st.battStyle <= 2) {
+      if (h) h.textContent = fwAtLeast(1, 7) ? 'Thiết bị vẽ lại ngay khi đổi.'
+        : st.fwVer === null
+          ? 'Máy không báo phiên bản (gói ' + v.byteLength + ' byte) — vẫn cho chỉnh; cần firmware ≥ 1.7 mới có tác dụng.'
+          : 'Cần firmware ≥ 1.7 — máy đang chạy v' + st.fwVer + ', hãy cập nhật ở mục OTA.';
+      if (st.battStyle !== null && st.battStyle <= 2) {
         const rb = document.querySelector(`input[name="battStyle"][value="${st.battStyle}"]`);
         if (rb) rb.checked = true;
       }
     }
-    // «Định dạng giờ» 12h/24h cần fw >= 1.8 (0x90 + tham số) — gate theo
-    // phiên bản tự khai như trên; giá trị hiện tại ở byte [18] (gói 19B)
+    // «Định dạng giờ» 12h/24h cần fw >= 1.8 (0x90 + tham số) — cùng quy tắc
     {
-      const ok = fwAtLeast(1, 8);
+      const ok = fwAtLeast(1, 8) || st.fwVer === null;
       document.querySelectorAll('input[name="timeFmt"]').forEach(r => { r.disabled = !ok; });
       const h = document.getElementById('timeFmtHint');
-      if (h) h.textContent = ok ? 'Thiết bị vẽ lại ngay khi đổi.' : 'Cần firmware ≥ 1.8 — hãy cập nhật ở mục OTA.';
-      if (ok && st.timeFmt !== null && st.timeFmt <= 1) {
+      if (h) h.textContent = fwAtLeast(1, 8) ? 'Thiết bị vẽ lại ngay khi đổi.'
+        : st.fwVer === null
+          ? 'Máy không báo phiên bản (gói ' + v.byteLength + ' byte) — vẫn cho chỉnh; cần firmware ≥ 1.8 mới có tác dụng.'
+          : 'Cần firmware ≥ 1.8 — máy đang chạy v' + st.fwVer + ', hãy cập nhật ở mục OTA.';
+      if (st.timeFmt !== null && st.timeFmt <= 1) {
         const rb = document.querySelector(`input[name="timeFmt"][value="${st.timeFmt}"]`);
         if (rb) rb.checked = true;
       }
