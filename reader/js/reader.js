@@ -23,16 +23,16 @@ const EPD_CHAR = '62750002-d828-918d-fb46-b6c11c675aec';
 // ~1.8MB. Mục lục trên máy tối đa ~2000 trang nên sách CHỮ còn bị trần
 // 1900 trang x cỡ trang ước lượng theo font/hướng đang chọn.
 const BOOK_IDX_OFF = 0x1000;
-const BOOK_DATA_OFF = 0x3000;
-const MAX_PAGES_PART = 500;
+const BOOK_DATA_OFF = 0x5000;   // mục lục 4 sector (fw r1.0+: 4000 trang)
+const MAX_PAGES_PART = 900;     // truyện tranh: chip 2MB chứa ~350 trang/phần
 let devFlashBytes = 512 * 1024;  // mặc định chip chuẩn; cập nhật khi nhận flash=
 function storeDataCap() {
   const end = devFlashBytes - 2 * 4096;  // 2 sector hệ thống trên đỉnh chip
   return Math.max(0, end - 0x39000 - BOOK_DATA_OFF - 4096);  // chừa 1 sector lề
 }
 function textPartCap() {
-  const [cpl, lpp] = previewMetric();  // trần mục lục ~2000 trang (chừa lề 1900)
-  return Math.min(storeDataCap(), 1900 * cpl * lpp);
+  const [cpl, lpp] = previewMetric();  // trần mục lục 4000 trang (chừa lề 3900)
+  return Math.min(storeDataCap(), 3900 * cpl * lpp);
 }
 const PLANE_SIZE = 15000; // 400x300 / 8
 
