@@ -30,6 +30,7 @@ const EpdCmd = {
   IMG_SLOT: 0x27, // 3 khe ảnh (fw >= 1.5): [01 slot] mở khe / [02] chốt / [03 auto interval]
   DARK_BOOST: 0x28, // [0/1] chữ đậm cho màn lô in nhạt (ép 0°C khi làm mới toàn màn)
   BATT_STYLE: 0x29, // [0/1/2] hiển thị pin: chỉ icon / phần trăm / điện áp (fw >= 1.9)
+  CUSTOM_BG: 0x2B, // [0..3] ảnh nền «Tự thiết kế»: 0 tắt, 1-3 = khe ảnh (4.2 >= 2.4)
   TIME_FMT: 0x2A, // [0/1] định dạng giờ: 24h / 12h (BWR >= 2.1, 4 màu >= 3.0, 7.5" V1 >= 0.3)
 
   WRITE_IMG: 0x30, // v1.6
@@ -751,6 +752,10 @@ function handleNotify(value, idx) {
           : /^DIY-7_5V-/.test(devNm) ? '0.3' : '2.1');
       // icon «Tự thiết kế» 2 mặt (đen + ĐỎ): chỉ màn BA MÀU — 4.2" BWR >= 2.3,
       // 7.5" V1 >= 0.5. Bản 4 MÀU (DIY-4_2C) và CC2640 chưa có.
+      // ẢNH NỀN toàn màn cho «Tự thiết kế»: chỉ 4.2" ba màu từ v2.4 (dùng
+      // lại khe ảnh 32KB; bản 7.5"/4 màu không có khe nên không hỗ trợ)
+      window.__fwBg = !/^DIY-(7_5|4_2C)/.test(devNm) && FwCheck.atLeast('2.4');
+      if (window.refreshModeGallery) window.refreshModeGallery();
       window.__fwIconRed = /^DIY-7_5V-/.test(devNm) ? FwCheck.atLeast('0.5')
         : (devNm.indexOf('DIY-4_2C') === 0 || /^DIY-7_5-/.test(devNm)) ? false
         : FwCheck.atLeast('2.3');

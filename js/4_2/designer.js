@@ -30,6 +30,7 @@
   let st = { widgets: [], frame: 0, t1: '', t2: '' }; // st.icon = {w,h,b64} when an icon image was chosen
   let sel = -1, canvas, ctx, dragOff = null;
   let iconImg = null; // offscreen canvas cache built from st.icon
+  let bgImg = null;   // ảnh nền (chỉ để xem trước trên web; máy đọc từ khe ảnh)
 
   // Nap bo cuc da luu. KEP size ve khoang hop le cua tung loai: bo cuc cu
   // (hoac cua may khac neu ai do dung chung trinh duyet) co the mang size
@@ -204,6 +205,11 @@
 
   function renderLayout(x, now, withSelection) {
     x.fillStyle = '#f6f4ec'; x.fillRect(0, 0, 400, 300);
+    // ảnh nền toàn màn (nếu đã đặt) — vẽ trước, widget nằm đè lên
+    if (st.bgPrev) {
+      if (!bgImg) { bgImg = new Image(); bgImg.onload = () => redraw(); bgImg.src = st.bgPrev; }
+      if (bgImg.complete && bgImg.naturalWidth) x.drawImage(bgImg, 0, 0, 400, 300);
+    }
     if (st.frame >= 1) { x.strokeStyle = pv.BK; x.lineWidth = 2; x.strokeRect(3, 3, 394, 294); }
     if (st.frame >= 2) x.strokeRect(7, 7, 386, 286);
     st.widgets.forEach(w => drawWidget(x, w, now));
@@ -353,6 +359,34 @@
     return out;
   }
 
+  // ---- ẢNH NỀN toàn màn (4.2" fw >= 2.4) ----
+  // Ảnh nền KHÔNG đi cùng bố cục mà nằm ở KHE ẢNH 32KB của thiết bị — chính
+  // đường truyền của mục «Truyền hình ảnh», nên nét và màu y hệt (400x300,
+  // đen + đỏ). Ở đây chỉ gửi ảnh vào khe rồi báo thiết bị dùng khe đó làm nền.
+  window.dsSetBackground = async function () {
+    if (!window.__fwBg) {
+      alert('Máy chưa hỗ trợ ảnh nền (cần firmware 4.2" từ v2.4).');
+      return;
+    }
+    const src = document.getElementById('canvas');
+    if (!src || !src.width) { alert('Chưa có ảnh trong mục «Truyền hình ảnh».'); return; }
+    if (!confirm('Dùng ảnh đang có làm NỀN của thiết kế?\n\nẢnh sẽ được gửi vào khe 3 của thiết bị (ảnh cũ trong khe 3 bị thay).')) return;
+    if (typeof sendimg !== 'function') { alert('Không tìm thấy chức năng gửi ảnh.'); return; }
+    await sendimg(2);                       // khe 3
+    if (!await write(EpdCmd.CUSTOM_BG, [3])) return;
+    st.bg = 3;
+    st.bgPrev = src.toDataURL('image/png'); // chỉ để xem trước trên web
+    bgImg = null;
+    save(); redraw();
+    addLog('Đã đặt ảnh nền cho «Tự thiết kế» — bấm «Gửi lên thiết bị» để xếp pin/giờ lên trên.');
+  };
+
+  window.dsClearBackground = async function () {
+    st.bg = 0; st.bgPrev = null; bgImg = null; save(); redraw();
+    if (window.__fwBg) await write(EpdCmd.CUSTOM_BG, [0]);
+    addLog('Đã bỏ ảnh nền của thiết kế.');
+  };
+
   window.dsIconFromCanvas = function () {
     const src = document.getElementById('canvas');
     if (!src || !src.width || !src.height) { alert('Chưa có ảnh trong mục «Truyền hình ảnh».'); return; }
@@ -455,6 +489,8 @@
       }
       addLog("Icon đã gửi xong (thiết bị báo lại 'icon=done').");
     }
+    // nhắc thiết bị dùng (hoặc bỏ) khe ảnh làm nền trước khi nhận bố cục
+    if (window.__fwBg) await write(EpdCmd.CUSTOM_BG, [st.bg || 0]);
     const enc = new TextEncoder();
     const t1 = enc.encode(st.t1), t2 = enc.encode(st.t2);
     if (t1.length > 47 || t2.length > 47) {
