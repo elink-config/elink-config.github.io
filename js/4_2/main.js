@@ -153,7 +153,9 @@ async function write(cmd, data, withResponse = true) {
     if (data instanceof Uint8Array) data = Array.from(data);
     payload.push(...data)
   }
-  addLog(bytes2hex(payload), '⇑');
+  // goi anh 0x30 KHONG log hex tung goi (246B -> chuoi ~500 ky tu, ~250
+  // goi/anh lam nghen dien thoai yeu; tien do da co o thanh trang thai)
+  if (cmd !== EpdCmd.WRITE_IMG) addLog(bytes2hex(payload), '⇑');
   try {
     if (withResponse)
       await epdCharacteristic.writeValueWithResponse(Uint8Array.from(payload));
@@ -195,7 +197,8 @@ async function writeImage(data, step = 'bw') {
   const interleavedCount = document.getElementById('interleavedcount').value;
   const count = Math.ceil(data.length / chunkSize);
   let chunkIdx = 0;
-  let noReplyCount = interleavedCount;
+  let noReplyCount = 0;  // 8 gói ĐẦU ép có xác nhận: thiết bị có thể còn
+                         // bận (erase/abort render) — vào nhịp rồi mới thả
 
   for (let i = 0; i < data.length; i += chunkSize) {
     const currentTime = (new Date().getTime() - startTime) / 1000.0;
@@ -205,11 +208,14 @@ async function writeImage(data, step = 'bw') {
       (step == 'bw' ? 0x0F : 0x00) | (i == 0 ? 0x00 : 0xF0),
       ...data.slice(i, i + chunkSize),
     ];
-    const useReply = noReplyCount <= 0;
+    const useReply = chunkIdx < 8 || noReplyCount <= 0;
     // gói lỗi: thử lại MỘT lần bằng gói có xác nhận rồi mới bỏ cuộc — trước
     // đây một gói rơi là ảnh hỏng trong im lặng
     let ok = await write(EpdCmd.WRITE_IMG, payload, useReply);
-    if (!ok) ok = await write(EpdCmd.WRITE_IMG, payload, true);
+    // gói lỗi: NGHỈ cho thiết bị thở rồi thử lại bằng gói có xác nhận,
+    // tối đa 2 lần — độ bền ưu tiên hơn tốc độ (yêu cầu user)
+    if (!ok) { await sleep(250); ok = await write(EpdCmd.WRITE_IMG, payload, true); }
+    if (!ok) { await sleep(500); ok = await write(EpdCmd.WRITE_IMG, payload, true); }
     if (!ok) {
       addLog(`Truyền ảnh thất bại ở khối ${chunkIdx + 1}/${count} — hãy bấm gửi lại.`);
       return false;
@@ -411,6 +417,8 @@ async function sendimg(slot = 0) {
   }
 
   startTime = new Date().getTime();
+  window.__imgSending = true;  // chặn retry fw= ghi lại CCCD giữa phiên gửi
+  try {
   const status = document.getElementById("status");
   status.parentElement.style.display = "block";
 
@@ -496,6 +504,7 @@ async function sendimg(slot = 0) {
   setTimeout(() => {
     status.parentElement.style.display = "none";
   }, 5000);
+  } finally { window.__imgSending = false; }
 }
 
 function downloadDataArray() {
@@ -862,6 +871,7 @@ async function connect() {
     for (let i = 0; i < 3; i++) {
       await sleep(1200);
       if (FwCheck.atLeast('0.0')) return;  // đã nhận fw= (deviceVer != null)
+      if (window.__imgSending) return;     // đang gửi ảnh: cấm ghi lại CCCD
       if (!epdCharacteristic || !gattServer || !gattServer.connected) return;
       addLog('(Chưa nhận phiên bản firmware — yêu cầu thiết bị gửi lại...)');
       try {
