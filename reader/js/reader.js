@@ -882,8 +882,9 @@ function updateBookUI() {
   const s = document.getElementById('bookSummary');
   if (book.type === 'text') {
     const total = book.parts.reduce((n, p) => n + p.bytes.length, 0);
-    const estPages = Math.ceil(total / 1000);
-    s.textContent = `Sách chữ: ${fmtKB(total)}, ước lượng ~${estPages} trang màn hình` +
+    // số trang TÍNH ĐÚNG theo font + hướng đang chọn (bằng bộ ngắt dòng của máy)
+    const pages = book.parts.reduce((n, p) => n + countTextPages(p.text), 0);
+    s.textContent = `Sách chữ: ${fmtKB(total)}, ${pages} trang màn hình` +
       (book.parts.length > 1 ? ` — chia ${book.parts.length} phần, mỗi lần gửi một phần.` : '.');
   } else {
     s.textContent = `Truyện tranh: ${comicPages.length} trang` +
@@ -907,24 +908,92 @@ function currentPart() {
   return book.parts[Math.min(i, book.parts.length - 1)];
 }
 
-// phân trang XEM TRƯỚC (ước lượng — máy tự phân trang thật bằng font vnXX)
+/* Phân trang GIỐNG HỆT MÁY: dùng bảng bước tiến từng ký tự của chính font
+ * trên thiết bị (js/font_metrics.js — trích từ mảng u8g2 trong fonts.c) và
+ * lặp lại thuật toán reader_wrap_line: ghép từ tới khi quá bề rộng thì chốt
+ * dòng ở dấu cách gần nhất; từ dài hơn cả dòng thì bẻ cứng theo ký tự; dòng
+ * trống KHÔNG chiếm hàng. Nhờ vậy số trang xem trước = số trang máy báo.
+ * (Trước đây ước lượng "ký tự/dòng" cố định — sai nhiều vì font tỉ lệ:
+ * chữ 'i' 3px còn 'M' 9px.) */
+function fontIdx() {
+  return Math.min(2, Math.max(0, parseInt(document.getElementById('fontSize').value) || 0));
+}
+function textAreaWidth() { return previewRot() ? 284 : 384; }
+
+// ngắt một đoạn văn thành các dòng vừa bề rộng maxW
+function wrapParagraph(chars, adv, fallback, maxW) {
+  const out = [];
+  let start = 0;
+  while (start < chars.length) {
+    let w = 0, lastSpace = -1, cut = -1;
+    for (let i = start; i < chars.length; i++) {
+      const c = chars[i];
+      const cw = adv[c.codePointAt(0)] ?? fallback;
+      if (w + cw > maxW) {           // ký tự này làm tràn dòng
+        if (lastSpace > start) {     // chốt ở dấu cách gần nhất (bỏ dấu cách)
+          out.push(chars.slice(start, lastSpace).join(''));
+          cut = lastSpace + 1;
+        } else {                     // từ dài hơn cả dòng: bẻ cứng
+          const end = Math.max(start + 1, i);
+          out.push(chars.slice(start, end).join(''));
+          cut = end;
+        }
+        break;
+      }
+      if (c === ' ') lastSpace = i;
+      w += cw;
+    }
+    if (cut < 0) { out.push(chars.slice(start).join('')); break; }  // hết đoạn
+    start = cut;
+  }
+  return out;
+}
+
+// tổng số dòng của cả text (đếm nhanh, không dựng chuỗi) — dùng cho số trang
+function countTextLines(text) {
+  const adv = FONT_ADV[fontIdx()], fb = FONT_ADV_FALLBACK[fontIdx()];
+  const maxW = textAreaWidth();
+  let lines = 0;
+  for (const para of text.split('\n')) {
+    if (!para) continue;             // dòng trống không chiếm hàng (như máy)
+    const chars = Array.from(para);
+    let start = 0;
+    while (start < chars.length) {
+      let w = 0, lastSpace = -1, cut = -1;
+      for (let i = start; i < chars.length; i++) {
+        const c = chars[i];
+        const cw = adv[c.codePointAt(0)] ?? fb;
+        if (w + cw > maxW) {
+          cut = lastSpace > start ? lastSpace + 1 : Math.max(start + 1, i);
+          break;
+        }
+        if (c === ' ') lastSpace = i;
+        w += cw;
+      }
+      lines++;
+      if (cut < 0) break;
+      start = cut;
+    }
+  }
+  return lines;
+}
+
+function countTextPages(text) {
+  return Math.max(1, Math.ceil(countTextLines(text) / previewMetric()[1]));
+}
+
 function buildPreviewTextPages(text) {
-  const [cpl, lpp] = previewMetric();
+  const lpp = previewMetric()[1];
+  const adv = FONT_ADV[fontIdx()], fb = FONT_ADV_FALLBACK[fontIdx()];
+  const maxW = textAreaWidth();
   const pages = [];
   let lines = [];
   for (const para of text.split('\n')) {
-    let rest = para;
-    do {
-      let line = rest.slice(0, cpl);
-      if (rest.length > cpl) {
-        const sp = line.lastIndexOf(' ');
-        if (sp > cpl / 2) line = line.slice(0, sp);
-      }
+    if (!para) continue;  // dòng trống không chiếm hàng (như máy)
+    for (const line of wrapParagraph(Array.from(para), adv, fb, maxW)) {
       lines.push(line);
-      rest = rest.slice(line.length).replace(/^ /, '');
       if (lines.length === lpp) { pages.push(lines); lines = []; }
-      if (pages.length > 400) return pages; // đủ để xem trước
-    } while (rest.length);
+    }
   }
   if (lines.length) pages.push(lines);
   return pages;
@@ -956,11 +1025,11 @@ async function renderPreview() {
     const lines = previewTextPages[previewPage] || [];
     const [, , px, lh, y0] = previewMetric();
     ctx.fillStyle = 'black';
-    ctx.font = px + 'px sans-serif';
+    ctx.font = px + 'px Tahoma, "Segoe UI", sans-serif';  // đúng font máy dùng
     lines.forEach((l, i) => ctx.fillText(l, 8, y0 + i * lh, W - 16));
     ctx.fillRect(8, H - 20, W - 16, 1);
     ctx.font = '10px monospace';
-    ctx.fillText(`${previewPage + 1}/${previewTextPages.length} (xem trước ước lượng)`, 8, H - 6);
+    ctx.fillText(`${previewPage + 1}/${previewTextPages.length}`, 8, H - 6);
     label.textContent = `${previewPage + 1}/${previewTextPages.length}`;
   } else {
     const part = currentPart();
@@ -1114,8 +1183,9 @@ async function sendBook() {
       // sách chữ: gửi nội dung chiếm 2..80%, máy phân trang 80..99%
       await sendChunks(part.bytes, BOOK_DATA_OFF, 'nội dung', 2, 78);
       dataLen = part.bytes.length;
-      // ước lượng byte EVN1/trang theo cỡ chữ đang chọn (19x53 / 16x48 / 14x41)
-      idxEstPages = Math.max(1, Math.round(dataLen / [1000, 770, 570][previewMetric()[2] === 12 ? 0 : previewMetric()[2] === 14 ? 1 : 2]));
+      // số trang máy SẼ phân (tính bằng đúng bộ ngắt dòng của máy) — thanh
+      // tiến độ 80..99% nhờ vậy chạy khớp thực tế
+      idxEstPages = countTextPages(part.text);
     } else {
       // truyện tranh: nén 2..30%, mục lục 30..34%, dữ liệu 34..95%
       const blobs = [];
