@@ -388,6 +388,11 @@
   };
 
   window.dsIconFromCanvas = function () {
+    // Máy hỗ trợ ảnh nền (4.2" fw >= 2.4): dùng luôn đường NỀN TOÀN MÀN — ảnh
+    // giữ nguyên 400x300 đen+đỏ như mục «Truyền hình ảnh». Đường icon cũ (tối đa
+    // 176px, nhét trong 1 sector 4KB) chỉ còn dùng cho firmware/màn chưa hỗ trợ.
+    if (window.__fwBg) return window.dsSetBackground();
+
     const src = document.getElementById('canvas');
     if (!src || !src.width || !src.height) { alert('Chưa có ảnh trong mục «Truyền hình ảnh».'); return; }
     // Trần kích thước: firmware mới (icon 2 mặt) cho tới 176px; firmware cũ
