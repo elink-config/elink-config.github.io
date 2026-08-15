@@ -210,6 +210,10 @@ function handleNotify(value, idx) {
     const cap = parseInt(id.substring(4, 6), 16);
     const kb = cap > 10 && cap < 32 ? (1 << cap) / 1024 : 0;
     addLog(`Chip flash: ${v}, ${kb >= 1024 ? (kb / 1024) + 'MB' : kb + 'KB'} (JEDEC ${id})`);
+    if (kb > 0 && kb < 512) {
+      addLog('⚠ Chip flash ' + kb + 'KB — KHÔNG đủ chỗ cho kho sách (cần 512KB, ví dụ board 6TP). ' +
+        'Trên board này firmware đọc sách giữ được kích hoạt/cấu hình nhưng KHÔNG nhận sách được.');
+    }
   } else if (msg === 'locked') {
     addLog('⚠ Thiết bị chưa kích hoạt — liên hệ nhà cung cấp.');
   }
@@ -260,10 +264,7 @@ async function preConnect() {
   resetVariables();
   try {
     const debugMode = new URLSearchParams(window.location.search).get('debug') === 'true';
-    bleDevice = await navigator.bluetooth.requestDevice(debugMode ? {
-      acceptAllDevices: true,
-      optionalServices: [EPD_SERVICE],
-    } : {
+    bleDevice = await navigator.bluetooth.requestDevice({ // ?debug=true vẫn LỌC THEO TÊN thiết bị (yêu cầu user) — hết acceptAllDevices
       // CHỈ máy đọc sách DIY-4_2R-xxxx (yêu cầu user) — không hiện máy lịch
       // DIY-4_2 chuẩn nữa; cần quét mọi thiết bị thì thêm ?debug=true
       filters: [{ namePrefix: 'DIY-4_2R' }],
