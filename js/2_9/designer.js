@@ -339,6 +339,44 @@
 
   /* ---- gửi (0x9b) ---- */
 
+  // ---- kho thiết kế (js/diy_store.js) + ảnh từ mục «Truyền hình ảnh» ----
+
+  window.dsGetState = function () {
+    try { return JSON.parse(JSON.stringify(st)); } catch (e) { return null; }
+  };
+
+  window.dsSetState = function (s) {
+    if (!s || !Array.isArray(s.widgets)) return false;
+    st = s;
+    st.frame = Number(st.frame) || 0;
+    st.widgets = st.widgets.filter(w => TYPES[w.type]).map(w => {
+      const max = TYPES[w.type].sizes - 1;
+      w.size = Math.max(0, Math.min(max, w.size | 0));
+      return w;
+    });
+    iconCache = {};
+    iconEl = null;
+    if (typeof loadIconEl === 'function') loadIconEl();
+    if (typeof clampW === 'function') st.widgets.forEach(clampW);
+    save(); redraw();
+    return true;
+  };
+
+  // Ảnh trong mục «Truyền hình ảnh» (đã cắt/chỉnh/dither/vẽ tay) -> ảnh của
+  // thiết kế: mọi tùy chỉnh ảnh dùng chung một chỗ, không còn nút tải ảnh
+  // riêng trong designer. Giữ nguyên ảnh gốc (dataURL) — designer tự chuyển
+  // sang bitmap theo cỡ đã chọn khi gửi, y như luồng cũ.
+  window.dsIconFromCanvas = function () {
+    const src = document.getElementById('canvas');
+    if (!src || !src.width || !src.height) { alert('Chưa có ảnh trong mục «Truyền hình ảnh».'); return; }
+    st.icon = src.toDataURL('image/png');
+    iconCache = {};
+    if (typeof loadIconEl === 'function') loadIconEl();
+    if (!st.widgets.some(w => w.type === 10)) dsAdd(10);
+    save(); redraw();
+    addLog('Đã lấy ảnh vào thiết kế (' + src.width + 'x' + src.height + ') — «Đổi cỡ» để chọn kích thước hiển thị.');
+  };
+
   window.dsUpload = async function () {
     if (!st.widgets.length) { alert('Thiết kế còn trống — hãy thêm ít nhất một thành phần.'); return; }
 

@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  const VER = '20260813i'; // cache-buster, keep in sync with index.html
+  const VER = '20260813j'; // cache-buster, keep in sync with index.html
 
   const EPD42_SERVICE = '62750001-d828-918d-fb46-b6c11c675aec';
   const HM213_SERVICE = '0000ff00-0000-1000-8000-00805f9b34fb';
@@ -24,7 +24,7 @@
       fragment: 'apps/4_2.html',
       family: '4_2',
       scripts: ['js/dithering.js', 'js/paint.js', 'js/crop.js',
-        'js/4_2/mode_preview.js', 'js/4_2/designer.js', 'js/4_2/main.js'],
+        'js/4_2/mode_preview.js', 'js/4_2/designer.js', 'js/diy_store.js', 'js/4_2/main.js'],
     },
     '4_2c': {
       label: '4.2" BỐN MÀU',
@@ -32,7 +32,7 @@
       fragment: 'apps/4_2c.html',
       family: '4_2',
       scripts: ['js/dithering.js', 'js/paint.js', 'js/crop.js',
-        'js/4_2/mode_preview.js', 'js/4_2/designer.js', 'js/4_2/main.js'],
+        'js/4_2/mode_preview.js', 'js/4_2/designer.js', 'js/diy_store.js', 'js/4_2/main.js'],
     },
     '7_5': {
       label: '7.5"',
@@ -40,7 +40,7 @@
       fragment: 'apps/7_5.html',
       family: '4_2',
       scripts: ['js/dithering.js', 'js/paint.js', 'js/crop.js',
-        'js/4_2/mode_preview.js', 'js/4_2/designer.js', 'js/4_2/main.js'],
+        'js/4_2/mode_preview.js', 'js/4_2/designer.js', 'js/diy_store.js', 'js/4_2/main.js'],
     },
     '2_13': {
       label: '2.13" (212×104)',
@@ -48,14 +48,14 @@
       fragment: 'apps/2_13.html',
       scripts: ['js/dithering.js', 'js/paint.js', 'js/crop.js',
         'js/2_13/common.js',
-        'js/2_13/designer.js', 'js/2_13/mode_preview.js', 'js/2_13/main.js'],
+        'js/2_13/designer.js', 'js/diy_store.js', 'js/2_13/mode_preview.js', 'js/2_13/main.js'],
     },
     '2_9': {
       label: '2.9" (296×128)',
       sub: 'DA14585 — 2.9" (296×128 BWR): kết nối, cấu hình và truyền hình ảnh',
       fragment: 'apps/2_9.html',
       scripts: ['js/dithering.js', 'js/paint.js', 'js/crop.js',
-        'js/2_9/designer.js', 'js/2_9/mode_preview.js', 'js/2_9/main.js'],
+        'js/2_9/designer.js', 'js/diy_store.js', 'js/2_9/mode_preview.js', 'js/2_9/main.js'],
     },
     'dlg': {
       label: 'Đồng hồ DLG-CLOCK',

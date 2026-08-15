@@ -91,8 +91,7 @@
 				<button type="button" class="secondary" onclick="dsAdd(7)">+ Lịch tháng</button>
 				<button type="button" class="secondary" onclick="dsAdd(8)">+ Chữ 1</button>
 				<button type="button" class="secondary" onclick="dsAdd(9)">+ Chữ 2</button>
-				<button type="button" class="secondary" onclick="document.getElementById('dsIconFile').click()">+ Icon (chọn ảnh)</button>
-				<input type="file" id="dsIconFile" accept=".png,.jpg,.jpeg,.webp,.bmp" style="display:none" onchange="dsIconFileChange(this)">
+				<button type="button" class="secondary" onclick="dsAdd(10)">+ Icon (lấy từ mục Truyền hình ảnh)</button>
 			</div>
 			<canvas id="designerCanvas" width="400" height="300" class="designer-canvas"></canvas>
 			<div class="flex-container">
@@ -205,6 +204,7 @@
 					<button id="sendimgbutton" type="button" class="primary" onclick="sendimg(0)">Gửi ảnh khe 1</button>
 					<button id="sendimgbutton2" type="button" class="primary" onclick="sendimg(1)">Gửi ảnh khe 2</button>
 					<button id="sendimgbutton3" type="button" class="primary" onclick="sendimg(2)">Gửi ảnh khe 3</button>
+					<button type="button" class="secondary" onclick="dsIconFromCanvas()">Thêm ảnh vào thiết kế</button>
 				</div>
 			</div>
 			<!-- Tự đổi ảnh (fw >= 1.5): bật được khi đã có >= 2 khe ảnh trên thiết bị -->

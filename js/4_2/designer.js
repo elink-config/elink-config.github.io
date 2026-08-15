@@ -278,6 +278,67 @@
 
   /* ---- upload ---- */
 
+  // ---- kho thiết kế (js/diy_store.js) + ảnh từ mục «Truyền hình ảnh» ----
+
+  window.dsGetState = function () {
+    try { return JSON.parse(JSON.stringify(st)); } catch (e) { return null; }
+  };
+
+  window.dsSetState = function (s) {
+    if (!s || !Array.isArray(s.widgets)) return false;
+    st = s;
+    st.frame = Number(st.frame) || 0;
+    st.widgets = st.widgets.filter(w => TYPES[w.type]).map(w => {
+      const max = TYPES[w.type].sizes - 1;
+      w.size = Math.max(0, Math.min(max, w.size | 0));
+      return w;
+    });
+    iconImg = null;
+    if (typeof clampW === 'function') st.widgets.forEach(clampW);
+    save(); redraw();
+    return true;
+  };
+
+  // Ảnh trong mục «Truyền hình ảnh» (đã cắt/chỉnh/dither/vẽ tay) -> icon 1-bit
+  // của thiết kế: mọi tùy chỉnh ảnh dùng chung một chỗ, không còn nút tải ảnh
+  // riêng trong designer. Icon trên máy hiện VẼ MỘT MÀU ĐEN (firmware lưu ảnh
+  // 1 bit/điểm) nên vùng đỏ sẽ thành đen — có cảnh báo khi ảnh có màu đỏ.
+  window.dsIconFromCanvas = function () {
+    const src = document.getElementById('canvas');
+    if (!src || !src.width || !src.height) { alert('Chưa có ảnh trong mục «Truyền hình ảnh».'); return; }
+    const scale = Math.min(1, 128 / src.width, 128 / src.height);
+    const w = Math.max(1, Math.round(src.width * scale));
+    const h = Math.max(1, Math.round(src.height * scale));
+    const oc = document.createElement('canvas');
+    oc.width = w; oc.height = h;
+    const og = oc.getContext('2d');
+    og.imageSmoothingEnabled = scale < 1;   // thu nhỏ mới nội suy; đúng cỡ thì sao y
+    og.imageSmoothingQuality = 'high';
+    og.fillStyle = '#fff'; og.fillRect(0, 0, w, h);
+    og.drawImage(src, 0, 0, w, h);
+    const d = og.getImageData(0, 0, w, h).data;
+    const stride = (w + 7) >> 3;
+    const bits = new Uint8Array(stride * h);
+    let redPx = 0;
+    for (let yy = 0; yy < h; yy++) {
+      for (let xx = 0; xx < w; xx++) {
+        const i = (yy * w + xx) * 4;
+        const r = d[i], g = d[i + 1], b = d[i + 2];
+        const isRed = r > 110 && r - g > 55 && r - b > 55;
+        if (isRed) redPx++;
+        const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+        if (d[i + 3] > 127 && (isRed || lum < 140)) bits[yy * stride + (xx >> 3)] |= 0x80 >> (xx & 7);
+      }
+    }
+    st.icon = { w: w, h: h, b64: btoa(String.fromCharCode.apply(null, bits)) };
+    iconImg = null;
+    if (!st.widgets.some(wd => wd.type === 10)) dsAdd(10);
+    st.widgets.forEach(clampW);
+    save(); redraw();
+    addLog('Đã lấy ảnh vào thiết kế: ' + w + 'x' + h + ' (' + bits.length + ' byte).');
+    if (redPx) addLog('Lưu ý: ảnh có màu đỏ — icon trong thiết kế chỉ vẽ được ĐEN, vùng đỏ sẽ thành đen.');
+  };
+
   window.dsUpload = async function () {
     if (!st.widgets.length) { alert('Thiết kế còn trống — hãy thêm ít nhất một thành phần.'); return; }
     // the icon travels first (chunked into its own flash sector); the

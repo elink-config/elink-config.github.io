@@ -101,8 +101,7 @@
 					<button type="button" class="secondary" onclick="dsAdd(9)">+ Chữ 2</button>
 					<button type="button" class="secondary" onclick="dsAdd(11)">+ Thứ</button>
 					<button type="button" class="secondary" onclick="dsAdd(12)">+ Ngày</button>
-					<input type="file" id="dsIconFile" accept="image/*" style="display:none" onchange="dsIconFile(this)">
-					<button type="button" class="secondary" onclick="document.getElementById('dsIconFile').click()">+ Ảnh…</button>
+					<button type="button" class="secondary" onclick="dsAdd(10)">+ Ảnh (lấy từ mục Truyền hình ảnh)</button>
 				</div>
 			</div>
 			<div class="canvas-container">
@@ -181,6 +180,7 @@
 					<button type="button" class="secondary" onclick="clearCanvas()">Xóa canvas</button>
 					<button type="button" class="secondary debug" onclick="downloadDataArray()">Tải mảng dữ liệu</button>
 					<button id="sendimgbutton" type="button" class="primary" onclick="sendimg()">Gửi hình ảnh</button>
+					<button type="button" class="secondary" onclick="dsIconFromCanvas()">Thêm ảnh vào thiết kế</button>
 					<button id="saveflashbutton" type="button" class="secondary" onclick="saveImageFlash()">Lưu ảnh vào flash</button>
 				</div>
 			</div>
