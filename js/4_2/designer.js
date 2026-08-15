@@ -131,6 +131,15 @@
     return out;
   }
 
+  // mặt ĐỎ của icon (chỉ có khi ảnh nguồn có màu đỏ) — firmware BWR mới vẽ
+  // được, máy cũ thì gộp vào mặt đen lúc gửi
+  function iconRedBits() {
+    if (!st.icon || !st.icon.r64) return null;
+    const raw = atob(st.icon.r64), out = new Uint8Array(raw.length);
+    for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+    return out;
+  }
+
   function iconImage() {
     if (iconImg) return iconImg;
     const bits = iconBits();
@@ -140,10 +149,13 @@
     oc.width = w; oc.height = h;
     const og = oc.getContext('2d');
     const id = og.createImageData(w, h);
+    const rbits = iconRedBits();
     for (let yy = 0; yy < h; yy++)
       for (let xx = 0; xx < w; xx++) {
-        if (bits[yy * stride + (xx >> 3)] & (0x80 >> (xx & 7))) {
-          const i = (yy * w + xx) * 4;
+        const bit = 0x80 >> (xx & 7), o = yy * stride + (xx >> 3), i = (yy * w + xx) * 4;
+        if (rbits && (rbits[o] & bit)) {          // điểm ĐỎ
+          id.data[i] = 192; id.data[i + 1] = 38; id.data[i + 2] = 31; id.data[i + 3] = 255;
+        } else if (bits[o] & bit) {               // điểm đen
           id.data[i] = 21; id.data[i + 1] = 21; id.data[i + 2] = 21; id.data[i + 3] = 255;
         }
       }
@@ -303,40 +315,104 @@
   // của thiết kế: mọi tùy chỉnh ảnh dùng chung một chỗ, không còn nút tải ảnh
   // riêng trong designer. Icon trên máy hiện VẼ MỘT MÀU ĐEN (firmware lưu ảnh
   // 1 bit/điểm) nên vùng đỏ sẽ thành đen — có cảnh báo khi ảnh có màu đỏ.
+  // Có điểm đỏ trong ảnh nguồn không (quyết định icon 1 hay 2 mặt)
+  function hasRed(src) {
+    const c = src.getContext('2d');
+    const d = c.getImageData(0, 0, src.width, src.height).data;
+    for (let i = 0; i < d.length; i += 4) {
+      if (d[i + 3] > 127 && d[i] > 110 && d[i] - d[i + 1] > 55 && d[i] - d[i + 2] > 55) return true;
+    }
+    return false;
+  }
+
+  // Thu nhỏ bằng TRUNG BÌNH VÙNG (mỗi điểm đích = trung bình khối điểm nguồn):
+  // giữ đúng sắc độ của ảnh đã dither, khác hẳn drawImage nội suy rồi cắt ngưỡng.
+  function boxAverage(src, w, h) {
+    const sw = src.width, sh = src.height;
+    const sd = src.getContext('2d').getImageData(0, 0, sw, sh).data;
+    const out = new Float32Array(w * h * 3);
+    const fx = sw / w, fy = sh / h;
+    for (let y = 0; y < h; y++) {
+      const y0 = Math.floor(y * fy), y1 = Math.max(y0 + 1, Math.floor((y + 1) * fy));
+      for (let x = 0; x < w; x++) {
+        const x0 = Math.floor(x * fx), x1 = Math.max(x0 + 1, Math.floor((x + 1) * fx));
+        let r = 0, g = 0, b = 0, n = 0;
+        for (let yy = y0; yy < y1 && yy < sh; yy++) {
+          for (let xx = x0; xx < x1 && xx < sw; xx++) {
+            const i = (yy * sw + xx) * 4, a = sd[i + 3] / 255;
+            r += sd[i] * a + 255 * (1 - a);
+            g += sd[i + 1] * a + 255 * (1 - a);
+            b += sd[i + 2] * a + 255 * (1 - a);
+            n++;
+          }
+        }
+        const o = (y * w + x) * 3;
+        out[o] = r / n; out[o + 1] = g / n; out[o + 2] = b / n;
+      }
+    }
+    return out;
+  }
+
   window.dsIconFromCanvas = function () {
     const src = document.getElementById('canvas');
     if (!src || !src.width || !src.height) { alert('Chưa có ảnh trong mục «Truyền hình ảnh».'); return; }
-    const scale = Math.min(1, 128 / src.width, 128 / src.height);
-    const w = Math.max(1, Math.round(src.width * scale));
-    const h = Math.max(1, Math.round(src.height * scale));
-    const oc = document.createElement('canvas');
-    oc.width = w; oc.height = h;
-    const og = oc.getContext('2d');
-    og.imageSmoothingEnabled = scale < 1;   // thu nhỏ mới nội suy; đúng cỡ thì sao y
-    og.imageSmoothingQuality = 'high';
-    og.fillStyle = '#fff'; og.fillRect(0, 0, w, h);
-    og.drawImage(src, 0, 0, w, h);
-    const d = og.getImageData(0, 0, w, h).data;
+    // Trần kích thước: firmware mới (icon 2 mặt) cho tới 176px; firmware cũ
+    // chỉ nhận 128px. Ảnh CÓ ĐỎ cần 2 mặt nên phải nhỏ hơn để vừa một sector
+    // flash 4096B: 8 + số_mặt * ceil(w/8) * h <= 4096.
+    const maxDim = window.__fwIconRed ? 176 : 128;
+    let scale = Math.min(1, maxDim / src.width, maxDim / src.height);
+    let w = Math.max(1, Math.round(src.width * scale));
+    let h = Math.max(1, Math.round(src.height * scale));
+    const planes = hasRed(src) && window.__fwIconRed ? 2 : 1;
+    while (w > 8 && h > 8 && 8 + planes * (((w + 7) >> 3) * h) > 4096) {
+      scale *= 0.94;
+      w = Math.max(1, Math.round(src.width * scale));
+      h = Math.max(1, Math.round(src.height * scale));
+    }
+    // Ảnh nguồn ĐÃ được dither thành các chấm: nếu thu nhỏ bằng nội suy rồi
+    // cắt ngưỡng thì chấm hòa thành xám và rơi hết về trắng (nét đứt, chữ mất).
+    // Cách đúng: lấy TRUNG BÌNH VÙNG để khôi phục sắc độ, rồi dither lại bằng
+    // khuếch tán sai số (Floyd–Steinberg) ở cỡ đích.
+    const avg = boxAverage(src, w, h);
     const stride = (w + 7) >> 3;
-    const bits = new Uint8Array(stride * h);
+    const bits = new Uint8Array(stride * h);      // mặt ĐEN
+    const rbits = new Uint8Array(stride * h);     // mặt ĐỎ
     let redPx = 0;
+    const PAL = planes === 2
+      ? [[255, 255, 255], [0, 0, 0], [200, 32, 26]]   // trắng / đen / ĐỎ
+      : [[255, 255, 255], [0, 0, 0]];                 // fw cũ: đỏ dồn về đen
     for (let yy = 0; yy < h; yy++) {
       for (let xx = 0; xx < w; xx++) {
-        const i = (yy * w + xx) * 4;
-        const r = d[i], g = d[i + 1], b = d[i + 2];
-        const isRed = r > 110 && r - g > 55 && r - b > 55;
-        if (isRed) redPx++;
-        const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-        if (d[i + 3] > 127 && (isRed || lum < 140)) bits[yy * stride + (xx >> 3)] |= 0x80 >> (xx & 7);
+        const o = (yy * w + xx) * 3;
+        const r = avg[o], g = avg[o + 1], b = avg[o + 2];
+        let best = 0, bestD = Infinity;
+        for (let p = 0; p < PAL.length; p++) {
+          const dr = r - PAL[p][0], dg = g - PAL[p][1], db = b - PAL[p][2];
+          const dist = dr * dr + dg * dg + db * db;
+          if (dist < bestD) { bestD = dist; best = p; }
+        }
+        if (best === 1) bits[yy * stride + (xx >> 3)] |= 0x80 >> (xx & 7);
+        else if (best === 2) { rbits[yy * stride + (xx >> 3)] |= 0x80 >> (xx & 7); redPx++; }
+        // khuếch tán sai số sang các điểm chưa xử lý
+        const er = r - PAL[best][0], eg = g - PAL[best][1], eb = b - PAL[best][2];
+        const push = (px, py, k) => {
+          if (px < 0 || px >= w || py >= h) return;
+          const q = (py * w + px) * 3;
+          avg[q] += er * k; avg[q + 1] += eg * k; avg[q + 2] += eb * k;
+        };
+        push(xx + 1, yy, 7 / 16); push(xx - 1, yy + 1, 3 / 16);
+        push(xx, yy + 1, 5 / 16); push(xx + 1, yy + 1, 1 / 16);
       }
     }
     st.icon = { w: w, h: h, b64: btoa(String.fromCharCode.apply(null, bits)) };
+    if (redPx) st.icon.r64 = btoa(String.fromCharCode.apply(null, rbits));
     iconImg = null;
     if (!st.widgets.some(wd => wd.type === 10)) dsAdd(10);
     st.widgets.forEach(clampW);
     save(); redraw();
-    addLog('Đã lấy ảnh vào thiết kế: ' + w + 'x' + h + ' (' + bits.length + ' byte).');
-    if (redPx) addLog('Lưu ý: ảnh có màu đỏ — icon trong thiết kế chỉ vẽ được ĐEN, vùng đỏ sẽ thành đen.');
+    addLog('Đã lấy ảnh vào thiết kế: ' + w + 'x' + h + ' (' + bits.length + ' byte/mặt' +
+           (planes === 2 ? ', 2 mặt đen+ĐỎ' : '') + ').');
+    if (redPx) addLog('Ảnh có ' + redPx + ' điểm ĐỎ — máy firmware mới vẽ được đỏ; máy cũ sẽ vẽ chúng thành đen.');
   };
 
   window.dsUpload = async function () {
@@ -345,13 +421,31 @@
     // layout upload afterwards switches the device to mode 20
     if (st.widgets.some(w => w.type === 10)) {
       if (!st.icon) { alert('Thiết kế có Icon nhưng chưa chọn ảnh cho nó.'); return; }
-      const bits = iconBits();
-      const chunk = Math.max(16, (Number(document.getElementById('mtusize').value) || 20) - 4);
-      addLog('Đang gửi icon ' + st.icon.w + 'x' + st.icon.h + ' (' + bits.length + ' byte, khối ' + chunk + ')...');
+      const black = iconBits();
+      const red = iconRedBits();
+      // 2 mặt chỉ gửi khi firmware biết đọc (BWR 4.2 >= 2.3 / 7.5 >= 0.5):
+      // máy cũ nhận mặt đen ĐÃ GỘP đỏ nên ảnh vẫn đủ nét, chỉ mất màu.
+      const twoPlane = !!(red && window.__fwIconRed);
+      let bits;
+      if (twoPlane) {
+        bits = new Uint8Array(black.length + red.length);
+        bits.set(black, 0); bits.set(red, black.length);
+      } else if (red) {
+        bits = new Uint8Array(black.length);
+        for (let i = 0; i < black.length; i++) bits[i] = black[i] | red[i];
+      } else {
+        bits = black;
+      }
+      const chunk = Math.max(16, (Number(document.getElementById('mtusize').value) || 20) - 5);
+      addLog('Đang gửi icon ' + st.icon.w + 'x' + st.icon.h +
+             (twoPlane ? ' (2 mặt đen+ĐỎ, ' : ' (') + bits.length + ' byte, khối ' + chunk + ')...');
+      const hdr = twoPlane ? 4 : 3;                 // [0x02,w,h,planes] | [0x00,w,h]
       const n0 = Math.min(chunk, bits.length);
-      const first = new Uint8Array(3 + n0);
-      first[0] = 0x00; first[1] = st.icon.w; first[2] = st.icon.h;
-      first.set(bits.slice(0, n0), 3);
+      const first = new Uint8Array(hdr + n0);
+      first[0] = twoPlane ? 0x02 : 0x00;
+      first[1] = st.icon.w; first[2] = st.icon.h;
+      if (twoPlane) first[3] = 2;
+      first.set(bits.slice(0, n0), hdr);
       if (!await write(EpdCmd.SET_ICON, first)) return;
       for (let off = n0; off < bits.length; off += chunk) {
         const part = bits.slice(off, off + chunk);

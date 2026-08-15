@@ -749,6 +749,11 @@ function handleNotify(value, idx) {
       window.__fwTimeOk = /^DIY-7_5-/.test(devNm) ? false
         : FwCheck.atLeast(devNm.indexOf('DIY-4_2C') === 0 ? '3.0'
           : /^DIY-7_5V-/.test(devNm) ? '0.3' : '2.1');
+      // icon «Tự thiết kế» 2 mặt (đen + ĐỎ): chỉ màn BA MÀU — 4.2" BWR >= 2.3,
+      // 7.5" V1 >= 0.5. Bản 4 MÀU (DIY-4_2C) và CC2640 chưa có.
+      window.__fwIconRed = /^DIY-7_5V-/.test(devNm) ? FwCheck.atLeast('0.5')
+        : (devNm.indexOf('DIY-4_2C') === 0 || /^DIY-7_5-/.test(devNm)) ? false
+        : FwCheck.atLeast('2.3');
       {
         document.querySelectorAll('input[name="timeFmt"]').forEach(r => { r.disabled = !window.__fwTimeOk; });
         const th = document.getElementById('timeFmtHint');
