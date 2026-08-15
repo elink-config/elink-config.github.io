@@ -392,6 +392,13 @@
     // giữ nguyên 400x300 đen+đỏ như mục «Truyền hình ảnh». Đường icon cũ (tối đa
     // 176px, nhét trong 1 sector 4KB) chỉ còn dùng cho firmware/màn chưa hỗ trợ.
     if (window.__fwBg) return window.dsSetBackground();
+    // KHÔNG hỗ trợ nền -> phải nói rõ, đừng lặng lẽ tạo icon bé rồi người dùng
+    // tưởng nút hỏng (đây chính là chỗ đã gây hiểu nhầm).
+    if (!confirm('Máy này KHÔNG dùng được ảnh nền toàn màn nên ảnh sẽ bị thu nhỏ '
+        + 'thành icon (tối đa 176px, phóng to sẽ vỡ).\n\n'
+        + 'Thiết bị: ' + (window.__devNm || '(chưa rõ)')
+        + '\nFirmware máy báo: ' + (window.__fwStr || '(chưa nhận được)')
+        + '\nCần: 4.2" ba màu, firmware từ v2.4\n\nVẫn thêm dạng icon?')) return;
 
     const src = document.getElementById('canvas');
     if (!src || !src.width || !src.height) { alert('Chưa có ảnh trong mục «Truyền hình ảnh».'); return; }

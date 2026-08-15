@@ -732,6 +732,8 @@ function handleNotify(value, idx) {
       const f = imgRdyResolve; imgRdyResolve = null; f(msg === 'img=rdy');
     } else if (msg.startsWith('fw=') && msg.length > 3) {
       FwCheck.report(msg.substring(3));
+      window.__fwStr = msg.substring(3);   // để báo lỗi cho rõ ở nơi khác
+      window.__devNm = (bleDevice && bleDevice.name) || '';
       // khu «Tự động đổi ảnh» chỉ hiện khi firmware hỗ trợ 3 khe (>= 1.5)
       if (FwCheck.atLeast('1.5')) {
         document.getElementById('imgAutoRow').style.display = '';
