@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  const VER = '20260813j'; // cache-buster, keep in sync with index.html
+  const VER = '20260813k'; // cache-buster, keep in sync with index.html
 
   const EPD42_SERVICE = '62750001-d828-918d-fb46-b6c11c675aec';
   const HM213_SERVICE = '0000ff00-0000-1000-8000-00805f9b34fb';
@@ -22,6 +22,7 @@
       label: '4.2" (3 màu / đen trắng)',
       sub: 'Màn 4.2" 400×300 (DA14585): kết nối, cấu hình và truyền hình ảnh',
       fragment: 'apps/4_2.html',
+      prefixes: ['DIY-4_2-'],   // hộp chọn BLE chỉ hiện đúng dòng máy này
       family: '4_2',
       scripts: ['js/dithering.js', 'js/paint.js', 'js/crop.js',
         'js/4_2/mode_preview.js', 'js/4_2/designer.js', 'js/diy_store.js', 'js/4_2/main.js'],
@@ -30,6 +31,7 @@
       label: '4.2" BỐN MÀU',
       sub: 'Màn 4.2" 400×300 BỐN MÀU (DIY-4_2C, DA14585): kết nối, cấu hình và truyền hình ảnh',
       fragment: 'apps/4_2c.html',
+      prefixes: ['DIY-4_2C-'],   // hộp chọn BLE chỉ hiện đúng dòng máy này
       family: '4_2',
       scripts: ['js/dithering.js', 'js/paint.js', 'js/crop.js',
         'js/4_2/mode_preview.js', 'js/4_2/designer.js', 'js/diy_store.js', 'js/4_2/main.js'],
@@ -38,6 +40,7 @@
       label: '7.5"',
       sub: 'Màn 7.5" V1 640×384 (DIY-7_5V, DA14585): kết nối, cấu hình và truyền hình ảnh',
       fragment: 'apps/7_5.html',
+      prefixes: ['DIY-7_5'],   // hộp chọn BLE chỉ hiện đúng dòng máy này
       family: '4_2',
       scripts: ['js/dithering.js', 'js/paint.js', 'js/crop.js',
         'js/4_2/mode_preview.js', 'js/4_2/designer.js', 'js/diy_store.js', 'js/4_2/main.js'],
@@ -46,6 +49,7 @@
       label: '2.13" (212×104)',
       sub: 'DA14585 — 2.13" (212×104): kết nối, cấu hình và truyền hình ảnh',
       fragment: 'apps/2_13.html',
+      prefixes: ['DIY-2_13-'],   // hộp chọn BLE chỉ hiện đúng dòng máy này
       scripts: ['js/dithering.js', 'js/paint.js', 'js/crop.js',
         'js/2_13/common.js',
         'js/2_13/designer.js', 'js/diy_store.js', 'js/2_13/mode_preview.js', 'js/2_13/main.js'],
@@ -54,6 +58,7 @@
       label: '2.9" (296×128)',
       sub: 'DA14585 — 2.9" (296×128 BWR): kết nối, cấu hình và truyền hình ảnh',
       fragment: 'apps/2_9.html',
+      prefixes: ['DIY-2_9-'],   // hộp chọn BLE chỉ hiện đúng dòng máy này
       scripts: ['js/dithering.js', 'js/paint.js', 'js/crop.js',
         'js/2_9/designer.js', 'js/diy_store.js', 'js/2_9/mode_preview.js', 'js/2_9/main.js'],
     },
@@ -61,6 +66,7 @@
       label: 'Đồng hồ DLG-CLOCK',
       sub: 'Đồng hồ E-Ink DLG-CLOCK: đặt giờ, đếm ngược, truyền hình ảnh và thiết kế mẫu',
       fragment: 'apps/dlg.html',
+      prefixes: ['DLG-CLOCK-'],   // hộp chọn BLE chỉ hiện đúng dòng máy này
       scripts: ['js/dlg/image.js', 'js/dlg/qrcode.min.js', 'js/dlg/main.js', 'js/dlg/editor.js'],
     },
   };
@@ -407,8 +413,14 @@
 
     let device;
     try {
-      device = await navigator.bluetooth.requestDevice({ // ?debug=true vẫn LỌC THEO TÊN thiết bị (yêu cầu user) — hết acceptAllDevices
-        filters: [{ namePrefix: 'DIY-' }, { namePrefix: 'DLG-CLOCK-' }],
+      // Hộp chọn BLE luôn LỌC THEO TÊN (kể cả ?debug=true). Đã mở một app
+      // rồi (chọn máy trước đó, hoặc ?debug=true&app=…) thì chỉ hiện đúng
+      // dòng máy của app ấy — khỏi lỡ tay chọn nhầm máy khác loại.
+      const filters = (hubApp && APPS[hubApp] && APPS[hubApp].prefixes)
+        ? APPS[hubApp].prefixes.map(p => ({ namePrefix: p }))
+        : [{ namePrefix: 'DIY-' }, { namePrefix: 'DLG-CLOCK-' }];
+      device = await navigator.bluetooth.requestDevice({
+        filters: filters,
         optionalServices: ALL_SERVICES,
       });
     } catch (e) {
