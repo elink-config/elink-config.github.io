@@ -6,7 +6,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>Máy đọc sách E-Ink 4.2" (DA14585)</title>
 	<link rel="shortcut icon" type="image/png" href="favicon.png">
-	<link rel="stylesheet" href="css/main.css?v=20260806i">
+	<link rel="stylesheet" href="css/main.css?v=20260815a">
 	<script>
 		// apply the saved theme before first paint to avoid a flash
 		(function () {
@@ -69,7 +69,8 @@
 				<p style="margin:6px 0 0">
 					<b>.txt</b>, <b>.epub</b> (sách chữ) — <b>.cbz/.zip</b> hoặc nhiều file ảnh (truyện tranh) —
 					<b>.mobi/.azw3</b> không DRM (nếu không đọc được hãy chuyển sang epub/txt bằng Calibre).
-					Kho sách trong máy ~260KB; chữ Việt nén 8-bit nên tương đương ~350KB file .txt.
+					Kho sách theo chip flash trên máy: ~260KB (chip 512KB chuẩn) hoặc ~1.8MB (chip 2MB) —
+					kết nối thiết bị để webtool tự nhận; chữ Việt nén 8-bit nên chứa nhiều hơn cỡ file .txt ~35%.
 					Sách dài tự chia thành nhiều <b>phần</b>, mỗi lần gửi một phần (gửi phần mới thay phần cũ;
 					máy tự lưu trang đang đọc của phần hiện tại).
 				</p>
@@ -147,7 +148,7 @@
 			<div class="flex-container">
 				<div class="flex-group">
 					<label for="fontSize">Cỡ chữ:</label>
-					<select id="fontSize" onchange="previewTextPages=null;renderPreview()">
+					<select id="fontSize" onchange="previewTextPages=null;bookResplit();renderPreview()">
 						<option value="0" selected>Nhỏ 12px (19 dòng)</option>
 						<option value="1">Vừa 14px (16 dòng)</option>
 						<option value="2">Lớn 16px (14 dòng)</option>
@@ -156,7 +157,7 @@
 				</div>
 				<div class="flex-group">
 					<label for="rotMode">Hướng màn hình:</label>
-					<select id="rotMode" onchange="previewTextPages=null;renderPreview()">
+					<select id="rotMode" onchange="previewTextPages=null;bookResplit();renderPreview()">
 						<option value="0" selected>Ngang (mặc định)</option>
 						<option value="1">Dọc (xoay 90°)</option>
 					</select>
@@ -265,8 +266,8 @@
 			</span>
 		</div>
 	</div>
-	<script type="text/javascript" src="js/dithering.js?v=20260806i"></script>
-	<script type="text/javascript" src="js/reader.js?v=20260806i"></script>
+	<script type="text/javascript" src="js/dithering.js?v=20260815a"></script>
+	<script type="text/javascript" src="js/reader.js?v=20260815a"></script>
 </body>
 
 </html>

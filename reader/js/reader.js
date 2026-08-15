@@ -17,12 +17,23 @@ const EpdCmd = {
 const EPD_SERVICE = '62750001-d828-918d-fb46-b6c11c675aec';
 const EPD_CHAR = '62750002-d828-918d-fb46-b6c11c675aec';
 
-// kho sách trên máy (fw r2.1 mở rộng): vùng riêng 276KB tại 0x39000, dữ
-// liệu bắt đầu tại +0x3000 — 260KB dùng được (chừa lề dưới trần 264KB)
+// kho sách trên máy: vùng riêng từ 0x39000 tới (dung lượng chip - 2 sector
+// hệ thống); dữ liệu bắt đầu tại +0x3000. Dung lượng chip đọc từ thông báo
+// flash= (JEDEC) lúc kết nối — chip 512KB: 260KB sách; chip 2MB (FM25Q16A):
+// ~1.8MB. Mục lục trên máy tối đa ~2000 trang nên sách CHỮ còn bị trần
+// 1900 trang x cỡ trang ước lượng theo font/hướng đang chọn.
 const BOOK_IDX_OFF = 0x1000;
 const BOOK_DATA_OFF = 0x3000;
-const MAX_DATA = 260 * 1024;
 const MAX_PAGES_PART = 500;
+let devFlashBytes = 512 * 1024;  // mặc định chip chuẩn; cập nhật khi nhận flash=
+function storeDataCap() {
+  const end = devFlashBytes - 2 * 4096;  // 2 sector hệ thống trên đỉnh chip
+  return Math.max(0, end - 0x39000 - BOOK_DATA_OFF - 4096);  // chừa 1 sector lề
+}
+function textPartCap() {
+  const [cpl, lpp] = previewMetric();  // trần mục lục ~2000 trang (chừa lề 1900)
+  return Math.min(storeDataCap(), 1900 * cpl * lpp);
+}
 const PLANE_SIZE = 15000; // 400x300 / 8
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
@@ -213,6 +224,15 @@ function handleNotify(value, idx) {
     if (kb > 0 && kb < 512) {
       addLog('⚠ Chip flash ' + kb + 'KB — KHÔNG đủ chỗ cho kho sách (cần 512KB, ví dụ board 6TP). ' +
         'Trên board này firmware đọc sách giữ được kích hoạt/cấu hình nhưng KHÔNG nhận sách được.');
+    } else if (kb >= 512) {
+      // sức chứa kho sách theo chip thật (fw r1.0+ tự nở kho theo JEDEC);
+      // chip lớn hơn 512KB -> chia phần lại sách đang nạp theo kho mới
+      const bytes = Math.min(kb * 1024, 16 * 1024 * 1024);
+      if (bytes !== devFlashBytes) {
+        devFlashBytes = bytes;
+        addLog(`Kho sách trên máy: ~${Math.floor(storeDataCap() / 1024)}KB`);
+        bookResplit();
+      }
     }
   } else if (msg === 'locked') {
     addLog('⚠ Thiết bị chưa kích hoạt — liên hệ nhà cung cấp.');
@@ -565,14 +585,16 @@ function loadTextBook(text, title) {
   const chars = [...text];
   const enc = evnEncode(text);
   const all = enc.bytes;
-  // chia phần <= MAX_DATA tại ranh giới đoạn (\n), không cắt giữa escape EVN1
+  // chia phần <= sức chứa kho (theo chip + trần trang của font/hướng đang
+  // chọn) tại ranh giới đoạn (\n), không cắt giữa escape EVN1
+  const cap = textPartCap();
   const parts = [];
   let off = 0;
   while (off < all.length) {
-    let end = Math.min(off + MAX_DATA, all.length);
+    let end = Math.min(off + cap, all.length);
     if (end < all.length) {
       let nl = -1;
-      for (let i = end; i > off + MAX_DATA / 2; i--) {
+      for (let i = end; i > off + cap / 2; i--) {
         if (all[i] === 10) { nl = i; break; }
       }
       if (nl > 0) end = nl;
@@ -584,7 +606,20 @@ function loadTextBook(text, title) {
     off = end;
     while (off < all.length && all[off] === 10) off++;
   }
-  book = { type: 'text', title: (title || 'Sách').slice(0, 60), parts };
+  // giữ text gốc để CHIA PHẦN LẠI khi đổi cỡ chữ/hướng màn hoặc biết chip lớn
+  book = { type: 'text', title: (title || 'Sách').slice(0, 60), parts, raw: text };
+}
+
+// chia phần lại sách đang nạp theo sức chứa hiện tại (gọi khi nhận flash=
+// chip lớn hơn, hoặc đổi cỡ chữ/hướng màn — trần trang sách chữ đổi theo)
+function bookResplit() {
+  if (!book) return;
+  const t = book.title;
+  if (book.type === 'text' && book.raw) loadTextBook(book.raw, t);
+  else if (book.type === 'image' && comicPages.length) finishComic(comicPages, t);
+  else return;
+  book.title = t;
+  updateBookUI();
 }
 
 // ---- truyện tranh ----
@@ -620,7 +655,7 @@ function finishComic(pages, title) {
   // chia phần: ước lượng dung lượng nén sau khi gửi (nén thật lúc gửi);
   // tạm chia theo số trang, tinh chỉnh khi nén (sendBook sẽ dừng khi đầy)
   const estPerPage = 5 * 1024; // trang truyện đen trắng nén RLE trung bình ~3-6KB
-  const perPart = Math.max(1, Math.min(MAX_PAGES_PART, Math.floor(MAX_DATA / estPerPage)));
+  const perPart = Math.max(1, Math.min(MAX_PAGES_PART, Math.floor(storeDataCap() / estPerPage)));
   const parts = [];
   for (let i = 0; i < pages.length; i += perPart) {
     parts.push({ pages: Array.from({ length: Math.min(perPart, pages.length - i) }, (_, k) => i + k) });
@@ -1084,13 +1119,14 @@ async function sendBook() {
     } else {
       // truyện tranh: nén 2..30%, mục lục 30..34%, dữ liệu 34..95%
       const blobs = [];
+      const dataCap = storeDataCap();
       let total = 0;
       for (const pi of part.pages) {
-        setStatus(`Đang nén trang ${blobs.length + 1}/${part.pages.length}... (${fmtKB(total)}/${fmtKB(MAX_DATA)} kho)`);
+        setStatus(`Đang nén trang ${blobs.length + 1}/${part.pages.length}... (${fmtKB(total)}/${fmtKB(dataCap)} kho)`);
         setProgress(2 + 28 * (blobs.length / part.pages.length));
         await sleep(1); // nhả UI
         const blob = rleEncode(comicRenderPlane(pi));
-        if (total + blob.length > MAX_DATA) {
+        if (total + blob.length > dataCap) {
           addLog(`Kho đầy: gửi ${blobs.length}/${part.pages.length} trang của phần này (các trang sau nén kém).`);
           break;
         }
