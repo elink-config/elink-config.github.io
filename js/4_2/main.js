@@ -342,16 +342,19 @@ async function setBattStyle() {
 // ---- Nhịp làm mới của màn 4 MÀU (cùng lệnh 0x23, ba giá trị) ----
 // Mọi lượt làm mới của panel 4 màu đều chớp ~15s (kể cả lượt "nhảy phút"
 // chỉ quét ô số phút), nên cho chọn: 1 = nhảy phút + full mỗi giờ (mặc
-// định, không tích ô nào), 2 = chỉ full mỗi giờ, 0 = chỉ full lúc 00:00.
-// Hai ô loại trừ nhau; firmware màn 4 màu cần >= 3.3.
+// định, không tích ô nào), 2 = chỉ full mỗi giờ, 3 = chỉ full lúc 00:00.
+// KHÔNG dùng số 0 (nghĩa cũ của bản BWR): máy 4 màu đời trước v3.2 có thể
+// đang lưu 0 trong flash, firmware >= 3.3 coi 0 là "mặc định" để những máy
+// đó không tự dưng đứng phút. Hai ô loại trừ nhau; fw màn 4 màu cần >= 3.3.
 let refreshModeLast = 1;
 
 function applyRefreshModeUI(v) {
+  if (v !== 2 && v !== 3) v = 1;  // 0 / 0xFF / lạ = mặc định (khớp firmware)
   refreshModeLast = v;
   const h = document.getElementById('onlyHourlyCHK');
   const d = document.getElementById('onlyMidnightCHK');
   if (h) h.checked = (v === 2);
-  if (d) d.checked = (v === 0);
+  if (d) d.checked = (v === 3);
 }
 
 async function setRefreshMode(which) {
@@ -359,10 +362,10 @@ async function setRefreshMode(which) {
   const d = document.getElementById('onlyMidnightCHK');
   if (which === 'hour' && h.checked) d.checked = false;   // loại trừ nhau
   if (which === 'day' && d.checked) h.checked = false;
-  const v = d.checked ? 0 : (h.checked ? 2 : 1);
+  const v = d.checked ? 3 : (h.checked ? 2 : 1);
   if (await write(EpdCmd.SET_HOURLY_FULL, [v])) {
     refreshModeLast = v;
-    addLog(v === 0
+    addLog(v === 3
       ? 'Đã đặt: chỉ làm mới lúc 00:00 — màn đứng yên cả ngày (đồng hồ sẽ đứng ở 00:00).'
       : v === 2
         ? 'Đã đặt: chỉ làm mới mỗi giờ — không nhảy phút nữa (đồng hồ hiện HH:00).'
@@ -717,8 +720,8 @@ function handleNotify(value, idx) {
     if (hf !== null) {
       const c = document.getElementById('hourlyFullCHK');
       if (c) c.checked = hf !== 0;
-      // màn 4 màu: cùng byte này mang BA giá trị (xem setRefreshMode)
-      applyRefreshModeUI(hf > 2 ? 1 : hf);
+      // màn 4 màu: cùng byte này mang BA giá trị 1/2/3 (xem setRefreshMode)
+      applyRefreshModeUI(hf);
     }
     // 3 khe ảnh (fw >= 1.5): auto/interval/mask tại offset 212/213/214 (sau
     // u32 activation ở 208 — struct căn 4 byte)
