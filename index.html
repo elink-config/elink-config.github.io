@@ -7,7 +7,7 @@
 	<title>E-Ink DA14585</title>
 	<link rel="shortcut icon" type="image/png" href="favicon.png">
 	<link rel="shortcut icon" type="image/png" href="favicon.png">
-	<link rel="stylesheet" href="css/main.css?v=20260813e">
+	<link rel="stylesheet" href="css/main.css?v=20260816a">
 	<script>
 		// apply the saved theme before first paint to avoid a flash
 		(function () {
@@ -58,6 +58,13 @@
 					<input type="text" id="cmdTXT" value="">
 					<button id="sendcmdbutton" type="button" class="primary" onclick="sendcmd()">Gửi lệnh</button>
 				</div>
+			</div>
+			<!-- Chọn thẳng dòng máy: hộp chọn Bluetooth chỉ hiện đúng dòng đó.
+			     Danh sách nút do connector.js dựng từ bảng APPS (khỏi lệch khi
+			     thêm/bớt dòng máy); cả khối tự ẩn khi đã mở một app. -->
+			<div class="dev-pick" id="devPickRow">
+				<div class="dev-pick-label">Hoặc kết nối tới một thiết bị cụ thể:</div>
+				<div class="dev-pick-list" id="devPickList"></div>
 			</div>
 			<div class="log-container" id="log"></div>
 		</fieldset>
@@ -120,7 +127,7 @@
 	     hub và mọi app (trước đây bị chép lại ở 4 nơi) -->
 	<script type="text/javascript" src="js/log.js?v=20260815d"></script>
 	<script type="text/javascript" src="js/fw_check.js?v=20260815d"></script>
-	<script type="text/javascript" src="js/connector.js?v=20260816b"></script>
+	<script type="text/javascript" src="js/connector.js?v=20260816c"></script>
 	<script>
 		var _hmt = _hmt || [];
 		(function () {

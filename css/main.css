@@ -1455,3 +1455,43 @@ button.local-image-btn:hover {
         margin-left: 40px;
     }
 }
+
+
+/* ---- Chọn thẳng dòng máy ở khung «Kết nối Bluetooth» ----
+   Hàng nút do connector.js dựng từ bảng APPS; bấm nút nào thì hộp chọn
+   Bluetooth chỉ hiện đúng dòng máy đó. Cả khối ẩn khi đã mở một app. */
+.dev-pick {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--md-sys-color-outline-variant);
+}
+
+.dev-pick.hidden {
+    display: none;
+}
+
+.dev-pick-label {
+    font-size: 0.92rem;
+    color: var(--md-sys-color-on-surface-variant);
+    margin-bottom: 8px;
+}
+
+.dev-pick-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.dev-pick-list button {
+    font-size: 0.92rem;
+    padding: 7px 14px;
+    line-height: 1.25;
+}
+
+.dev-pick-list button small {
+    display: block;
+    font-size: 0.74rem;
+    font-weight: 400;
+    opacity: 0.6;
+    margin-top: 1px;
+}

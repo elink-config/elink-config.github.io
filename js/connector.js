@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  const VER = '20260816b'; // cache-buster, keep in sync with index.html
+  const VER = '20260816c'; // cache-buster, keep in sync with index.html
 
   const EPD42_SERVICE = '62750001-d828-918d-fb46-b6c11c675aec';
   const HM213_SERVICE = '0000ff00-0000-1000-8000-00805f9b34fb';
@@ -192,6 +192,7 @@
     if (sub) sub.textContent = cfg.sub;
 
     hubApp = type;
+    hideDevPicker();
   }
 
   function revealSections() {
@@ -402,7 +403,33 @@
   }
   /* ---- end activation gate ---------------------------------------------- */
 
-  async function hubPreConnect() {
+  // Dựng hàng nút «Hoặc kết nối tới một thiết bị cụ thể» từ chính bảng APPS,
+  // nên thêm/bớt dòng máy ở APPS là hàng nút tự khớp theo.
+  function buildDevPicker() {
+    const box = document.getElementById('devPickList');
+    if (!box) return;
+    box.innerHTML = '';
+    for (const [type, cfg] of Object.entries(APPS)) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'secondary';
+      const name = document.createTextNode(cfg.label);
+      const hint = document.createElement('small');
+      hint.textContent = cfg.prefixes.join(' / ') + 'xxxx';
+      b.appendChild(name);
+      b.appendChild(hint);
+      b.onclick = () => hubPreConnect(type);
+      box.appendChild(b);
+    }
+  }
+
+  // đã mở một app thì bộ lọc bị ghim theo app đó — hàng nút hết tác dụng
+  function hideDevPicker() {
+    const row = document.getElementById('devPickRow');
+    if (row) row.classList.add('hidden');
+  }
+
+  async function hubPreConnect(pickType) {
     if (loading) return;
 
     // an app is active and connected: the button means "disconnect"
@@ -413,11 +440,18 @@
 
     let device;
     try {
-      // Hộp chọn BLE luôn LỌC THEO TÊN (kể cả ?debug=true). Đã mở một app
-      // rồi (chọn máy trước đó, hoặc ?debug=true&app=…) thì chỉ hiện đúng
-      // dòng máy của app ấy — khỏi lỡ tay chọn nhầm máy khác loại.
-      const filters = (hubApp && APPS[hubApp] && APPS[hubApp].prefixes)
-        ? APPS[hubApp].prefixes.map(p => ({ namePrefix: p }))
+      // Hộp chọn BLE luôn LỌC THEO TÊN (kể cả ?debug=true). Ưu tiên dòng máy
+      // người dùng vừa bấm ở hàng «kết nối tới một thiết bị cụ thể»; nếu
+      // không thì theo app đang mở (chọn máy trước đó, hoặc ?debug=true&app=…)
+      // — khỏi lỡ tay chọn nhầm máy khác loại; cuối cùng mới lọc rộng.
+      const pick = (pickType && APPS[pickType]) ? APPS[pickType]
+        : (hubApp && APPS[hubApp]) ? APPS[hubApp] : null;
+      if (pickType && APPS[pickType]) {
+        addLog('Chỉ tìm máy ' + APPS[pickType].label + ' (' +
+          APPS[pickType].prefixes.join(' / ') + 'xxxx).');
+      }
+      const filters = (pick && pick.prefixes)
+        ? pick.prefixes.map(p => ({ namePrefix: p }))
         : [{ namePrefix: 'DIY-' }, { namePrefix: 'DLG-CLOCK-' }];
       device = await navigator.bluetooth.requestDevice({
         filters: filters,
@@ -515,6 +549,7 @@
     document.getElementById('reconnectbutton').disabled = true;
     document.getElementById('sendcmdbutton').disabled = true;
     actInitUi();
+    buildDevPicker();
 
     // dev helper: ?debug=true&act=<MAC> opens the activation popup with a fake
     // MAC so the dialog can be checked without a locked device
