@@ -1,0 +1,176 @@
+<!-- Fragment giao diện thiết bị — được connector.js nạp vào #appMount.
+     Sinh từ webtool standalone tương ứng; sau đó SỬA TRỰC TIẾP file này. -->
+		<!-- 2. GỬI SÁCH — việc chính -->
+		<fieldset>
+			<legend>Gửi sách xuống máy</legend>
+			<div class="flex-container">
+				<input type="file" id="bookFile" accept=".txt,.epub,.zip,.cbz,.mobi,.azw,.azw3,.png,.jpg,.jpeg,.webp,.bmp" multiple onchange="bookFileChange()">
+			</div>
+			<details class="mode-gallery-hint" style="margin:6px 0">
+				<summary>Định dạng hỗ trợ &amp; giới hạn kho sách</summary>
+				<p style="margin:6px 0 0">
+					<b>.txt</b>, <b>.epub</b> (sách chữ) — <b>.cbz/.zip</b> hoặc nhiều file ảnh (truyện tranh) —
+					<b>.mobi/.azw3</b> không DRM (nếu không đọc được hãy chuyển sang epub/txt bằng Calibre).
+					Kho sách = trọn chip flash ngoài, máy tự nở theo chip thật: <b>512KB → 496KB sách</b>, <b>2MB (FM25Q16A) → ~2MB</b>;
+					chữ Việt nén 8-bit nên 496KB kho tương đương ~650KB file .txt. Sức chứa thật hiện ở nhật ký ngay khi kết nối.
+					Sách dài tự chia thành nhiều <b>phần</b>, mỗi lần gửi một phần (gửi phần mới thay phần cũ;
+					máy tự lưu trang đang đọc của phần hiện tại).
+				</p>
+			</details>
+			<div class="flex-container" id="bookInfoRow" style="display:none">
+				<div class="flex-group" style="flex:1 1 100%">
+					<label for="bookTitle">Tên sách:</label>
+					<input type="text" id="bookTitle" maxlength="60" style="flex:1">
+				</div>
+				<div class="flex-group" style="flex:1 1 100%">
+					<span id="bookSummary" class="mode-gallery-hint" style="margin:0"></span>
+				</div>
+				<div class="flex-group" id="bookPartRow" style="display:none">
+					<label for="bookPart">Phần:</label>
+					<select id="bookPart" onchange="bookPartChange()"></select>
+					<span id="bookPartHint" class="mode-gallery-hint" style="margin:0"></span>
+				</div>
+				<div class="flex-group" id="comicOptsRow" style="display:none">
+					<label for="ditherAlg">Dithering:</label>
+					<select id="ditherAlg" onchange="comicRepreview()">
+						<option value="floydSteinberg">Floyd-Steinberg</option>
+						<option value="atkinson">Atkinson</option>
+						<option value="bayer">Bayer</option>
+						<option value="stucki">Stucki</option>
+						<option value="none">Không (ngưỡng)</option>
+					</select>
+					<label for="ditherStrength">Cường độ:</label>
+					<input type="range" min="0" max="2" step="0.1" value="1.0" id="ditherStrength" onchange="comicRepreview()">
+					<label for="ditherContrast">Tương phản:</label>
+					<input type="range" min="0.5" max="2" step="0.1" value="1.2" id="ditherContrast" onchange="comicRepreview()">
+					<label style="display:flex;align-items:center;gap:4px;cursor:pointer">
+						<input type="checkbox" id="comicRotate" onchange="comicRepreview()"> Xoay ngang trang
+					</label>
+				</div>
+			</div>
+			<div class="canvas-container">
+				<div class="canvas-title" id="previewTitle" style="display:none"></div>
+				<canvas id="canvas" width="400" height="300"></canvas>
+				<div class="flex-container canvas-tools">
+					<div class="flex-group">
+						<button type="button" class="secondary" onclick="previewStep(-1)">◀ Trang trước</button>
+						<span id="previewPageLabel" class="system-time">—</span>
+						<button type="button" class="secondary" onclick="previewStep(1)">Trang sau ▶</button>
+					</div>
+				</div>
+			</div>
+			<div class="status-bar"><b>Trạng thái: </b><span id="status"></span></div>
+			<progress id="sendProgress" max="100" value="0" style="width:100%;height:14px;display:none"></progress>
+			<div class="flex-container">
+				<div class="flex-group">
+					<button id="sendbookbutton" type="button" class="primary" onclick="sendBook()" disabled>Gửi sách xuống máy</button>
+					<span class="mode-gallery-hint" style="margin:0">Sách chữ: sau khi gửi, máy tự phân trang (sách dài ~30 giây) rồi hiện trang 1.</span>
+				</div>
+			</div>
+		</fieldset>
+
+		<!-- 3. ĐIỀU KHIỂN ĐỌC — thao tác nhanh, tách khỏi cài đặt -->
+		<fieldset>
+			<legend>Điều khiển đọc sách</legend>
+			<div class="flex-container">
+				<div class="flex-group">
+					<button id="rprevbutton" type="button" class="secondary" onclick="readerCmd(0x12)" disabled>◀ Trang trước</button>
+					<button id="rnextbutton" type="button" class="secondary" onclick="readerCmd(0x11)" disabled>Trang sau ▶</button>
+					<button id="rhomebutton" type="button" class="secondary" onclick="readerCmd(0x13)" disabled>Trang chủ</button>
+					<label for="gotoPage">Tới trang:</label>
+					<input type="number" id="gotoPage" value="1" min="1" style="width:70px">
+					<button id="rgotobutton" type="button" class="primary" onclick="readerGoto()" disabled>Đi</button>
+				</div>
+			</div>
+		</fieldset>
+
+		<!-- 4. CÀI ĐẶT HIỂN THỊ — chỉnh một lần, thi thoảng đổi -->
+		<fieldset>
+			<legend>Cài đặt hiển thị</legend>
+			<div class="flex-container">
+				<div class="flex-group">
+					<label for="fontSize">Cỡ chữ:</label>
+					<select id="fontSize" onchange="previewTextPages=null;bookResplit();renderPreview()">
+						<option value="0" selected>Nhỏ 12px (32 dòng)</option>
+						<option value="1">Vừa 14px (26 dòng)</option>
+						<option value="2">Lớn 16px (23 dòng)</option>
+						<option value="3">Lớn hơn 18px (20 dòng)</option>
+						<option value="4">Khổ lớn 24px (16 dòng)</option>
+						<option value="5">Khổ lớn 28px (13 dòng)</option>
+						<option value="6">Khổ lớn 32px (11 dòng)</option>
+						<option value="7">Khổ lớn 36px (10 dòng)</option>
+					</select>
+					<span class="mode-gallery-hint" style="margin:0">Số dòng tính cho hướng ngang; xoay dọc được nhiều dòng hơn. Từ 24px trở lên là chữ <b>nhân đôi điểm ảnh</b> — to rõ nhưng nét hơi vuông cạnh.</span>
+				</div>
+				<div class="flex-group">
+					<label for="rotMode">Hướng màn hình:</label>
+					<select id="rotMode" onchange="previewTextPages=null;bookResplit();renderPreview()">
+						<option value="0" selected>Ngang (mặc định)</option>
+						<option value="1">Dọc (xoay 90°)</option>
+					</select>
+					<span class="mode-gallery-hint" style="margin:0">Cỡ chữ + hướng màn áp xuống máy khi bấm «Gửi sách xuống máy» (chỉ trang đọc sách chữ xoay dọc; menu máy và truyện tranh vẫn ngang).</span>
+				</div>
+				<div class="flex-group">
+					<label for="clockMode">Giờ thiết bị:</label>
+					<select id="clockMode">
+						<option value="0" selected>Cập nhật khi chuyển trang</option>
+						<option value="1">Tự động cập nhật</option>
+						<option value="2">Tắt hiển thị</option>
+					</select>
+					<button id="clockModebutton" type="button" class="secondary" onclick="setClockMode()" disabled>Áp dụng</button>
+				</div>
+				<div class="flex-group">
+					<label for="fullEvery">Làm mới màn hình sau mỗi</label>
+					<select id="fullEvery">
+						<option value="1">mỗi trang</option>
+						<option value="3">3 trang</option>
+						<option value="5">5 trang</option>
+						<option value="10">10 trang</option>
+						<option value="0" selected>Tắt (mặc định)</option>
+					</select>
+					<button id="fullEverybutton" type="button" class="secondary" onclick="setFullEvery()" disabled>Áp dụng</button>
+				</div>
+			</div>
+		</fieldset>
+
+		<!-- 5. PHẦN CỨNG — cấu hình một lần khi lắp máy -->
+		<fieldset>
+			<legend>Nút bấm vật lý (3 nút)</legend>
+			<!-- Khối đổi chân nút ẨN (không xóa — reader.js tham chiếu các id btnNext/btnPrev/
+			     btnSel/btnApply/btnHint): người dùng đã hàn đúng chân mặc định theo hướng dẫn. -->
+			<div class="flex-container" style="display:none">
+				<div class="flex-group">
+					<label>Trang sau:</label><select id="btnNext" class="btnsel"></select>
+					<label>Trang trước:</label><select id="btnPrev" class="btnsel"></select>
+					<label>Trang chủ:</label><select id="btnSel" class="btnsel"></select>
+					<button id="btnApply" type="button" class="primary" onclick="applyButtons()" disabled>Lưu chân nút</button>
+				</div>
+				<div class="flex-group">
+					<span id="btnHint" class="mode-gallery-hint" style="margin:0"></span>
+				</div>
+			</div>
+			<p class="mode-gallery-hint" style="margin:6px 0 0">
+				Ba nút hàn từ chân <b>P0.25</b> (trang trước), <b>P0.26</b> (trang sau),
+				<b>P0.27</b> (trang chủ) xuống <b>GND</b> — nhấn là nối đất, nên nối tiếp
+				điện trở ~1kΩ. Bản nRF52811 <b>cố định</b> ba chân này, không đổi được qua
+				webtool như bản 4.2" (board này không có pad SWD kiêm nút).
+				Không có nút nguồn: bật/tắt Bluetooth nằm trong menu Trang chủ trên máy.
+				Ở màn Trang chủ, hai nút trang sau/trước <b>di chuyển menu</b>, nút trang chủ <b>chọn</b>.
+			</p>
+		</fieldset>
+
+		<!-- 6. FIRMWARE — máy này KHÔNG cập nhật qua Bluetooth được.
+		     nRF52811 chỉ có 192KB flash và đã kín đặc: SoftDevice S112 100KB +
+		     ứng dụng 80KB + FDS 8KB + 4KB đệm = đúng 192KB, không còn chỗ cho
+		     bootloader DFU (~32KB). Firmware cũng để EPD_ENABLE_DFU 0.
+		     Bảng firmware .bin cũ ở đây là của máy 4.2" (chip DA14585, kiến trúc
+		     khác hẳn) — đã bỏ để không ai nạp nhầm. -->
+		<fieldset>
+			<legend>Cập nhật firmware</legend>
+			<p class="mode-gallery-hint" style="margin:0">Máy 7.5" (nRF52811) <b>không cập nhật qua Bluetooth</b> —
+				flash 192KB đã dùng hết cho SoftDevice + ứng dụng + cấu hình, không còn chỗ cho bootloader DFU.
+				Nạp firmware bằng <b>J-Link/SWD</b> (file <code>READER-7_5inch-full.hex</code>).
+				Kho sách nằm ở chip flash ngoài nên <b>nạp lại firmware không mất sách</b>.</p>
+		</fieldset>
+
+		

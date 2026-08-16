@@ -29,9 +29,8 @@ const EpdCmd = {
   SET_ICON: 0x25, // MODE_CUSTOM 1-bit icon, chunked: [0x00,w,h,data...] then [0x01,data...]
   IMG_SLOT: 0x27, // 3 khe ảnh (fw >= 1.5): [01 slot] mở khe / [02] chốt / [03 auto interval]
   DARK_BOOST: 0x28, // [0/1] chữ đậm cho màn lô in nhạt (ép 0°C khi làm mới toàn màn)
-  BATT_STYLE: 0x29, // [0/1/2] hiển thị pin: chỉ icon / phần trăm / điện áp (fw >= 1.9)
-  CUSTOM_BG: 0x2B, // [0..3] ảnh nền «Tự thiết kế»: 0 tắt, 1-3 = khe ảnh (4.2 >= 2.3)
-  TIME_FMT: 0x2A, // [0/1] định dạng giờ: 24h / 12h (BWR >= 2.1, 4 màu >= 3.0, 7.5" V1 >= 0.3)
+  BATT_STYLE: 0x29, // [0/1/2] hiển thị pin: chỉ icon / phần trăm / điện áp (fw >= 0.4)
+  TIME_FMT: 0x2A, // [0/1] định dạng giờ: 24h / 12h
 
   WRITE_IMG: 0x30, // v1.6
 
@@ -42,14 +41,12 @@ const EpdCmd = {
 };
 
 const EPD_SERVICE = '62750001-d828-918d-fb46-b6c11c675aec';
-// Chỉ liệt kê đúng máy của app này: 4.2" (DIY-4_2-xxxx) và 7.5" (DIY-7_5-xxxx
-// DIY-7_5-xxxx = màn 7.5" 640×384 DA14585, tên cũ DIY-7_5V-xxxx). Các
+// Chỉ liệt kê đúng máy 10.2" (DIY-10_2-xxxx, firmware epd_10_2inch): các
 // board 2.13"/2.9" quảng bá DIY-2_13-/DIY-2_9- dùng giao thức khác (service
-// 0xff00), hiện trong hộp chọn chỉ gây nhầm. Board 4.2" chạy firmware quá cũ
-// (tên chưa gắn cỡ màn) vẫn kết nối được bằng chế độ dev (?debug=true).
+// 0xff00), các loại DIY-4_2/DIY-7_5V/DIY-7_3 dùng app riêng — hiện trong hộp
+// chọn chỉ gây nhầm. Kết nối máy khác được bằng chế độ dev (?debug=true).
 const BLE_REQUEST_FILTERS = [
-  { namePrefix: 'DIY-4_2' },
-  { namePrefix: 'DIY-7_5' },
+  { namePrefix: 'DIY-10_2' },
 ];
 
 function sleep(ms) {
@@ -59,7 +56,7 @@ function sleep(ms) {
 function logBleConnectHelp(error) {
   addLog(`connect: ${error.name} - ${error.message}`);
   addLog('Gợi ý xử lý khi kết nối thất bại:');
-  addLog('1. Đảm bảo thiết bị đã nạp firmware mới nhất, tên Bluetooth là DIY-4_2-xxxx / DIY-7_5-xxxx');
+  addLog('1. Đảm bảo thiết bị đã nạp firmware mới nhất, tên Bluetooth là DIY-10_2-xxxx');
   addLog('2. Đặt thiết bị gần máy tính, màn hình chưa vào chế độ ngủ');
   addLog('3. Windows: xóa ghép nối cũ trong cài đặt Bluetooth rồi thử lại');
   addLog('4. Ngắt kết nối thiết bị khỏi điện thoại/máy tính khác');
@@ -154,9 +151,7 @@ async function write(cmd, data, withResponse = true) {
     if (data instanceof Uint8Array) data = Array.from(data);
     payload.push(...data)
   }
-  // goi anh 0x30 KHONG log hex tung goi (246B -> chuoi ~500 ky tu, ~250
-  // goi/anh lam nghen dien thoai yeu; tien do da co o thanh trang thai)
-  if (cmd !== EpdCmd.WRITE_IMG) addLog(bytes2hex(payload), '⇑');
+  addLog(bytes2hex(payload), '⇑');
   try {
     if (withResponse)
       await epdCharacteristic.writeValueWithResponse(Uint8Array.from(payload));
@@ -198,8 +193,7 @@ async function writeImage(data, step = 'bw') {
   const interleavedCount = document.getElementById('interleavedcount').value;
   const count = Math.ceil(data.length / chunkSize);
   let chunkIdx = 0;
-  let noReplyCount = 0;  // 8 gói ĐẦU ép có xác nhận: thiết bị có thể còn
-                         // bận (erase/abort render) — vào nhịp rồi mới thả
+  let noReplyCount = interleavedCount;
 
   for (let i = 0; i < data.length; i += chunkSize) {
     const currentTime = (new Date().getTime() - startTime) / 1000.0;
@@ -209,14 +203,11 @@ async function writeImage(data, step = 'bw') {
       (step == 'bw' ? 0x0F : 0x00) | (i == 0 ? 0x00 : 0xF0),
       ...data.slice(i, i + chunkSize),
     ];
-    const useReply = chunkIdx < 8 || noReplyCount <= 0;
+    const useReply = noReplyCount <= 0;
     // gói lỗi: thử lại MỘT lần bằng gói có xác nhận rồi mới bỏ cuộc — trước
     // đây một gói rơi là ảnh hỏng trong im lặng
     let ok = await write(EpdCmd.WRITE_IMG, payload, useReply);
-    // gói lỗi: NGHỈ cho thiết bị thở rồi thử lại bằng gói có xác nhận,
-    // tối đa 2 lần — độ bền ưu tiên hơn tốc độ (yêu cầu user)
-    if (!ok) { await sleep(250); ok = await write(EpdCmd.WRITE_IMG, payload, true); }
-    if (!ok) { await sleep(500); ok = await write(EpdCmd.WRITE_IMG, payload, true); }
+    if (!ok) ok = await write(EpdCmd.WRITE_IMG, payload, true);
     if (!ok) {
       addLog(`Truyền ảnh thất bại ở khối ${chunkIdx + 1}/${count} — hãy bấm gửi lại.`);
       return false;
@@ -293,85 +284,28 @@ async function sendNote() {
   }
 }
 
-// «Chữ đậm»: cho MÀN thuộc lô in mực đen nhạt — firmware ép nhiệt độ 0°C khi
-// làm mới toàn màn (waveform khung dài hơn -> đen đậm hơn, làm mới chậm hơn
-// chút). Lưu theo thiết bị; màn bình thường không cần bật.
-async function setDarkBoost() {
-  const chk = document.getElementById('darkBoostCHK');
-  const enabled = chk.checked ? 1 : 0;
-  if (await write(EpdCmd.DARK_BOOST, [enabled])) {
-    addLog(enabled
-      ? 'Đã bật «Chữ đậm» — thiết bị vẽ lại ngay; nét đen sẽ đậm hơn, làm mới chậm hơn một chút.'
-      : 'Đã tắt «Chữ đậm».');
-  } else {
-    chk.checked = !chk.checked;
-  }
-}
-
-// Hiển thị pin (fw >= 1.9): 0 chỉ icon, 1 phần trăm, 2 điện áp — lưu theo
-// thiết bị, máy vẽ lại ngay khi đổi
-// «Định dạng giờ» (0x2A): 0 = 24h, 1 = 12h — radio bị mờ khi firmware chưa
-// hỗ trợ (gate __fwTimeOk đặt trong handler fw=)
-async function setTimeFmt() {
-  const sel = document.querySelector('input[name="timeFmt"]:checked');
-  const v = sel ? parseInt(sel.value) : 0;
-  if (!window.__fwTimeOk) {
-    // như setBattStyle: không chặn cứng — chưa chắc do máy cũ, có thể chỉ là
-    // chưa nhận 'fw='; firmware cũ sẽ bỏ qua lệnh 0x2A vô hại
-    addLog('(Chưa rõ phiên bản thiết bị — vẫn gửi lệnh; firmware cũ hơn sẽ bỏ qua.)');
-  }
-  if (await write(EpdCmd.TIME_FMT, [v])) {
-    addLog('Đã đặt định dạng giờ: ' + (v === 1 ? '12 giờ' : '24 giờ') + '.');
-  }
-}
+// («Chữ đậm» dark_boost 0x28 ĐÃ GỠ 2026-08-05 theo yêu cầu người dùng —
+// firmware 7.5 cũng bỏ lệnh; opcode 0x28 giữ chỗ trong bảng EpdCmd)
 
 async function setBattStyle() {
   const sel = document.querySelector('input[name="battStyle"]:checked');
   const style = sel ? parseInt(sel.value) : 2;
   // KHÔNG chặn cứng theo atLeast: vài giây đầu sau kết nối thiết bị chưa kịp
-  // khai 'fw=' — chặn sẽ từ chối nhầm cả máy mới (đã gặp trên v2.1). Firmware
-  // cũ nhận lệnh lạ sẽ bỏ qua vô hại; radio vẫn bị mờ khi biết rõ máy quá cũ.
-  if (!FwCheck.atLeast('1.9')) {
-    addLog('(Chưa rõ phiên bản thiết bị — vẫn gửi lệnh; firmware cũ hơn v1.9 sẽ bỏ qua.)');
+  // khai 'fw=' — chặn sẽ từ chối nhầm cả máy mới. Firmware cũ nhận lệnh lạ
+  // sẽ bỏ qua vô hại; radio vẫn bị mờ khi biết rõ máy quá cũ.
+  if (!FwCheck.atLeast('0.4')) {
+    addLog('(Chưa rõ phiên bản thiết bị — vẫn gửi lệnh; firmware cũ hơn v0.4 sẽ bỏ qua.)');
   }
   if (await write(EpdCmd.BATT_STYLE, [style])) {
     addLog('Đã đặt hiển thị pin: ' + (style === 0 ? 'chỉ icon' : style === 1 ? 'phần trăm' : 'điện áp') + '.');
   }
 }
 
-// ---- Nhịp làm mới của màn 4 MÀU (cùng lệnh 0x23, ba giá trị) ----
-// Mọi lượt làm mới của panel 4 màu đều chớp ~15s (kể cả lượt "nhảy phút"
-// chỉ quét ô số phút), nên cho chọn: 1 = nhảy phút + full mỗi giờ (mặc
-// định, không tích ô nào), 2 = chỉ full mỗi giờ, 3 = chỉ full lúc 00:00.
-// KHÔNG dùng số 0 (nghĩa cũ của bản BWR): máy 4 màu đời trước v3.2 có thể
-// đang lưu 0 trong flash, firmware >= 3.3 coi 0 là "mặc định" để những máy
-// đó không tự dưng đứng phút. Hai ô loại trừ nhau; fw màn 4 màu cần >= 3.3.
-let refreshModeLast = 1;
-
-function applyRefreshModeUI(v) {
-  if (v !== 2 && v !== 3) v = 1;  // 0 / 0xFF / lạ = mặc định (khớp firmware)
-  refreshModeLast = v;
-  const h = document.getElementById('onlyHourlyCHK');
-  const d = document.getElementById('onlyMidnightCHK');
-  if (h) h.checked = (v === 2);
-  if (d) d.checked = (v === 3);
-}
-
-async function setRefreshMode(which) {
-  const h = document.getElementById('onlyHourlyCHK');
-  const d = document.getElementById('onlyMidnightCHK');
-  if (which === 'hour' && h.checked) d.checked = false;   // loại trừ nhau
-  if (which === 'day' && d.checked) h.checked = false;
-  const v = d.checked ? 3 : (h.checked ? 2 : 1);
-  if (await write(EpdCmd.SET_HOURLY_FULL, [v])) {
-    refreshModeLast = v;
-    addLog(v === 3
-      ? 'Đã đặt: chỉ làm mới lúc 00:00 — màn đứng yên cả ngày (đồng hồ sẽ đứng ở 00:00).'
-      : v === 2
-        ? 'Đã đặt: chỉ làm mới mỗi giờ — không nhảy phút nữa (đồng hồ hiện HH:00).'
-        : 'Đã đặt: nhảy phút + làm mới toàn màn mỗi giờ (mặc định).');
-  } else {
-    applyRefreshModeUI(refreshModeLast);  // gửi thất bại: trả UI về trạng thái cũ
+async function setTimeFmt() {
+  const sel = document.querySelector('input[name="timeFmt"]:checked');
+  const v = sel ? parseInt(sel.value) : 0;
+  if (await write(EpdCmd.TIME_FMT, [v])) {
+    addLog('Đã đặt định dạng giờ: ' + (v === 1 ? '12 giờ' : '24 giờ') + '.');
   }
 }
 
@@ -379,7 +313,6 @@ async function setHourlyFull() {
   const chk = document.getElementById('hourlyFullCHK');
   const enabled = chk.checked ? 1 : 0;
   if (await write(EpdCmd.SET_HOURLY_FULL, [enabled])) {
-    // (màn 4 màu không dùng ô này — nó có hàng «Nhịp làm mới» riêng)
     addLog(enabled
       ? "Đã bật: làm mới toàn màn hình mỗi giờ (chế độ đồng hồ)."
       : "Đã tắt: chỉ làm mới toàn màn hình lúc 00:00 (bóng mờ có thể tích tụ trong ngày).");
@@ -403,32 +336,7 @@ async function sendcmd() {
   await write(bytes[0], bytes.length > 1 ? bytes.slice(1) : null);
 }
 
-function convertUC8159(blackWhiteData, redWhiteData) {
-  const halfLength = blackWhiteData.length;
-  let payloadData = new Uint8Array(halfLength * 4);
-  let payloadIdx = 0;
-  let black_data, color_data, data;
-  for (let i = 0; i < halfLength; i++) {
-    black_data = blackWhiteData[i];
-    color_data = redWhiteData[i];
-    for (let j = 0; j < 8; j++) {
-      if ((color_data & 0x80) == 0x00) data = 0x04;  // red
-      else if ((black_data & 0x80) == 0x00) data = 0x00;  // black
-      else data = 0x03;  // white
-      data = (data << 4) & 0xFF;
-      black_data = (black_data << 1) & 0xFF;
-      color_data = (color_data << 1) & 0xFF;
-      j++;
-      if ((color_data & 0x80) == 0x00) data |= 0x04;  // red
-      else if ((black_data & 0x80) == 0x00) data |= 0x00;  // black
-      else data |= 0x03;  // white
-      black_data = (black_data << 1) & 0xFF;
-      color_data = (color_data << 1) & 0xFF;
-      payloadData[payloadIdx++] = data;
-    }
-  }
-  return payloadData;
-}
+// (convertUC8159 của màn 7.5" V1 ĐÃ BỎ: SSD1677 nhận hai mặt 1bpp trực tiếp)
 
 async function sendimg(slot = 0) {
   if (cropManager.isCropMode()) {
@@ -455,8 +363,6 @@ async function sendimg(slot = 0) {
   }
 
   startTime = new Date().getTime();
-  window.__imgSending = true;  // chặn retry fw= ghi lại CCCD giữa phiên gửi
-  try {
   const status = document.getElementById("status");
   status.parentElement.style.display = "block";
 
@@ -489,25 +395,17 @@ async function sendimg(slot = 0) {
     }
   }
 
+  // Driver 11/12 (SSD1677) nhận ảnh HAI MẶT 1bpp như bản 4.2": mặt đen (cờ
+  // 0x0F) rồi mặt đỏ (0x00/0xF0), mỗi mặt 960x640/8 = 76800 byte — KHÔNG
+  // dùng luồng 4bpp convertUC8159 của màn 7.5" V1.
   let ok = true;
   if (ditherMode === 'threeColor') {
     const halfLength = Math.floor(processedData.length / 2);
     const blackWhiteData = processedData.slice(0, halfLength);
     const redWhiteData = processedData.slice(halfLength);
-    if (epdDriverSelect.value === '08' || epdDriverSelect.value === '09') {
-      ok = await writeImage(convertUC8159(blackWhiteData, redWhiteData), 'bw');
-    } else {
-      ok = await writeImage(blackWhiteData, 'bw');
-      if (ok) ok = await writeImage(redWhiteData, 'red');
-    }
+    ok = await writeImage(blackWhiteData, 'bw');
+    if (ok) ok = await writeImage(redWhiteData, 'red');
   } else if (ditherMode === 'blackWhiteColor') {
-    if (epdDriverSelect.value === '08' || epdDriverSelect.value === '09') {
-      const emptyData = new Uint8Array(processedData.length).fill(0xFF);
-      ok = await writeImage(convertUC8159(processedData, emptyData), 'bw');
-    } else {
-      ok = await writeImage(processedData, 'bw');
-    }
-  } else if (ditherMode === 'fourColor' || ditherMode === 'sixColor') {
     ok = await writeImage(processedData, 'bw');
   } else {
     addLog("Firmware không hỗ trợ chế độ màu này.");
@@ -542,7 +440,6 @@ async function sendimg(slot = 0) {
   setTimeout(() => {
     status.parentElement.style.display = "none";
   }, 5000);
-  } finally { window.__imgSending = false; }
 }
 
 function downloadDataArray() {
@@ -596,8 +493,8 @@ function updateButtonStatus(forceDisabled = false) {
   // mode selection KHÔNG còn đòi [Sync time] trước: lệnh chọn giao diện
   // (0x02) tự mang timestamp nên thiết bị luôn nhận được giờ đúng. Gate cũ
   // từng khóa chết người dùng khi mode ĐANG LƯU trên máy bị lỗi render
-  // (7.5" rst=P4): bấm Sync time là máy vẽ lại mode lỗi và reset ngay,
-  // không có cách nào thoát sang mode khác.
+  // (rst=P4): bấm Sync time là máy vẽ lại mode lỗi và reset ngay, không có
+  // cách nào thoát sang mode khác.
   const modeStatus = status;
   document.getElementById("reconnectbutton").disabled = (gattServer == null || gattServer.connected) ? 'disabled' : null;
   document.getElementById("synctimebutton").disabled = status;
@@ -629,9 +526,8 @@ function updateButtonStatus(forceDisabled = false) {
   document.getElementById("uploadlayoutbutton").disabled = status;
   document.getElementById("sendnotebutton").disabled = status;
   document.getElementById("clearscreenbutton").disabled = status;
+  // màn 10.2" chỉ có MỘT nút gửi ảnh (không khe ảnh — 76800B/mặt > khe 32KB)
   document.getElementById("sendimgbutton").disabled = status;
-  document.getElementById("sendimgbutton2").disabled = status;
-  document.getElementById("sendimgbutton3").disabled = status;
   document.getElementById("setDriverbutton").disabled = status;
   document.getElementById("otabutton").disabled = status;
 }
@@ -674,7 +570,7 @@ async function preConnect() {
     } catch (e) {
       console.error(e);
       if (e.name === 'NotFoundError') {
-        addLog("Không tìm thấy thiết bị E-Ink 4.2\" (tên DIY-4_2-xxxx)");
+        addLog("Không tìm thấy thiết bị E-Ink 10.2\" (tên DIY-10_2-xxxx)");
       } else if (e.message) {
         addLog("requestDevice: " + e.message);
       }
@@ -718,10 +614,7 @@ function handleNotify(value, idx) {
     // older firmware (96-byte note field)
     const hf = data.length > 205 ? data[205] : (data.length > 109 ? data[109] : null);
     if (hf !== null) {
-      const c = document.getElementById('hourlyFullCHK');
-      if (c) c.checked = hf !== 0;
-      // màn 4 màu: cùng byte này mang BA giá trị 1/2/3 (xem setRefreshMode)
-      applyRefreshModeUI(hf);
+      document.getElementById('hourlyFullCHK').checked = hf !== 0;
     }
     // 3 khe ảnh (fw >= 1.5): auto/interval/mask tại offset 212/213/214 (sau
     // u32 activation ở 208 — struct căn 4 byte)
@@ -733,14 +626,16 @@ function handleNotify(value, idx) {
       if (r) r.checked = true;
       updateImgAutoUI();
     }
-    // «Chữ đậm» (màn lô in nhạt) tại offset 216
-    if (data.length > 216) {
-      document.getElementById('darkBoostCHK').checked = data[216] === 1;
-    }
-    // «Hiển thị pin» (fw >= 1.9) tại offset 217: 0 icon / 1 % / 2 điện áp
+    // (byte dark_boost tại offset 216 không còn dùng — «chữ đậm» đã gỡ)
+    // «Hiển thị pin» (fw >= 0.4) tại offset 217, «Định dạng giờ» tại 218 —
+    // CỐ Ý trùng offset bản 4.2" để hub dùng chung js/4_2/main.js đọc đúng
     if (data.length > 217 && data[217] <= 2) {
       const rb = document.querySelector(`input[name="battStyle"][value="${data[217]}"]`);
       if (rb) rb.checked = true;
+    }
+    if (data.length > 218 && data[218] <= 1) {
+      const rt = document.querySelector(`input[name="timeFmt"][value="${data[218]}"]`);
+      if (rt) rt.checked = true;
     }
   } else {
     if (textDecoder == null) textDecoder = new TextDecoder();
@@ -772,62 +667,15 @@ function handleNotify(value, idx) {
       const f = imgRdyResolve; imgRdyResolve = null; f(msg === 'img=rdy');
     } else if (msg.startsWith('fw=') && msg.length > 3) {
       FwCheck.report(msg.substring(3));
-      window.__fwStr = msg.substring(3);   // để báo lỗi cho rõ ở nơi khác
-      window.__devNm = (bleDevice && bleDevice.name) || '';
       // khu «Tự động đổi ảnh» chỉ hiện khi firmware hỗ trợ 3 khe (>= 1.5)
       if (FwCheck.atLeast('1.5')) {
         document.getElementById('imgAutoRow').style.display = '';
         updateImgAutoUI();
       }
-      // giao diện v1.7 (chữ đậm/đỏ, số 12-3-6-9 đỏ, bỏ mode 2 & 18, hắc đạo):
-      // preview mới CHỈ hiện khi firmware thiết bị khớp — máy cũ giữ preview cũ
-      window.__fw17 = FwCheck.atLeast('1.7');
-      // mode «Lịch dương + âm» (card 13, id 14) thay Đếm ngược: BWR cần fw
-      // >= 2.0; bản BỐN MÀU (DIY-4_2C, đánh số 2.x riêng) cần >= 2.9
-      const devNm = (bleDevice && bleDevice.name) || '';
-      // Màn 7.5" 640x384: tên MỚI 'DIY-7_5-' và tên CŨ 'DIY-7_5V-' là CÙNG
-      // một dòng máy (đổi tên ở firmware v1.0). Regex có 'V?' + gạch nối nên
-      // KHÔNG chạm DIY-7_5B / DIY-7_5R. Nhánh CC2640 cũ đã bỏ hẳn.
-      const is7_5 = /^DIY-7_5V?-/.test(devNm);
-      window.__fwCal = is7_5 ? false   // 7.5" chua co mode nay
-        : FwCheck.atLeast(devNm.indexOf('DIY-4_2C') === 0 ? '2.9' : '2.0');
-      // «Định dạng giờ» 12h/24h: BWR >= 2.1, 4 màu >= 3.0, 7.5" >= 0.3
-      window.__fwTimeOk = FwCheck.atLeast(devNm.indexOf('DIY-4_2C') === 0 ? '3.0'
-        : is7_5 ? '0.3' : '2.1');
-      // icon «Tự thiết kế» 2 mặt (đen + ĐỎ): chỉ màn BA MÀU — 4.2" BWR >= 2.3,
-      // 7.5" >= 0.5. Bản 4 MÀU (DIY-4_2C) chưa có.
-      // ẢNH NỀN toàn màn cho «Tự thiết kế»: chỉ 4.2" ba màu từ v2.3 (dùng
-      // lại khe ảnh 32KB; bản 7.5"/4 màu không có khe nên không hỗ trợ)
-      window.__fwBg = !/^DIY-(7_5|4_2C)/.test(devNm) && FwCheck.atLeast('2.3');
+      // mode 14 «Lịch dương + âm» thay Đếm ngược: cần fw 10.2" >= 0.2 —
+      // preview card 14 đổi hình + tên theo cờ này (mode_preview.js)
+      window.__fwCal = FwCheck.atLeast('0.2');
       if (window.refreshModeGallery) window.refreshModeGallery();
-      window.__fwIconRed = is7_5 ? FwCheck.atLeast('0.5')
-        : (devNm.indexOf('DIY-4_2C') === 0) ? false
-        : FwCheck.atLeast('2.3');
-      // «Nhịp làm mới»: BWR/7.5" vẫn dùng ô hourly_full cũ (có từ lâu); bản
-      // BỐN MÀU (DIY-4_2C) chỉ nghe ba giá trị của lệnh 0x23 từ v3.3 —
-      // firmware cũ hơn nhận byte nhưng bỏ qua, nên khóa 2 ô cho khỏi hiểu lầm
-      {
-        const ok4c = devNm.indexOf('DIY-4_2C') !== 0 || FwCheck.atLeast('3.3');
-        ['onlyHourlyCHK', 'onlyMidnightCHK'].forEach(id => {
-          const e = document.getElementById(id);
-          if (e) e.disabled = !ok4c;
-        });
-        const rh = document.getElementById('refreshModeHint');
-        if (rh && !ok4c) rh.textContent = 'Cần firmware màn 4 màu ≥ 3.3 — hãy cập nhật ở mục OTA bên dưới.';
-      }
-      {
-        document.querySelectorAll('input[name="timeFmt"]').forEach(r => { r.disabled = !window.__fwTimeOk; });
-        const th = document.getElementById('timeFmtHint');
-        if (th && window.__fwTimeOk) th.textContent = 'Thiết bị vẽ lại ngay khi đổi.';
-      }
-      if (window.refreshModeGallery) window.refreshModeGallery();
-      // «Hiển thị pin» cần fw >= 1.9 — máy cũ mờ radio + giữ hint nhắc cập nhật
-      {
-        const ok19 = FwCheck.atLeast('1.9');
-        document.querySelectorAll('input[name="battStyle"]').forEach(r => { r.disabled = !ok19; });
-        const h = document.getElementById('battStyleHint');
-        if (h) h.textContent = ok19 ? 'Thiết bị vẽ lại ngay khi đổi.' : 'Cần firmware ≥ 1.9 — hãy cập nhật ở mục OTA bên dưới.';
-      }
     }
   }
 }
@@ -867,11 +715,8 @@ async function setImgAuto() {
 async function connect() {
   if (bleDevice == null || epdCharacteristic != null) return;
   // đời cũ không tự khai coi như 1.3.1; kèm tên thiết bị để popup nhắc
-  // tối đa 1 lần/ngày cho mỗi máy. Màn 7.5" (DIY-7_5- và tên cũ
-  // DIY-7_5V-) không so với bảng firmware 4.2" — khỏi nhắc
-  // cập nhật nhầm (bảng «Danh sách firmware» hiện chỉ có file 4.2").
-  const is75 = bleDevice && bleDevice.name && /^DIY-7_5V?-/.test(bleDevice.name);
-  if (!is75) FwCheck.reset('1.3.1', bleDevice && bleDevice.name);
+  // tối đa 1 lần/ngày cho mỗi máy
+  FwCheck.reset('1.3.1', bleDevice && bleDevice.name);
 
   try {
     addLog("Đang kết nối: " + bleDevice.name);
@@ -898,9 +743,9 @@ async function connect() {
     appVersion = 0x15;
   }
 
-  // is75: cả hai bản 7.5" đánh số APP_VERSION riêng từ 0x01 (không có đời
-  // EPD-nRF5 cũ) — ngưỡng 0x16 của dòng 4.2" không áp dụng, khỏi báo nhầm
-  if (appVersion < 0x16 && !is75) {
+  // (bỏ cảnh báo «firmware quá cũ» của bản 4.2": firmware epd_7_5inch bắt
+  // đầu từ APP_VERSION 0x01 và không có đời EPD-nRF5 cũ nào cho màn này)
+  if (false) {
     const oldURL = "https://tsl0922.github.io/EPD-nRF5/v1.5";
     alert("!!! Chú ý !!!\nPhiên bản firmware quá cũ, một số chức năng có thể không hoạt động. Nên cập nhật firmware.");
     if (confirm('Mở phiên bản web tool cũ?')) location.href = oldURL;
@@ -929,30 +774,8 @@ async function connect() {
 
   await write(EpdCmd.INIT);
 
-  // 'fw=' nằm CUỐI loạt notify mở màn — một số máy/điện thoại làm rơi gói
-  // cuối (radio 12/24h + gallery mới không mở dù máy chạy bản mới). Chưa
-  // nhận sau 1.2s thì ép thiết bị GỬI LẠI loạt bằng cách ghi lại CCCD
-  // (stop -> start), tối đa 3 lần; biết version rồi thì thôi ngay.
-  (async () => {
-    for (let i = 0; i < 3; i++) {
-      await sleep(1200);
-      if (FwCheck.atLeast('0.0')) return;  // đã nhận fw= (deviceVer != null)
-      if (window.__imgSending) return;     // đang gửi ảnh: cấm ghi lại CCCD
-      if (!epdCharacteristic || !gattServer || !gattServer.connected) return;
-      addLog('(Chưa nhận phiên bản firmware — yêu cầu thiết bị gửi lại...)');
-      try {
-        await epdCharacteristic.stopNotifications();
-        msgIndex = 0;  // loạt gửi lại bắt đầu bằng config (idx 0)
-        await epdCharacteristic.startNotifications();
-      } catch (e) {
-        console.error(e);
-        return;
-      }
-    }
-  })();
-
   // firmware <= 1.3.1 không gửi 'fw=' — sau 3s vẫn nhắc nếu bảng có bản mới
-  if (!is75) FwCheck.schedule(3000);
+  FwCheck.schedule(3000);
 
   document.getElementById("connectbutton").innerHTML = 'Ngắt kết nối';
   updateButtonStatus();
@@ -962,8 +785,39 @@ function setStatus(statusText) {
   document.getElementById("status").innerHTML = statusText;
 }
 
-// addLog() / clearLog(): js/log.js (dung chung ca hub lan cac app).
-// Ban standalone trong EPD-DA14585/webtools/ van giu ban rieng cua no.
+function addLog(logTXT, action = '') {
+  const log = document.getElementById("log");
+  const now = new Date();
+  const time = String(now.getHours()).padStart(2, '0') + ":" +
+    String(now.getMinutes()).padStart(2, '0') + ":" +
+    String(now.getSeconds()).padStart(2, '0') + " ";
+
+  const logEntry = document.createElement('div');
+  const timeSpan = document.createElement('span');
+  logEntry.className = 'log-line';
+  timeSpan.className = 'time';
+  timeSpan.textContent = time;
+  logEntry.appendChild(timeSpan);
+
+  if (action !== '') {
+    const actionSpan = document.createElement('span');
+    actionSpan.className = 'action';
+    actionSpan.innerHTML = action;
+    logEntry.appendChild(actionSpan);
+  }
+  logEntry.appendChild(document.createTextNode(logTXT));
+
+  log.appendChild(logEntry);
+  log.scrollTop = log.scrollHeight;
+
+  while (log.childNodes.length > 20) {
+    log.removeChild(log.firstChild);
+  }
+}
+
+function clearLog() {
+  document.getElementById("log").innerHTML = '';
+}
 
 function fillCanvas(style) {
   ctx.fillStyle = style;
@@ -1199,20 +1053,13 @@ function updateDitcherOptions() {
   if (colorMode) document.getElementById('ditherMode').value = colorMode;
   if (canvasSize) document.getElementById('canvasSize').value = canvasSize;
 
-  // Màn 4 màu IST7158/JD79668 (driver 05/06, firmware epd_4_2inch_4c):
-  // «chữ đậm» của bản BWR không áp dụng (ẩn), còn «làm mới mỗi giờ» thì CÓ
-  // (fw 4 màu >= v3.2) — hiện kèm ghi chú nhịp cập nhật riêng của màn 4 màu
-  const is4c = epdDriverSelect.value === '05' || epdDriverSelect.value === '06';
+  // Màn 10.2" fw >= 0.3 CÓ partial từng phút như bản 4.2": hiện lại tùy
+  // chọn «làm mới toàn màn mỗi giờ» (dọn tàn dư waveform partial) + ghi
+  // chú nhịp cập nhật.
   const hfRow = document.getElementById('hourlyFullRow');
-  const dbRow = document.getElementById('darkBoostRow');
   const hint = document.getElementById('fourColorHint');
-  // màn 4 màu dùng hàng «Nhịp làm mới» 3 lựa chọn thay cho ô hourly_full 2
-  // trạng thái của bản BWR (mọi lượt của màn 4 màu đều là full refresh)
-  const rmRow = document.getElementById('refreshModeRow');
-  if (hfRow) hfRow.style.display = is4c ? 'none' : '';
-  if (rmRow) rmRow.style.display = is4c ? '' : 'none';
-  if (dbRow) dbRow.style.display = is4c ? 'none' : '';
-  if (hint) hint.style.display = is4c ? '' : 'none';
+  if (hfRow) hfRow.style.display = '';
+  if (hint) hint.style.display = '';
 
   // gallery preview vẽ điểm nhấn VÀNG khi driver là màn 4 màu — vẽ lại
   if (window.refreshModeGallery) window.refreshModeGallery();
@@ -1234,8 +1081,8 @@ function crc32buf(buf) {
   return (crc ^ -1) | 0;
 }
 
-// Nút «Cài ngay» trong bảng «Danh sách firmware»: tải file .bin cùng origin
-// rồi chạy thẳng luồng OTA — khách không cần tải về máy rồi chọn file thủ công.
+// Nút «Cài ngay» ở bảng «Danh sách firmware»: tải .bin của hàng đó rồi chạy
+// thẳng OTA — người dùng khỏi phải tải file về máy rồi chọn lại ở ô Upload.
 async function fwInstallRow(btn) {
   const tr = btn.closest('tr');
   const link = tr && tr.querySelector('a[download]');
@@ -1244,7 +1091,6 @@ async function fwInstallRow(btn) {
   const ver = (tr.cells && tr.cells[1]) ? tr.cells[1].textContent.trim() : '?';
   if (!confirm('Cài firmware phiên bản ' + ver + ' vào thiết bị đang kết nối?' + String.fromCharCode(10) +
                'Thiết bị sẽ khởi động lại sau khi cập nhật — KHÔNG tắt nguồn giữa chừng!')) return;
-  // cuộn lên khu «Cập nhật firmware (OTA)» để người dùng thấy tiến trình
   const otaBox = document.getElementById('otaProgress');
   if (otaBox && otaBox.closest('fieldset'))
     otaBox.closest('fieldset').scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1262,23 +1108,18 @@ async function fwInstallRow(btn) {
 }
 
 async function otaUpdate(preBuf) {
-  // preBuf (ArrayBuffer): từ nút «Cài ngay» của bảng firmware (đã confirm
-  // ở fwInstallRow) — không truyền thì đọc file chọn ở ô Upload như cũ
+  // preBuf (ArrayBuffer): từ nút «Cài ngay» của bảng firmware (đã hỏi xác
+  // nhận ở fwInstallRow) — không truyền thì đọc file chọn ở ô Upload như cũ
+  const fileInput = document.getElementById('otaFile');
+  if (!preBuf && (!fileInput || fileInput.files.length === 0)) {
+    addLog('Vui lòng chọn file firmware .bin trước.');
+    return;
+  }
   if (!epdCharacteristic) {
     addLog('Chưa kết nối thiết bị.');
     return;
   }
-  let firmBuf;
-  if (preBuf) {
-    firmBuf = new Uint8Array(preBuf);
-  } else {
-    const fileInput = document.getElementById('otaFile');
-    if (!fileInput || fileInput.files.length === 0) {
-      addLog('Vui lòng chọn file firmware .bin trước.');
-      return;
-    }
-    firmBuf = new Uint8Array(await fileInput.files[0].arrayBuffer());
-  }
+  const firmBuf = new Uint8Array(preBuf ? preBuf : await fileInput.files[0].arrayBuffer());
   const firmSize = firmBuf.length;
 
   // tìm magic phiên bản (epd_version[] trong user_app.c: 79 13 a5 f9 86 ec 5a 06 + version 4B)
@@ -1297,7 +1138,7 @@ async function otaUpdate(preBuf) {
   const firmCrc = crc32buf(firmBuf);
   addLog('Firmware: ' + firmSize + ' byte, phiên bản 0x' + (firmVer >>> 0).toString(16) + '.');
 
-  if (!preBuf && !confirm('Cập nhật firmware qua BLE?\nKhông tắt nguồn thiết bị trong quá trình cập nhật!')) return;
+  if (!confirm('Cập nhật firmware qua BLE?\nKhông tắt nguồn thiết bị trong quá trình cập nhật!')) return;
 
   const otaStatus = document.getElementById('otaProgress');
   const show = (t) => { if (otaStatus) otaStatus.textContent = t; };
@@ -1492,6 +1333,9 @@ document.body.onload = () => {
   paintManager.initPaintTools();
   cropManager.initCropTools();
   initEventHandlers();
+  // đồng bộ canvas 960×640 + chế độ màu + các row tùy chọn theo driver 11
+  // ngay khi mở trang (thẻ <canvas> trong HTML vẫn là 400×300 thừa kế 4.2")
+  updateDitcherOptions();
   updateButtonStatus();
   checkDebugMode();
 }

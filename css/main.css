@@ -797,11 +797,19 @@ canvas.text-placement-mode {
 
 /* 4.2-only debug controls in the connect fieldset: even in debug mode they
    only show once a 4.2 device is connected (body.app-4_2) */
-body.dark-mode .only-4_2.debug {
+body.dark-mode .only-4_2.debug,
+body.dark-mode .only-7_5.debug,
+body.dark-mode .only-7_3.debug,
+body.dark-mode .only-7_5b.debug,
+body.dark-mode .only-10_2.debug {
     display: none !important;
 }
 
-body.app-4_2.dark-mode .only-4_2.debug {
+body.app-4_2.dark-mode .only-4_2.debug,
+body.app-7_5.dark-mode .only-7_5.debug,
+body.app-7_3.dark-mode .only-7_3.debug,
+body.app-7_5b.dark-mode .only-7_5b.debug,
+body.app-10_2.dark-mode .only-10_2.debug {
     display: flex !important;
 }
 

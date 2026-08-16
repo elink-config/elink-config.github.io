@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  const VER = '20260816c'; // cache-buster, keep in sync with index.html
+  const VER = '20260816d'; // cache-buster, keep in sync with index.html
 
   const EPD42_SERVICE = '62750001-d828-918d-fb46-b6c11c675aec';
   const HM213_SERVICE = '0000ff00-0000-1000-8000-00805f9b34fb';
@@ -17,12 +17,40 @@
   // covers whichever app ends up being loaded
   const ALL_SERVICES = [EPD42_SERVICE, HM213_SERVICE, DLG_EPD_SERVICE, DLG_RXTX_SERVICE, DLG_OTA_SERVICE];
 
+  // THỨ TỰ Ở ĐÂY = thứ tự nút «Hoặc kết nối tới một thiết bị cụ thể»
+  // (buildDevPicker duyệt bảng này). Mỗi dòng máy lọc bằng ĐÚNG tiền tố của
+  // nó — tuyệt đối không gộp biến thể: 'DIY-7_5-' có gạch nối nên KHÔNG
+  // khớp DIY-7_5B / DIY-7_5R, 'DIY-4_2-' không khớp DIY-4_2C / DIY-4_2R.
   const APPS = {
+    'dlg': {
+      label: 'Đồng hồ DLG-CLOCK',
+      sub: 'Đồng hồ E-Ink DLG-CLOCK: đặt giờ, đếm ngược, truyền hình ảnh và thiết kế mẫu',
+      fragment: 'apps/dlg.html',
+      prefixes: ['DLG-CLOCK-'],
+      scripts: ['js/dlg/image.js', 'js/dlg/qrcode.min.js', 'js/dlg/main.js', 'js/dlg/editor.js'],
+    },
+    '2_13': {
+      label: '2.13"',
+      sub: 'DA14585 — 2.13" (212×104): kết nối, cấu hình và truyền hình ảnh',
+      fragment: 'apps/2_13.html',
+      prefixes: ['DIY-2_13-'],
+      scripts: ['js/dithering.js', 'js/paint.js', 'js/crop.js',
+        'js/2_13/common.js',
+        'js/2_13/designer.js', 'js/diy_store.js', 'js/2_13/mode_preview.js', 'js/2_13/main.js'],
+    },
+    '2_9': {
+      label: '2.9"',
+      sub: 'DA14585 — 2.9" (296×128 BWR): kết nối, cấu hình và truyền hình ảnh',
+      fragment: 'apps/2_9.html',
+      prefixes: ['DIY-2_9-'],
+      scripts: ['js/dithering.js', 'js/paint.js', 'js/crop.js',
+        'js/2_9/designer.js', 'js/diy_store.js', 'js/2_9/mode_preview.js', 'js/2_9/main.js'],
+    },
     '4_2': {
       label: '4.2" (3 màu / đen trắng)',
       sub: 'Màn 4.2" 400×300 (DA14585): kết nối, cấu hình và truyền hình ảnh',
       fragment: 'apps/4_2.html',
-      prefixes: ['DIY-4_2-'],   // hộp chọn BLE chỉ hiện đúng dòng máy này
+      prefixes: ['DIY-4_2-'],
       family: '4_2',
       scripts: ['js/dithering.js', 'js/paint.js', 'js/crop.js',
         'js/4_2/mode_preview.js', 'js/4_2/designer.js', 'js/diy_store.js', 'js/4_2/main.js'],
@@ -31,43 +59,58 @@
       label: '4.2" BỐN MÀU',
       sub: 'Màn 4.2" 400×300 BỐN MÀU (DIY-4_2C, DA14585): kết nối, cấu hình và truyền hình ảnh',
       fragment: 'apps/4_2c.html',
-      prefixes: ['DIY-4_2C-'],   // hộp chọn BLE chỉ hiện đúng dòng máy này
+      prefixes: ['DIY-4_2C-'],
       family: '4_2',
       scripts: ['js/dithering.js', 'js/paint.js', 'js/crop.js',
         'js/4_2/mode_preview.js', 'js/4_2/designer.js', 'js/diy_store.js', 'js/4_2/main.js'],
+    },
+    'reader_4_2': {
+      label: 'Máy đọc sách 4.2"',
+      sub: 'Máy đọc sách 4.2" (DIY-4_2R, DA14585): gửi sách, điều khiển đọc và cài đặt hiển thị',
+      fragment: 'apps/reader_4_2.html',
+      prefixes: ['DIY-4_2R-'],
+      scripts: ['js/dithering.js', 'js/reader_4_2/font_metrics.js', 'js/reader_4_2/reader.js'],
+    },
+    '7_3': {
+      label: '7.3" SÁU MÀU',
+      sub: 'Màn 7.3" 800×480 SÁU MÀU Spectra 6 (DIY-7_3, DA14585): kết nối, cấu hình và truyền hình ảnh',
+      fragment: 'apps/7_3.html',
+      prefixes: ['DIY-7_3-'],
+      scripts: ['js/dithering.js', 'js/paint.js', 'js/crop.js',
+        'js/7_3/mode_preview.js', 'js/7_3/designer.js', 'js/diy_store.js', 'js/7_3/main.js'],
     },
     '7_5': {
       label: '7.5"',
-      sub: 'Màn 7.5" V1 640×384 (DIY-7_5V, DA14585): kết nối, cấu hình và truyền hình ảnh',
+      sub: 'Màn 7.5" 640×384 (DIY-7_5, DA14585): kết nối, cấu hình và truyền hình ảnh',
       fragment: 'apps/7_5.html',
-      prefixes: ['DIY-7_5'],   // hộp chọn BLE chỉ hiện đúng dòng máy này
-      family: '4_2',
+      // 'DIY-7_5V-' = TÊN CŨ của chính dòng máy này (firmware trước v1.0),
+      // giữ lại để máy đã bán chưa cập nhật vẫn bấm nút 7.5" được.
+      prefixes: ['DIY-7_5-', 'DIY-7_5V-'],
       scripts: ['js/dithering.js', 'js/paint.js', 'js/crop.js',
-        'js/4_2/mode_preview.js', 'js/4_2/designer.js', 'js/diy_store.js', 'js/4_2/main.js'],
+        'js/7_5/mode_preview.js', 'js/7_5/designer.js', 'js/diy_store.js', 'js/7_5/main.js'],
     },
-    '2_13': {
-      label: '2.13" (212×104)',
-      sub: 'DA14585 — 2.13" (212×104): kết nối, cấu hình và truyền hình ảnh',
-      fragment: 'apps/2_13.html',
-      prefixes: ['DIY-2_13-'],   // hộp chọn BLE chỉ hiện đúng dòng máy này
+    '7_5b': {
+      label: '7.5" CHỮ LỚN',
+      sub: 'Màn 7.5" 640×384 bản CHỮ LỚN (DIY-7_5B, DA14585): kết nối, cấu hình và truyền hình ảnh',
+      fragment: 'apps/7_5b.html',
+      prefixes: ['DIY-7_5B-'],
       scripts: ['js/dithering.js', 'js/paint.js', 'js/crop.js',
-        'js/2_13/common.js',
-        'js/2_13/designer.js', 'js/diy_store.js', 'js/2_13/mode_preview.js', 'js/2_13/main.js'],
+        'js/7_5b/mode_preview.js', 'js/7_5b/main.js'],
     },
-    '2_9': {
-      label: '2.9" (296×128)',
-      sub: 'DA14585 — 2.9" (296×128 BWR): kết nối, cấu hình và truyền hình ảnh',
-      fragment: 'apps/2_9.html',
-      prefixes: ['DIY-2_9-'],   // hộp chọn BLE chỉ hiện đúng dòng máy này
+    'reader_7_5': {
+      label: 'Máy đọc sách 7.5"',
+      sub: 'Máy đọc sách 7.5" (DIY-7_5R, nRF52811): gửi sách, điều khiển đọc và cài đặt hiển thị',
+      fragment: 'apps/reader_7_5.html',
+      prefixes: ['DIY-7_5R-'],
+      scripts: ['js/dithering.js', 'js/reader_7_5/reader.js'],
+    },
+    '10_2': {
+      label: '10.2"',
+      sub: 'Màn 10.2" 960×640 (DIY-10_2, DA14585): kết nối, cấu hình và truyền hình ảnh',
+      fragment: 'apps/10_2.html',
+      prefixes: ['DIY-10_2-'],
       scripts: ['js/dithering.js', 'js/paint.js', 'js/crop.js',
-        'js/2_9/designer.js', 'js/diy_store.js', 'js/2_9/mode_preview.js', 'js/2_9/main.js'],
-    },
-    'dlg': {
-      label: 'Đồng hồ DLG-CLOCK',
-      sub: 'Đồng hồ E-Ink DLG-CLOCK: đặt giờ, đếm ngược, truyền hình ảnh và thiết kế mẫu',
-      fragment: 'apps/dlg.html',
-      prefixes: ['DLG-CLOCK-'],   // hộp chọn BLE chỉ hiện đúng dòng máy này
-      scripts: ['js/dlg/image.js', 'js/dlg/qrcode.min.js', 'js/dlg/main.js', 'js/dlg/editor.js'],
+        'js/10_2/mode_preview.js', 'js/10_2/designer.js', 'js/diy_store.js', 'js/10_2/main.js'],
     },
   };
 
@@ -80,21 +123,30 @@
     return new URLSearchParams(window.location.search).get('debug') === 'true';
   }
 
-  // DIY-2_13-xxxx → 2.13", DIY-2_9-xxxx → 2.9", DIY-4_2-xxxx → 4.2",
-  // DIY-4_2C-xxxx → 4.2" BỐN MÀU (epd_4_2inch_4c — cùng app 4_2, driver 05/06),
-  // DIY-7_5-xxxx → 7.5" (CC2640 800×480, cùng giao thức + app với 4.2"),
-  // DIY-7_5V-xxxx → 7.5" V1 640×384 (DA14585, epd_7_5inch — model 08/09),
-  // DLG-CLOCK-xxxx → đồng hồ DLG.
-  // Plain DIY-xxxx = 4.2" board on older firmware without the size tag.
+  // Route theo TÊN BLE. QUY TẮC: tên biến thể dài phải kiểm TRƯỚC tiền tố
+  // ngắn hơn, nếu không DIY-7_5B/-7_5R sẽ bị nhánh DIY-7_5- nuốt mất.
+  //   DLG-CLOCK-xxxx → đồng hồ DLG          DIY-2_13-xxxx  → 2.13"
+  //   DIY-2_9-xxxx   → 2.9"                 DIY-4_2-xxxx   → 4.2" (3 màu)
+  //   DIY-4_2C-xxxx  → 4.2" BỐN MÀU         DIY-4_2R-xxxx  → máy đọc sách 4.2"
+  //   DIY-7_3-xxxx   → 7.3" SÁU MÀU         DIY-7_5-xxxx   → 7.5" (640×384)
+  //   DIY-7_5B-xxxx  → 7.5" CHỮ LỚN         DIY-7_5R-xxxx  → máy đọc sách 7.5"
+  //   DIY-10_2-xxxx  → 10.2"
+  // DIY-7_5V-xxxx = TÊN CŨ của 7.5" (firmware trước v1.0) — vẫn nhận.
+  // DIY-xxxx trơ = board 4.2" đời cũ chưa có phần tên kích thước.
   function detectType(name) {
     name = name || '';
     if (name.startsWith('DLG-CLOCK-')) return 'dlg';
     if (name.startsWith('DIY-2_13-')) return '2_13';
     if (name.startsWith('DIY-2_9-')) return '2_9';
     if (name.startsWith('DIY-4_2C-')) return '4_2c';
+    if (name.startsWith('DIY-4_2R-')) return 'reader_4_2';
     if (name.startsWith('DIY-4_2-')) return '4_2';
-    if (name.startsWith('DIY-7_5V-')) return '7_5'; // 7.5" V1 (DA14585) cùng giao thức 4.2"
-    if (name.startsWith('DIY-7_5-')) return '7_5';  // firmware CC2640 7.5" nói giao thức 4.2"
+    if (name.startsWith('DIY-7_3-')) return '7_3';
+    if (name.startsWith('DIY-7_5B-')) return '7_5b';
+    if (name.startsWith('DIY-7_5R-')) return 'reader_7_5';
+    if (name.startsWith('DIY-7_5V-')) return '7_5';  // tên cũ của 7.5"
+    if (name.startsWith('DIY-7_5-')) return '7_5';
+    if (name.startsWith('DIY-10_2-')) return '10_2';
     if (name.startsWith('DIY-')) return '4_2';
     return null;
   }
