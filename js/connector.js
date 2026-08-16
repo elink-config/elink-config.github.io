@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  const VER = '20260816d'; // cache-buster, keep in sync with index.html
+  const VER = '20260816e'; // cache-buster, keep in sync with index.html
 
   const EPD42_SERVICE = '62750001-d828-918d-fb46-b6c11c675aec';
   const HM213_SERVICE = '0000ff00-0000-1000-8000-00805f9b34fb';
@@ -457,6 +457,46 @@
 
   // Dựng hàng nút «Hoặc kết nối tới một thiết bị cụ thể» từ chính bảng APPS,
   // nên thêm/bớt dòng máy ở APPS là hàng nút tự khớp theo.
+  // Điền cột «Firmware mới nhất» của bảng «Thiết bị được hỗ trợ» ở trang chủ.
+  // NGUỒN DUY NHẤT là bảng «Danh sách firmware» trong fragment của chính máy
+  // đó — phát hành bản mới chỉ cần thêm hàng vào bảng ấy, ô này tự theo, khỏi
+  // sửa hai nơi rồi quên một nơi. Chạy nền sau khi trang hiện, hỏng thì để
+  // dấu «—» chứ không chặn gì.
+  function fwVerNum(txt) {
+    const m = String(txt).match(/(\d+)(?:\.(\d+))?(?:\.(\d+))?/);
+    if (!m) return null;
+    return [+m[1], +(m[2] || 0), +(m[3] || 0)];
+  }
+
+  async function fillLatestFw() {
+    const cells = document.querySelectorAll('td.fw-latest[data-app]');
+    for (const td of cells) {
+      const type = td.getAttribute('data-app');
+      const cfg = APPS[type];
+      if (!cfg || !cfg.fragment) { td.textContent = '—'; continue; }
+      try {
+        const r = await fetch(cfg.fragment + '?v=' + VER);
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const doc = new DOMParser().parseFromString(await r.text(), 'text/html');
+        let best = null, bestTxt = null;
+        doc.querySelectorAll('.fw-table tbody tr').forEach(tr => {
+          if (!tr.cells || tr.cells.length < 2) return;
+          const txt = tr.cells[1].textContent.trim();
+          const v = fwVerNum(txt);
+          if (!v) return;
+          if (!best || v[0] > best[0] || (v[0] === best[0] &&
+              (v[1] > best[1] || (v[1] === best[1] && v[2] > best[2])))) {
+            best = v; bestTxt = txt;
+          }
+        });
+        td.textContent = bestTxt || '—';
+        if (!bestTxt) td.title = 'Dòng máy này chưa phát hành firmware qua trang';
+      } catch (e) {
+        td.textContent = '—';
+      }
+    }
+  }
+
   function buildDevPicker() {
     const box = document.getElementById('devPickList');
     if (!box) return;
@@ -602,6 +642,7 @@
     document.getElementById('sendcmdbutton').disabled = true;
     actInitUi();
     buildDevPicker();
+    fillLatestFw();
 
     // dev helper: ?debug=true&act=<MAC> opens the activation popup with a fake
     // MAC so the dialog can be checked without a locked device
