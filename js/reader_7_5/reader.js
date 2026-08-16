@@ -145,12 +145,6 @@ async function sendcmd() {
 
 // ---- chờ notify ----
 let mtuNotifyResolve = null;
-function waitMtuNotify(timeoutMs) {
-  return new Promise(resolve => {
-    const t = setTimeout(() => { mtuNotifyResolve = null; resolve(false); }, timeoutMs);
-    mtuNotifyResolve = () => { clearTimeout(t); resolve(true); };
-  });
-}
 let notifyWaiters = [];
 // đợi một notify dạng chữ thỏa pred(msg) -> truthy; trả về giá trị pred trả ra
 function waitNotify(pred, timeoutMs) {

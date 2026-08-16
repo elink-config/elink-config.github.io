@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  const VER = '20260816g'; // cache-buster, keep in sync with index.html
+  const VER = '20260816h'; // cache-buster, keep in sync with index.html
 
   const EPD42_SERVICE = '62750001-d828-918d-fb46-b6c11c675aec';
   const HM213_SERVICE = '0000ff00-0000-1000-8000-00805f9b34fb';
@@ -27,14 +27,14 @@
       sub: 'Đồng hồ E-Ink DLG-CLOCK: đặt giờ, đếm ngược, truyền hình ảnh và thiết kế mẫu',
       fragment: 'apps/dlg.html',
       prefixes: ['DLG-CLOCK-'],
-      scripts: ['js/dlg/image.js', 'js/dlg/qrcode.min.js', 'js/dlg/main.js', 'js/dlg/editor.js'],
+      scripts: ['js/app_common.js', 'js/dlg/image.js', 'js/dlg/qrcode.min.js', 'js/dlg/main.js', 'js/dlg/editor.js'],
     },
     '2_13': {
       label: '2.13"',
       sub: 'Màn 2.13" đen trắng (212×104 hoặc 250×122, DA14585): kết nối, cấu hình và truyền hình ảnh',
       fragment: 'apps/2_13.html',
       prefixes: ['DIY-2_13-'],
-      scripts: ['js/dithering.js', 'js/paint.js', 'js/crop.js',
+      scripts: ['js/app_common.js', 'js/dithering.js', 'js/paint.js', 'js/crop.js',
         'js/2_13/common.js',
         'js/2_13/designer.js', 'js/diy_store.js', 'js/2_13/mode_preview.js', 'js/2_13/main.js'],
     },
@@ -43,7 +43,7 @@
       sub: 'DA14585 — 2.9" (296×128 BWR): kết nối, cấu hình và truyền hình ảnh',
       fragment: 'apps/2_9.html',
       prefixes: ['DIY-2_9-'],
-      scripts: ['js/dithering.js', 'js/paint.js', 'js/crop.js',
+      scripts: ['js/app_common.js', 'js/dithering.js', 'js/paint.js', 'js/crop.js',
         'js/2_9/designer.js', 'js/diy_store.js', 'js/2_9/mode_preview.js', 'js/2_9/main.js'],
     },
     '4_2': {
@@ -52,7 +52,7 @@
       fragment: 'apps/4_2.html',
       prefixes: ['DIY-4_2-'],
       family: '4_2',
-      scripts: ['js/dithering.js', 'js/paint.js', 'js/crop.js',
+      scripts: ['js/app_common.js', 'js/dithering.js', 'js/paint.js', 'js/crop.js',
         'js/4_2/mode_preview.js', 'js/4_2/designer.js', 'js/diy_store.js', 'js/4_2/main.js'],
     },
     '4_2c': {
@@ -61,7 +61,7 @@
       fragment: 'apps/4_2c.html',
       prefixes: ['DIY-4_2C-'],
       family: '4_2',
-      scripts: ['js/dithering.js', 'js/paint.js', 'js/crop.js',
+      scripts: ['js/app_common.js', 'js/dithering.js', 'js/paint.js', 'js/crop.js',
         'js/4_2/mode_preview.js', 'js/4_2/designer.js', 'js/diy_store.js', 'js/4_2/main.js'],
     },
     'reader_4_2': {
@@ -69,14 +69,14 @@
       sub: 'Máy đọc sách 4.2" (DIY-4_2R, DA14585): gửi sách, điều khiển đọc và cài đặt hiển thị',
       fragment: 'apps/reader_4_2.html',
       prefixes: ['DIY-4_2R-'],
-      scripts: ['js/dithering.js', 'js/reader_4_2/font_metrics.js', 'js/reader_4_2/reader.js'],
+      scripts: ['js/app_common.js', 'js/dithering.js', 'js/reader_4_2/font_metrics.js', 'js/reader_4_2/reader.js'],
     },
     '7_3': {
       label: '7.3" SÁU MÀU',
       sub: 'Màn 7.3" 800×480 SÁU MÀU Spectra 6 (DIY-7_3, DA14585): kết nối, cấu hình và truyền hình ảnh',
       fragment: 'apps/7_3.html',
       prefixes: ['DIY-7_3-'],
-      scripts: ['js/dithering.js', 'js/paint.js', 'js/crop.js',
+      scripts: ['js/app_common.js', 'js/dithering.js', 'js/paint.js', 'js/crop.js',
         'js/7_3/mode_preview.js', 'js/7_3/designer.js', 'js/diy_store.js', 'js/7_3/main.js'],
     },
     '7_5': {
@@ -87,7 +87,7 @@
       // Chưa bán máy 7.5" nào nên tên này chỉ còn trên máy test nội bộ —
       // giữ lại cho tiện, không hiện ra trong các câu nhật ký cho khách.
       prefixes: ['DIY-7_5-', 'DIY-7_5V-'],
-      scripts: ['js/dithering.js', 'js/paint.js', 'js/crop.js',
+      scripts: ['js/app_common.js', 'js/dithering.js', 'js/paint.js', 'js/crop.js',
         'js/7_5/mode_preview.js', 'js/7_5/designer.js', 'js/diy_store.js', 'js/7_5/main.js'],
     },
     '7_5b': {
@@ -95,7 +95,7 @@
       sub: 'Màn 7.5" 640×384 bản CHỮ LỚN (DIY-7_5B, DA14585): kết nối, cấu hình và truyền hình ảnh',
       fragment: 'apps/7_5b.html',
       prefixes: ['DIY-7_5B-'],
-      scripts: ['js/dithering.js', 'js/paint.js', 'js/crop.js',
+      scripts: ['js/app_common.js', 'js/dithering.js', 'js/paint.js', 'js/crop.js',
         'js/7_5b/mode_preview.js', 'js/7_5b/main.js'],
     },
     'reader_7_5': {
@@ -103,14 +103,14 @@
       sub: 'Máy đọc sách 7.5" (DIY-7_5R, nRF52811): gửi sách, điều khiển đọc và cài đặt hiển thị',
       fragment: 'apps/reader_7_5.html',
       prefixes: ['DIY-7_5R-'],
-      scripts: ['js/dithering.js', 'js/reader_7_5/reader.js'],
+      scripts: ['js/app_common.js', 'js/dithering.js', 'js/reader_7_5/reader.js'],
     },
     '10_2': {
       label: '10.2"',
       sub: 'Màn 10.2" 960×640 (DIY-10_2, DA14585): kết nối, cấu hình và truyền hình ảnh',
       fragment: 'apps/10_2.html',
       prefixes: ['DIY-10_2-'],
-      scripts: ['js/dithering.js', 'js/paint.js', 'js/crop.js',
+      scripts: ['js/app_common.js', 'js/dithering.js', 'js/paint.js', 'js/crop.js',
         'js/10_2/mode_preview.js', 'js/10_2/designer.js', 'js/diy_store.js', 'js/10_2/main.js'],
     },
   };

@@ -136,12 +136,6 @@ async function sendcmd() {
 
 // ---- chờ notify ----
 let mtuNotifyResolve = null;
-function waitMtuNotify(timeoutMs) {
-  return new Promise(resolve => {
-    const t = setTimeout(() => { mtuNotifyResolve = null; resolve(false); }, timeoutMs);
-    mtuNotifyResolve = () => { clearTimeout(t); resolve(true); };
-  });
-}
 let notifyWaiters = [];
 // đợi một notify dạng chữ thỏa pred(msg) -> truthy; trả về giá trị pred trả ra
 function waitNotify(pred, timeoutMs) {
@@ -1259,14 +1253,6 @@ async function sendBook() {
 
 /* ================= OTA firmware (u32 size — như webtool 4_2inch) ========= */
 
-function crc32buf(buf) {
-  let crc = -1;
-  for (let i = 0; i < buf.length; i++) {
-    crc ^= buf[i];
-    for (let k = 0; k < 8; k++) crc = (crc >>> 1) ^ (0xEDB88320 & -(crc & 1));
-  }
-  return (crc ^ -1) | 0;
-}
 
 // Nút «Cài ngay» ở bảng «Danh sách firmware»: tải .bin của hàng đó rồi chạy
 // thẳng OTA — người dùng khỏi phải tải file về máy rồi chọn lại ở ô Upload.

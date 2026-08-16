@@ -52,9 +52,6 @@ const RESOLUTIONS = [
 let resIdx = parseInt(localStorage.getItem('resIdx_2_13')) || 0;
 if (resIdx < 0 || resIdx > 1) resIdx = 0;
 
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
 
 function logBleConnectHelp(error) {
   addLog(`connect: ${error.name} - ${error.message}`);
@@ -66,38 +63,6 @@ function logBleConnectHelp(error) {
   addLog('5. Dùng Chrome/Edge và mở trang qua https hoặc localhost');
 }
 
-async function connectGattWithRetry(device, maxAttempts = 3) {
-  let lastError;
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    try {
-      if (device.gatt.connected) return device.gatt;
-      if (attempt > 1) {
-        addLog(`Thử kết nối lại ${attempt}/${maxAttempts}...`);
-        try { device.gatt.disconnect(); } catch (e) {}
-        await sleep(500 * attempt);
-      }
-      return await device.gatt.connect();
-    } catch (e) {
-      lastError = e;
-      console.error(e);
-    }
-  }
-  throw lastError;
-}
-
-function hex2bytes(hex) {
-  hex = (hex || '').replace(/[^0-9a-fA-F]/g, '');  // tolerate spaces/0x/punctuation
-  for (var bytes = [], c = 0; c + 2 <= hex.length; c += 2)
-    bytes.push(parseInt(hex.substr(c, 2), 16));
-  return new Uint8Array(bytes);
-}
-
-function bytes2hex(data) {
-  return new Uint8Array(data).reduce(
-    function (memo, i) {
-      return memo + ("0" + i.toString(16)).slice(-2);
-    }, "");
-}
 
 function resetVariables() {
   deviceMode = null;
@@ -605,15 +570,6 @@ function setDisId(id, dis) {
 
 // ------- OTA firmware qua BLE (0xA0/A2/A3/A4 — như weble) -------
 
-// CRC32 chuẩn (IEEE 802.3) — thay cho thư viện CDN của weble
-function crc32buf(buf) {
-  let crc = -1;
-  for (let i = 0; i < buf.length; i++) {
-    crc ^= buf[i];
-    for (let k = 0; k < 8; k++) crc = (crc >>> 1) ^ (0xEDB88320 & -(crc & 1));
-  }
-  return (crc ^ -1) | 0;
-}
 
 // Nút «Cài ngay» trong bảng «Danh sách firmware»: tải file .bin cùng origin
 // rồi chạy thẳng luồng OTA — khách không cần tải về máy rồi chọn file thủ công.
@@ -957,11 +913,6 @@ function updateButtonStatus(forceDisabled = false) {
   setDis("temprefreshbutton", status);
 }
 
-// live system-time display in the [Thời gian] section
-function tickSystemTime() {
-  const el = document.getElementById('systemTime');
-  if (el) el.textContent = new Date().toLocaleString('vi-VN');
-}
 setInterval(tickSystemTime, 1000);
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', tickSystemTime);
 else tickSystemTime();
@@ -1018,13 +969,6 @@ async function preConnect() {
   }
 }
 
-async function reConnect() {
-  if (bleDevice != null && bleDevice.gatt.connected)
-    bleDevice.gatt.disconnect();
-  resetVariables();
-  addLog("Đang kết nối lại");
-  await connect();
-}
 
 async function connect() {
   if (bleDevice == null || longValueChar != null) return;
@@ -1069,25 +1013,10 @@ async function connect() {
   // FwCheck.schedule(1500);  // TAT popup nhac firmware (xem ghi chu o connect)
 }
 
-function setStatus(statusText) {
-  document.getElementById("status").innerHTML = statusText;
-}
 
 // addLog() / clearLog(): js/log.js (dung chung ca hub lan cac app).
 // Ban standalone trong EPD-DA14585/webtools/ van giu ban rieng cua no.
 
-function fillCanvas(style) {
-  ctx.fillStyle = style;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-}
-
-function setCanvasTitle(title) {
-  const canvasTitle = document.querySelector('.canvas-title');
-  if (canvasTitle) {
-    canvasTitle.innerText = title;
-    canvasTitle.style.display = title && title !== '' ? 'block' : 'none';
-  }
-}
 
 // ------- image transform state (reload / stretch / fit / rotate / pan) -------
 let originalImage = null;  // the loaded source image (null after a manual crop)
@@ -1095,283 +1024,6 @@ let imgRotation = 0;       // degrees, multiples of 90
 let imgScaleX = 1.0, imgScaleY = 1.0;
 let imgOffsetX = 0, imgOffsetY = 0;  // pan offset in canvas pixels (drag to move)
 
-function computeFitScale(stretch) {
-  // when rotated by 90/270 the image width maps onto the canvas height
-  const rotated = (imgRotation % 180) !== 0;
-  const cw = rotated ? canvas.height : canvas.width;
-  const ch = rotated ? canvas.width : canvas.height;
-  if (stretch) {
-    imgScaleX = cw / originalImage.width;
-    imgScaleY = ch / originalImage.height;
-  } else {
-    imgScaleX = imgScaleY = Math.min(cw / originalImage.width, ch / originalImage.height);
-  }
-}
-
-// draw the source image with the current pan/rotation/scale (no dithering)
-function drawImagePreview() {
-  fillCanvas('white');
-  ctx.save();
-  ctx.translate(canvas.width / 2 + imgOffsetX, canvas.height / 2 + imgOffsetY);
-  ctx.rotate(imgRotation * Math.PI / 180);
-  ctx.scale(imgScaleX, imgScaleY);
-  ctx.drawImage(originalImage, -originalImage.width / 2, -originalImage.height / 2);
-  ctx.restore();
-}
-
-// redraw the source image with the current transform, then re-apply
-// adjustments + dithering (never compounds: always starts from the source)
-function redrawImage() {
-  if (!originalImage) return;
-  if (cropManager.isCropMode()) cropManager.exitCropMode();
-  drawImagePreview();
-  convertDithering();
-}
-
-function reloadImage() {
-  const imageFile = document.getElementById('imageFile');
-  if (imageFile.files.length == 0) {
-    addLog('Vui lòng chọn hình ảnh trước');
-    return;
-  }
-  updateImage();
-}
-
-function stretchToScreen() {
-  if (!originalImage) { addLog('Vui lòng chọn hình ảnh trước'); return; }
-  computeFitScale(true);
-  imgOffsetX = imgOffsetY = 0;
-  redrawImage();
-}
-
-function fitToScreen() {
-  if (!originalImage) { addLog('Vui lòng chọn hình ảnh trước'); return; }
-  computeFitScale(false);
-  imgOffsetX = imgOffsetY = 0;
-  redrawImage();
-}
-
-function rotateImage(degrees) {
-  if (!originalImage) { addLog('Vui lòng chọn hình ảnh trước'); return; }
-  imgRotation = degrees ? (imgRotation + degrees + 360) % 360 : 0;
-  redrawImage();
-}
-
-function cropImage() {
-  const imageFile = document.getElementById('imageFile');
-  if (imageFile.files.length == 0) {
-    addLog('Vui lòng chọn hình ảnh trước');
-    return;
-  }
-  paintManager.setActiveTool(null, '');
-  cropManager.initializeCrop();
-}
-
-function updateImage() {
-  const imageFile = document.getElementById('imageFile');
-  if (imageFile.files.length == 0) {
-    fillCanvas('white');
-    return;
-  }
-
-  const image = new Image();
-  image.onload = function () {
-    URL.revokeObjectURL(this.src);
-    if (cropManager.isCropMode()) cropManager.exitCropMode();
-    originalImage = image;
-    imgRotation = 0;
-    imgOffsetX = imgOffsetY = 0;
-    computeFitScale(false);  // fit to screen by default; stretch/crop buttons fill
-    redrawImage();
-    setCanvasTitle('Kéo ảnh để di chuyển, lăn chuột / chụm hai ngón tay để thu phóng');
-  };
-  image.src = URL.createObjectURL(imageFile.files[0]);
-}
-
-// ------- drag-to-pan and zoom on the image preview -------
-// Active only when an image is loaded, no paint tool is selected and we are
-// not in crop mode. While dragging, the raw image is shown for smooth
-// feedback; the adjustment + dithering pipeline re-runs on release.
-function imgPanActive() {
-  return originalImage && !cropManager.isCropMode() && !paintManager.currentTool;
-}
-
-function canvasPos(pt) {
-  const rect = canvas.getBoundingClientRect();
-  return {
-    x: (pt.clientX - rect.left) * (canvas.width / rect.width),
-    y: (pt.clientY - rect.top) * (canvas.height / rect.height),
-  };
-}
-
-function initImagePanZoom() {
-  let dragging = false, didDrag = false;
-  let startX = 0, startY = 0, origX = 0, origY = 0;
-  let wheelTimer = null;
-  let pinchDist = 0, pinchScaleX = 1, pinchScaleY = 1;
-
-  const beginDrag = (pt) => {
-    dragging = true; didDrag = false;
-    const p = canvasPos(pt);
-    startX = p.x; startY = p.y;
-    origX = imgOffsetX; origY = imgOffsetY;
-  };
-  const moveDrag = (pt) => {
-    const p = canvasPos(pt);
-    imgOffsetX = origX + (p.x - startX);
-    imgOffsetY = origY + (p.y - startY);
-    didDrag = true;
-    drawImagePreview();
-  };
-  const endDrag = () => {
-    if (!dragging) return;
-    dragging = false;
-    if (didDrag) redrawImage();
-  };
-
-  canvas.addEventListener('mousedown', (e) => {
-    if (!imgPanActive()) return;
-    beginDrag(e);
-  });
-  canvas.addEventListener('mousemove', (e) => {
-    if (!dragging || !imgPanActive()) return;
-    moveDrag(e);
-  });
-  canvas.addEventListener('mouseup', endDrag);
-  canvas.addEventListener('mouseleave', endDrag);
-
-  canvas.addEventListener('wheel', (e) => {
-    if (!imgPanActive()) return;
-    e.preventDefault();
-    const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
-    imgScaleX *= factor;
-    imgScaleY *= factor;
-    drawImagePreview();
-    clearTimeout(wheelTimer);
-    wheelTimer = setTimeout(() => redrawImage(), 300);
-  }, { passive: false });
-
-  canvas.addEventListener('touchstart', (e) => {
-    if (!imgPanActive()) return;
-    if (e.touches.length === 1) {
-      e.preventDefault();
-      beginDrag(e.touches[0]);
-    } else if (e.touches.length === 2) {
-      e.preventDefault();
-      dragging = false;
-      pinchDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX,
-                             e.touches[0].clientY - e.touches[1].clientY);
-      pinchScaleX = imgScaleX; pinchScaleY = imgScaleY;
-      didDrag = true;
-    }
-  }, { passive: false });
-  canvas.addEventListener('touchmove', (e) => {
-    if (!imgPanActive()) return;
-    if (e.touches.length === 1 && dragging) {
-      e.preventDefault();
-      moveDrag(e.touches[0]);
-    } else if (e.touches.length === 2 && pinchDist > 0) {
-      e.preventDefault();
-      const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX,
-                           e.touches[0].clientY - e.touches[1].clientY);
-      imgScaleX = pinchScaleX * (d / pinchDist);
-      imgScaleY = pinchScaleY * (d / pinchDist);
-      drawImagePreview();
-    }
-  }, { passive: false });
-  canvas.addEventListener('touchend', (e) => {
-    if (e.touches.length === 0) {
-      const hadPinch = pinchDist > 0;
-      pinchDist = 0;
-      if (dragging || hadPinch) {
-        dragging = false;
-        if (didDrag) redrawImage();
-      }
-    }
-  });
-}
-
-function rotateCanvas() {
-  const currentWidth = canvas.width;
-  const currentHeight = canvas.height;
-
-  // Capture current canvas content
-  const imageData = ctx.getImageData(0, 0, currentWidth, currentHeight);
-
-  // Swap canvas dimensions
-  canvas.width = currentHeight;
-  canvas.height = currentWidth;
-
-  // Create temporary canvas for rotation
-  const tempCanvas = document.createElement('canvas');
-  tempCanvas.width = currentWidth;
-  tempCanvas.height = currentHeight;
-  const tempCtx = tempCanvas.getContext('2d');
-  tempCtx.putImageData(imageData, 0, 0);
-
-  // Draw rotated image on the resized canvas
-  ctx.translate(canvas.width / 2, canvas.height / 2);
-  ctx.rotate(90 * Math.PI / 180);
-  ctx.drawImage(tempCanvas, -currentWidth / 2, -currentHeight / 2);
-  ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform
-
-  paintManager.clearHistory(); // Clear history as canvas size changed
-  paintManager.clearElements(); // Clear stored text positions and line segments
-  paintManager.saveToHistory(); // Save rotated canvas to history
-}
-
-function clearCanvas() {
-  if (confirm('Xóa nội dung canvas?')) {
-    fillCanvas('white');
-    paintManager.clearElements(); // Clear stored text positions and line segments
-    if (cropManager.isCropMode()) cropManager.exitCropMode();
-    paintManager.saveToHistory(); // Save cleared canvas to history
-    return true;
-  }
-  return false;
-}
-
-function convertDithering() {
-  paintManager.redrawTextElements();
-  paintManager.redrawLineSegments();
-
-  const brightness = parseInt(document.getElementById('imgBrightness').value);
-  const saturation = parseInt(document.getElementById('imgSaturation').value);
-  const contrast = parseFloat(document.getElementById('ditherContrast').value);
-  const currentImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const imageData = new ImageData(
-    new Uint8ClampedArray(currentImageData.data),
-    currentImageData.width,
-    currentImageData.height
-  );
-
-  adjustBrightness(imageData, brightness);
-  adjustSaturation(imageData, saturation);
-  adjustContrast(imageData, contrast);
-
-  const alg = document.getElementById('ditherAlg').value;
-  const strength = parseFloat(document.getElementById('ditherStrength').value);
-  const mode = document.getElementById('ditherMode').value;
-  const processedData = processImageData(ditherImage(imageData, alg, strength, mode), mode);
-  const finalImageData = decodeProcessedData(processedData, canvas.width, canvas.height, mode);
-  ctx.putImageData(finalImageData, 0, 0);
-
-  paintManager.saveToHistory(); // Save dithered image to history
-}
-
-function applyDither() {
-  if (cropManager.isCropMode()) {
-    // finishing a manual crop: the cropped result replaces the source image,
-    // adjustments then compound on the canvas (legacy behavior)
-    originalImage = null;
-    cropManager.finishCrop(() => convertDithering());
-  } else if (originalImage) {
-    // re-render from the source so adjustments never compound
-    redrawImage();
-  } else {
-    cropManager.finishCrop(() => convertDithering());
-  }
-}
 
 function initEventHandlers() {
   document.getElementById("ditherStrength").addEventListener("input", (e) => {
@@ -1402,22 +1054,6 @@ function initEventHandlers() {
   initImagePanZoom();
 }
 
-function checkDebugMode() {
-  const link = document.getElementById('debug-toggle');
-  const urlParams = new URLSearchParams(window.location.search);
-  const debugMode = urlParams.get('debug');
-
-  if (debugMode === 'true') {
-    document.body.classList.add('dark-mode');
-    link.innerHTML = 'Chế độ thường';
-    link.setAttribute('href', window.location.pathname);
-    addLog("Chú ý: chế độ dev đã bật! Không hiểu thì đừng chỉnh sửa tùy tiện!");
-  } else {
-    document.body.classList.remove('dark-mode');
-    link.innerHTML = 'Chế độ dev';
-    link.setAttribute('href', window.location.pathname + '?debug=true');
-  }
-}
 
 document.body.onload = () => {
   canvas = document.getElementById('canvas');
