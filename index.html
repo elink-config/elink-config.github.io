@@ -146,7 +146,7 @@
 				<div class="flex-group" style="flex:1 1 100%" id="hourlyFullRow">
 					<label style="display:flex;align-items:center;gap:6px;cursor:pointer">
 						<input type="checkbox" id="hourlyFullCHK" checked onchange="setHourlyFull()">
-						Làm mới toàn màn hình mỗi giờ (chế độ đồng hồ) — nếu tắt, chỉ làm mới toàn màn lúc 00:00 (ít chớp hơn nhưng bóng mờ tích tụ nhiều hơn)
+						<span id="hourlyFullTxt">Làm mới toàn màn hình mỗi giờ (chế độ đồng hồ) — nếu tắt, chỉ làm mới toàn màn lúc 00:00 (ít chớp hơn nhưng bóng mờ tích tụ nhiều hơn)</span>
 					</label>
 				</div>
 				<div class="flex-group" style="flex:1 1 100%" id="darkBoostRow">
@@ -156,7 +156,7 @@
 					</label>
 				</div>
 					<div class="flex-group" style="flex:1 1 100%; display:none" id="fourColorHint">
-						<span class="mode-gallery-hint" style="margin:0">Màn 4 màu: driver <b>JD79668</b> (06) đồng hồ nhảy <b>từng phút</b> bằng cập nhật cục bộ — chỉ <b>ô số phút</b> chớp ~15s (chế độ kim analog: cả mặt đồng hồ vì kim quét khắp mặt), mỗi giờ làm mới toàn màn; driver <b>IST7158</b> (05) không có cập nhật cục bộ nên đồng hồ làm mới <b>mỗi giờ</b> (hiển thị HH:00). Các chế độ lịch làm mới lúc 00:00. Ảnh dùng chế độ màu «4 màu (đen trắng đỏ vàng)».</span>
+						<span class="mode-gallery-hint" style="margin:0">Màn 4 màu — nhịp cập nhật đặt ở ô «Làm mới toàn màn hình mỗi giờ» bên trên. <b>Còn tích</b> (mặc định): driver <b>JD79668</b> (06) đồng hồ nhảy <b>từng phút</b> bằng cập nhật cục bộ — chỉ <b>ô số phút</b> chớp ~15s (chế độ kim analog: cả mặt đồng hồ vì kim quét khắp mặt), cộng một lượt làm mới toàn màn mỗi giờ; driver <b>IST7158</b> (05) không có cập nhật cục bộ nên đồng hồ chỉ đổi mỗi giờ (hiển thị HH:00). <b>Bỏ tích</b>: màn đứng yên cả ngày, chỉ làm mới đúng một lần lúc 00:00. Các chế độ lịch luôn làm mới lúc 00:00. Ảnh dùng chế độ màu «4 màu (đen trắng đỏ vàng)».</span>
 					</div>
 				<div class="flex-group" style="flex:1 1 100%" id="battStyleRow">
 					<span>Hiển thị pin:</span>
@@ -1623,7 +1623,7 @@
 		</div>
 	</div>
 	<script type="text/javascript" src="js/fw_check.js?v=20260729a"></script>
-	<script type="text/javascript" src="js/connector.js?v=20260806a"></script>
+	<script type="text/javascript" src="js/connector.js?v=20260816a"></script>
 	<script>
 		var _hmt = _hmt || [];
 		(function () {

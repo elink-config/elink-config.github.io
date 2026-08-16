@@ -316,9 +316,12 @@ async function setHourlyFull() {
   const chk = document.getElementById('hourlyFullCHK');
   const enabled = chk.checked ? 1 : 0;
   if (await write(EpdCmd.SET_HOURLY_FULL, [enabled])) {
+    const is4c = (bleDevice && bleDevice.name || '').indexOf('DIY-4_2C') === 0;
     addLog(enabled
       ? "Đã bật: làm mới toàn màn hình mỗi giờ (chế độ đồng hồ)."
-      : "Đã tắt: chỉ làm mới toàn màn hình lúc 00:00 (bóng mờ có thể tích tụ trong ngày).");
+      : (is4c
+        ? "Đã tắt: màn hình đứng yên cả ngày, chỉ làm mới đúng một lần lúc 00:00 (đồng hồ sẽ đứng ở 00:00)."
+        : "Đã tắt: chỉ làm mới toàn màn hình lúc 00:00 (bóng mờ có thể tích tụ trong ngày)."));
   } else {
     chk.checked = !chk.checked; // gửi thất bại: trả checkbox về trạng thái cũ
   }
@@ -710,6 +713,15 @@ function handleNotify(value, idx) {
       // preview mới CHỈ hiện khi firmware thiết bị khớp — máy cũ giữ preview cũ
       window.__fw17 = FwCheck.atLeast('1.7');
       if (window.refreshModeGallery) window.refreshModeGallery();
+      // «Làm mới toàn màn mỗi giờ»: BWR có từ lâu; bản BỐN MÀU (DIY-4_2C)
+      // chỉ nghe lệnh này từ v3.2 — firmware cũ hơn nhận byte nhưng bỏ qua,
+      // nên khóa ô để người dùng không tưởng đã đổi được
+      {
+        const devNm = (bleDevice && bleDevice.name) || '';
+        const okHf = devNm.indexOf('DIY-4_2C') === 0 ? FwCheck.atLeast('3.2') : true;
+        const c = document.getElementById('hourlyFullCHK');
+        if (c) c.disabled = !okHf;
+      }
       // «Hiển thị pin» cần fw >= 1.9 — máy cũ mờ radio + giữ hint nhắc cập nhật
       {
         const ok19 = FwCheck.atLeast('1.9');
@@ -1093,15 +1105,20 @@ function updateDitcherOptions() {
   if (canvasSize) document.getElementById('canvasSize').value = canvasSize;
 
   // Màn 4 màu IST7158/JD79668 (driver 05/06, firmware epd_4_2inch_4c):
-  // «làm mới mỗi giờ» và «chữ đậm» của bản BWR không áp dụng — ẩn 2 tùy
-  // chọn, hiện ghi chú nhịp cập nhật thay thế
+  // «chữ đậm» của bản BWR không áp dụng (ẩn), còn «làm mới mỗi giờ» thì CÓ
+  // (fw 4 màu >= v3.2) — hiện kèm ghi chú nhịp cập nhật riêng của màn 4 màu
   const is4c = epdDriverSelect.value === '05' || epdDriverSelect.value === '06';
   const hfRow = document.getElementById('hourlyFullRow');
   const dbRow = document.getElementById('darkBoostRow');
   const hint = document.getElementById('fourColorHint');
-  if (hfRow) hfRow.style.display = is4c ? 'none' : '';
+  if (hfRow) hfRow.style.display = '';
   if (dbRow) dbRow.style.display = is4c ? 'none' : '';
   if (hint) hint.style.display = is4c ? '' : 'none';
+  // nhãn dòng «làm mới mỗi giờ» nói đúng hệ quả của TỪNG loại màn
+  const hfTxt = document.getElementById('hourlyFullTxt');
+  if (hfTxt) hfTxt.textContent = is4c
+    ? 'Làm mới toàn màn hình mỗi giờ (chế độ đồng hồ) — BỎ TÍCH ô này thì màn hình đứng yên cả ngày: không nhảy phút, không làm mới lúc tròn giờ, chỉ làm mới đúng MỘT lần lúc 00:00 (tuyệt đối không chớp trong ngày, đổi lại đồng hồ đứng ở 00:00 và nhiệt độ/pin/ngày cũng đứng tới nửa đêm hôm sau). Cần firmware màn 4 màu ≥ 3.2.'
+    : 'Làm mới toàn màn hình mỗi giờ (chế độ đồng hồ) — nếu tắt, chỉ làm mới toàn màn lúc 00:00 (ít chớp hơn nhưng bóng mờ tích tụ nhiều hơn)';
 
   // gallery preview vẽ điểm nhấn VÀNG khi driver là màn 4 màu — vẽ lại
   if (window.refreshModeGallery) window.refreshModeGallery();
