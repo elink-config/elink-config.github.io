@@ -1503,3 +1503,44 @@ button.local-image-btn:hover {
     opacity: 0.6;
     margin-top: 1px;
 }
+
+
+/* Bảng «Thiết bị được hỗ trợ» trên điện thoại: 5 cột bị nén thành sợi chỉ,
+   nên đổi sang dạng THẺ — mỗi hàng một khối, mỗi ô có nhãn phía trước
+   (data-label). Chỉ áp cho .dev-table; bảng firmware trong app giữ nguyên. */
+@media (max-width: 640px) {
+    .dev-table thead {
+        display: none;
+    }
+
+    .dev-table,
+    .dev-table tbody,
+    .dev-table tbody tr,
+    .dev-table tbody td {
+        display: block;
+        width: auto;
+    }
+
+    .dev-table tbody tr {
+        border: 1px solid var(--md-sys-color-outline-variant);
+        border-radius: var(--md-shape-corner-small);
+        padding: 8px 10px;
+        margin-bottom: 10px;
+        background: var(--md-sys-color-surface-container);
+    }
+
+    .dev-table tbody tr:nth-child(even) {
+        background: var(--md-sys-color-surface-container);
+    }
+
+    .dev-table tbody td {
+        border: none;
+        padding: 3px 0;
+    }
+
+    .dev-table tbody td::before {
+        content: attr(data-label) ": ";
+        font-weight: 600;
+        color: var(--md-sys-color-on-surface-variant);
+    }
+}

@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  const VER = '20260816f'; // cache-buster, keep in sync with index.html
+  const VER = '20260816g'; // cache-buster, keep in sync with index.html
 
   const EPD42_SERVICE = '62750001-d828-918d-fb46-b6c11c675aec';
   const HM213_SERVICE = '0000ff00-0000-1000-8000-00805f9b34fb';
@@ -530,10 +530,15 @@
     }
   }
 
-  // đã mở một app thì bộ lọc bị ghim theo app đó — hàng nút hết tác dụng
+  // Đã mở một app thì: bộ lọc bị ghim theo app đó (hàng nút hết tác dụng) và
+  // bảng «Thiết bị được hỗ trợ» cũng thừa — nhất là trên điện thoại, bảng
+  // dạng thẻ cao hơn 2000px mà lại nằm TRÊN phần điều khiển, không ẩn thì
+  // kết nối xong phải cuộn qua cả bảng mới tới nút bấm.
   function hideDevPicker() {
     const row = document.getElementById('devPickRow');
     if (row) row.classList.add('hidden');
+    const info = document.getElementById('devInfoBox');
+    if (info) info.style.display = 'none';
   }
 
   async function hubPreConnect(pickType) {

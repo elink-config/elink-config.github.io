@@ -7,7 +7,7 @@
 	<title>E-Ink DA14585</title>
 	<link rel="shortcut icon" type="image/png" href="favicon.png">
 	<link rel="shortcut icon" type="image/png" href="favicon.png">
-	<link rel="stylesheet" href="css/main.css?v=20260816b">
+	<link rel="stylesheet" href="css/main.css?v=20260816c">
 	<script>
 		// apply the saved theme before first paint to avoid a flash
 		(function () {
@@ -67,92 +67,92 @@
 			<div class="log-container" id="log"></div>
 		</fieldset>
 
-		<fieldset>
+		<fieldset id="devInfoBox">
 			<legend>Thiết bị được hỗ trợ</legend>
 			<p class="mode-gallery-hint">Tên Bluetooth in ở đây là tên máy hiện ra khi bấm «Kết nối».
 				Trang tự nhận loại máy theo tên này và hiện đúng phần điều khiển tương ứng.</p>
 			<div style="overflow-x:auto">
-				<table class="fw-table">
+				<table class="fw-table dev-table">
 					<thead>
 						<tr><th>Dòng máy</th><th>Tên Bluetooth</th><th>Màn hình</th><th>Firmware mới nhất</th><th>Ghi chú</th></tr>
 					</thead>
 					<tbody>
 						<tr>
-							<td><b>Đồng hồ DLG-CLOCK</b></td>
-							<td><code>DLG-CLOCK-xxxx</code></td>
-							<td>2.13" (212×104 hoặc 250×122)</td>
-							<td class="fw-latest" data-app="dlg">…</td>
-							<td>Đồng hồ E-Ink chạy firmware đầu tiên — cùng phần cứng với bản 2.13" bên dưới</td>
+							<td data-label="Dòng máy"><b>Đồng hồ DLG-CLOCK</b></td>
+							<td data-label="Tên Bluetooth"><code>DLG-CLOCK-xxxx</code></td>
+							<td data-label="Màn hình">2.13" (212×104 hoặc 250×122)</td>
+							<td class="fw-latest" data-app="dlg" data-label="Firmware">…</td>
+							<td data-label="Ghi chú">Đồng hồ E-Ink chạy firmware đầu tiên — cùng phần cứng với bản 2.13" bên dưới</td>
 						</tr>
 						<tr>
-							<td><b>Màn 2.13"</b></td>
-							<td><code>DIY-2_13-xxxx</code></td>
-							<td>2.13" (212×104 hoặc 250×122) đen trắng</td>
-							<td class="fw-latest" data-app="2_13">…</td>
-							<td>Bản đã nạp firmware của shop: lịch, đồng hồ, ghi chú, truyền ảnh. Chạy được <b>hai loại panel</b> — đổi qua lại bằng một nút trong phần điều khiển (212×104 loại HINK-E0213A41/A55, 250×122 loại OPM021B1)</td>
+							<td data-label="Dòng máy"><b>Màn 2.13"</b></td>
+							<td data-label="Tên Bluetooth"><code>DIY-2_13-xxxx</code></td>
+							<td data-label="Màn hình">2.13" (212×104 hoặc 250×122) đen trắng</td>
+							<td class="fw-latest" data-app="2_13" data-label="Firmware">…</td>
+							<td data-label="Ghi chú">Bản đã nạp firmware của shop: lịch, đồng hồ, ghi chú, truyền ảnh. Chạy được <b>hai loại panel</b> — đổi qua lại bằng một nút trong phần điều khiển (212×104 loại HINK-E0213A41/A55, 250×122 loại OPM021B1)</td>
 						</tr>
 						<tr>
-							<td><b>Màn 2.9"</b></td>
-							<td><code>DIY-2_9-xxxx</code></td>
-							<td>2.9" (296×128) đen trắng đỏ</td>
-							<td class="fw-latest" data-app="2_9">…</td>
-							<td>Lịch, đồng hồ, truyền ảnh</td>
+							<td data-label="Dòng máy"><b>Màn 2.9"</b></td>
+							<td data-label="Tên Bluetooth"><code>DIY-2_9-xxxx</code></td>
+							<td data-label="Màn hình">2.9" (296×128) đen trắng đỏ</td>
+							<td class="fw-latest" data-app="2_9" data-label="Firmware">…</td>
+							<td data-label="Ghi chú">Lịch, đồng hồ, truyền ảnh</td>
 						</tr>
 						<tr>
-							<td><b>Màn 4.2"</b></td>
-							<td><code>DIY-4_2-xxxx</code></td>
-							<td>4.2" (400×300) ba màu (đen trắng đỏ)</td>
-							<td class="fw-latest" data-app="4_2">…</td>
-							<td>Dòng đầy đủ tính năng nhất: 22 giao diện, Tự thiết kế, 3 khe ảnh</td>
+							<td data-label="Dòng máy"><b>Màn 4.2"</b></td>
+							<td data-label="Tên Bluetooth"><code>DIY-4_2-xxxx</code></td>
+							<td data-label="Màn hình">4.2" (400×300) ba màu (đen trắng đỏ)</td>
+							<td class="fw-latest" data-app="4_2" data-label="Firmware">…</td>
+							<td data-label="Ghi chú">Dòng đầy đủ tính năng nhất: 22 giao diện, Tự thiết kế, 3 khe ảnh</td>
 						</tr>
 						<tr>
-							<td><b>Màn 4.2" bốn màu</b></td>
-							<td><code>DIY-4_2C-xxxx</code></td>
-							<td>4.2" (400×300) đen trắng đỏ vàng</td>
-							<td class="fw-latest" data-app="4_2c">…</td>
-							<td>Thêm màu vàng; đồng hồ nhảy phút bằng cập nhật cục bộ</td>
+							<td data-label="Dòng máy"><b>Màn 4.2" bốn màu</b></td>
+							<td data-label="Tên Bluetooth"><code>DIY-4_2C-xxxx</code></td>
+							<td data-label="Màn hình">4.2" (400×300) đen trắng đỏ vàng</td>
+							<td class="fw-latest" data-app="4_2c" data-label="Firmware">…</td>
+							<td data-label="Ghi chú">Thêm màu vàng; đồng hồ nhảy phút bằng cập nhật cục bộ</td>
 						</tr>
 						<tr>
-							<td><b>Máy đọc sách 4.2"</b></td>
-							<td><code>DIY-4_2R-xxxx</code></td>
-							<td>4.2" (400×300)</td>
-							<td class="fw-latest" data-app="reader_4_2">…</td>
-							<td>Gửi sách tiếng Việt vào máy, 3 cỡ chữ, lật trang bằng nút vật lý</td>
+							<td data-label="Dòng máy"><b>Máy đọc sách 4.2"</b></td>
+							<td data-label="Tên Bluetooth"><code>DIY-4_2R-xxxx</code></td>
+							<td data-label="Màn hình">4.2" (400×300)</td>
+							<td class="fw-latest" data-app="reader_4_2" data-label="Firmware">…</td>
+							<td data-label="Ghi chú">Gửi sách tiếng Việt vào máy, 3 cỡ chữ, lật trang bằng nút vật lý</td>
 						</tr>
 						<tr>
-							<td><b>Màn 7.3" sáu màu</b></td>
-							<td><code>DIY-7_3-xxxx</code></td>
-							<td>7.3" (800×480) Spectra 6</td>
-							<td class="fw-latest" data-app="7_3">…</td>
-							<td>Sáu màu: đen, trắng, đỏ, vàng, xanh dương, xanh lá</td>
+							<td data-label="Dòng máy"><b>Màn 7.3" sáu màu</b></td>
+							<td data-label="Tên Bluetooth"><code>DIY-7_3-xxxx</code></td>
+							<td data-label="Màn hình">7.3" (800×480) Spectra 6</td>
+							<td class="fw-latest" data-app="7_3" data-label="Firmware">…</td>
+							<td data-label="Ghi chú">Sáu màu: đen, trắng, đỏ, vàng, xanh dương, xanh lá</td>
 						</tr>
 						<tr>
-							<td><b>Màn 7.5"</b></td>
-							<td><code>DIY-7_5-xxxx</code></td>
-							<td>7.5" (640×384) ba màu</td>
-							<td class="fw-latest" data-app="7_5">…</td>
-							<td>Màn lớn cho lịch/đồng hồ, đủ 22 giao diện và truyền hình ảnh như bản 4.2"</td>
+							<td data-label="Dòng máy"><b>Màn 7.5"</b></td>
+							<td data-label="Tên Bluetooth"><code>DIY-7_5-xxxx</code></td>
+							<td data-label="Màn hình">7.5" (640×384) ba màu</td>
+							<td class="fw-latest" data-app="7_5" data-label="Firmware">…</td>
+							<td data-label="Ghi chú">Màn lớn cho lịch/đồng hồ, đủ 22 giao diện và truyền hình ảnh như bản 4.2"</td>
 						</tr>
 						<tr>
-							<td><b>Màn 7.5" chữ lớn</b></td>
-							<td><code>DIY-7_5B-xxxx</code></td>
-							<td>7.5" (640×384)</td>
-							<td class="fw-latest" data-app="7_5b">…</td>
-							<td>Giao diện chữ khối lớn, dành cho màn đã bạc màu hoặc người lớn tuổi</td>
+							<td data-label="Dòng máy"><b>Màn 7.5" chữ lớn</b></td>
+							<td data-label="Tên Bluetooth"><code>DIY-7_5B-xxxx</code></td>
+							<td data-label="Màn hình">7.5" (640×384)</td>
+							<td class="fw-latest" data-app="7_5b" data-label="Firmware">…</td>
+							<td data-label="Ghi chú">Giao diện chữ khối lớn, dành cho màn đã bạc màu hoặc người lớn tuổi</td>
 						</tr>
 						<tr>
-							<td><b>Máy đọc sách 7.5"</b></td>
-							<td><code>DIY-7_5R-xxxx</code></td>
-							<td>7.5" (800×480)</td>
-							<td class="fw-latest" data-app="reader_7_5">…</td>
-							<td>Bản đọc sách màn lớn. Không cập nhật được qua Bluetooth (nạp bằng dây)</td>
+							<td data-label="Dòng máy"><b>Máy đọc sách 7.5"</b></td>
+							<td data-label="Tên Bluetooth"><code>DIY-7_5R-xxxx</code></td>
+							<td data-label="Màn hình">7.5" (800×480)</td>
+							<td class="fw-latest" data-app="reader_7_5" data-label="Firmware">…</td>
+							<td data-label="Ghi chú">Bản đọc sách màn lớn. Không cập nhật được qua Bluetooth (nạp bằng dây)</td>
 						</tr>
 						<tr>
-							<td><b>Màn 10.2"</b></td>
-							<td><code>DIY-10_2-xxxx</code></td>
-							<td>10.2" (960×640)</td>
-							<td class="fw-latest" data-app="10_2">…</td>
-							<td>Màn lớn nhất hiện có</td>
+							<td data-label="Dòng máy"><b>Màn 10.2"</b></td>
+							<td data-label="Tên Bluetooth"><code>DIY-10_2-xxxx</code></td>
+							<td data-label="Màn hình">10.2" (960×640)</td>
+							<td class="fw-latest" data-app="10_2" data-label="Firmware">…</td>
+							<td data-label="Ghi chú">Màn lớn nhất hiện có</td>
 						</tr>
 					</tbody>
 				</table>
@@ -216,7 +216,7 @@
 	     hub và mọi app (trước đây bị chép lại ở 4 nơi) -->
 	<script type="text/javascript" src="js/log.js?v=20260815d"></script>
 	<script type="text/javascript" src="js/fw_check.js?v=20260815d"></script>
-	<script type="text/javascript" src="js/connector.js?v=20260816f"></script>
+	<script type="text/javascript" src="js/connector.js?v=20260816g"></script>
 	<script>
 		var _hmt = _hmt || [];
 		(function () {
