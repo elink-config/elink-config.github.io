@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  const VER = '20260816e'; // cache-buster, keep in sync with index.html
+  const VER = '20260816f'; // cache-buster, keep in sync with index.html
 
   const EPD42_SERVICE = '62750001-d828-918d-fb46-b6c11c675aec';
   const HM213_SERVICE = '0000ff00-0000-1000-8000-00805f9b34fb';
@@ -31,7 +31,7 @@
     },
     '2_13': {
       label: '2.13"',
-      sub: 'DA14585 — 2.13" (212×104): kết nối, cấu hình và truyền hình ảnh',
+      sub: 'Màn 2.13" đen trắng (212×104 hoặc 250×122, DA14585): kết nối, cấu hình và truyền hình ảnh',
       fragment: 'apps/2_13.html',
       prefixes: ['DIY-2_13-'],
       scripts: ['js/dithering.js', 'js/paint.js', 'js/crop.js',
@@ -47,8 +47,8 @@
         'js/2_9/designer.js', 'js/diy_store.js', 'js/2_9/mode_preview.js', 'js/2_9/main.js'],
     },
     '4_2': {
-      label: '4.2" (3 màu / đen trắng)',
-      sub: 'Màn 4.2" 400×300 (DA14585): kết nối, cấu hình và truyền hình ảnh',
+      label: '4.2" (3 màu)',
+      sub: 'Màn 4.2" 400×300 ba màu (DA14585): kết nối, cấu hình và truyền hình ảnh',
       fragment: 'apps/4_2.html',
       prefixes: ['DIY-4_2-'],
       family: '4_2',
@@ -83,8 +83,9 @@
       label: '7.5"',
       sub: 'Màn 7.5" 640×384 (DIY-7_5, DA14585): kết nối, cấu hình và truyền hình ảnh',
       fragment: 'apps/7_5.html',
-      // 'DIY-7_5V-' = TÊN CŨ của chính dòng máy này (firmware trước v1.0),
-      // giữ lại để máy đã bán chưa cập nhật vẫn bấm nút 7.5" được.
+      // 'DIY-7_5V-' = TÊN CŨ của chính dòng máy này (firmware trước v1.0).
+      // Chưa bán máy 7.5" nào nên tên này chỉ còn trên máy test nội bộ —
+      // giữ lại cho tiện, không hiện ra trong các câu nhật ký cho khách.
       prefixes: ['DIY-7_5-', 'DIY-7_5V-'],
       scripts: ['js/dithering.js', 'js/paint.js', 'js/crop.js',
         'js/7_5/mode_preview.js', 'js/7_5/designer.js', 'js/diy_store.js', 'js/7_5/main.js'],
@@ -457,6 +458,20 @@
 
   // Dựng hàng nút «Hoặc kết nối tới một thiết bị cụ thể» từ chính bảng APPS,
   // nên thêm/bớt dòng máy ở APPS là hàng nút tự khớp theo.
+  // Danh sách tên máy đang hỗ trợ, dựng từ chính bảng APPS -> thêm/bớt dòng
+  // máy khỏi phải sửa các câu nhật ký ở dưới. Bỏ tên cũ DIY-7_5V- cho gọn
+  // (chỉ còn trên máy test nội bộ, vẫn kết nối được bình thường).
+  function knownNames() {
+    const seen = [];
+    for (const cfg of Object.values(APPS)) {
+      for (const p of cfg.prefixes) {
+        if (p === 'DIY-7_5V-') continue;
+        if (!seen.includes(p)) seen.push(p);
+      }
+    }
+    return seen.map(p => p + 'xxxx').join(' / ');
+  }
+
   // Điền cột «Firmware mới nhất» của bảng «Thiết bị được hỗ trợ» ở trang chủ.
   // NGUỒN DUY NHẤT là bảng «Danh sách firmware» trong fragment của chính máy
   // đó — phát hành bản mới chỉ cần thêm hàng vào bảng ấy, ô này tự theo, khỏi
@@ -552,7 +567,7 @@
     } catch (e) {
       console.error(e);
       if (e.name === 'NotFoundError') {
-        addLog('Không tìm thấy thiết bị E-Ink (DIY-4_2-xxxx / DIY-4_2C-xxxx / DIY-7_5V-xxxx / DIY-2_13-xxxx / DIY-2_9-xxxx / DLG-CLOCK-xxxx)');
+        addLog('Không tìm thấy thiết bị E-Ink (' + knownNames() + ')');
       } else if (e.message) {
         addLog('requestDevice: ' + e.message);
       }
@@ -588,7 +603,7 @@
       }
     }
     if (!type) {
-      addLog('Thiết bị "' + (device.name || '?') + '" không phải DIY-4_2-xxxx / DIY-4_2C-xxxx / DIY-7_5V-xxxx / DIY-2_13-xxxx / DIY-2_9-xxxx / DLG-CLOCK-xxxx.');
+      addLog('Thiết bị "' + (device.name || '?') + '" không thuộc dòng máy nào đang hỗ trợ (' + knownNames() + ').');
       return;
     }
 
