@@ -52,6 +52,20 @@
 						Làm mới toàn màn hình mỗi giờ (chế độ đồng hồ) — nếu tắt, chỉ làm mới toàn màn lúc 00:00 (ít chớp hơn nhưng bóng mờ tích tụ nhiều hơn)
 					</label>
 				</div>
+				<!-- màn 4 màu: MỌI lượt đều là full refresh (~15s) kể cả lượt
+				     "nhảy phút" chỉ quét ô số phút -> cho chọn 3 nhịp -->
+				<div class="flex-group" style="flex:1 1 100%; display:none" id="refreshModeRow">
+					<span>Nhịp làm mới (chế độ có giờ):</span>
+					<label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+						<input type="checkbox" id="onlyHourlyCHK" onchange="setRefreshMode('hour')">
+						Chỉ làm mới mỗi giờ (không nhảy phút)
+					</label>
+					<label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+						<input type="checkbox" id="onlyMidnightCHK" onchange="setRefreshMode('day')">
+						Chỉ làm mới lúc 00:00
+					</label>
+					<span class="mode-gallery-hint" style="margin:0" id="refreshModeHint">Không tích ô nào = mặc định: nhảy phút (chỉ ô số phút chớp ~15s) + làm mới toàn màn mỗi giờ. Cần firmware màn 4 màu ≥ 3.3.</span>
+				</div>
 				<div class="flex-group" style="flex:1 1 100%" id="darkBoostRow">
 					<label style="display:flex;align-items:center;gap:6px;cursor:pointer">
 						<input type="checkbox" id="darkBoostCHK" onchange="setDarkBoost()">
@@ -59,7 +73,7 @@
 					</label>
 				</div>
 					<div class="flex-group" style="flex:1 1 100%; display:none" id="fourColorHint">
-						<span class="mode-gallery-hint" style="margin:0">Màn 4 màu: driver <b>JD79668</b> (06) đồng hồ nhảy <b>từng phút</b> bằng cập nhật cục bộ — chỉ <b>ô số phút</b> chớp ~15s (chế độ kim analog: cả mặt đồng hồ vì kim quét khắp mặt), mỗi giờ làm mới toàn màn; driver <b>IST7158</b> (05) không có cập nhật cục bộ nên đồng hồ làm mới <b>mỗi giờ</b> (hiển thị HH:00). Các chế độ lịch làm mới lúc 00:00. Ảnh dùng chế độ màu «4 màu (đen trắng đỏ vàng)».</span>
+						<span class="mode-gallery-hint" style="margin:0">Màn 4 màu: driver <b>JD79668</b> (06) có thể nhảy <b>từng phút</b> (chỉ ô số phút chớp ~15s; chế độ kim analog: cả mặt đồng hồ vì kim quét khắp mặt); driver <b>IST7158</b> (05) không có cập nhật cục bộ nên đồng hồ chỉ đổi ở mỗi lượt làm mới toàn màn. Chọn nhịp ở mục «Nhịp làm mới» bên trên. Các chế độ lịch luôn làm mới lúc 00:00. Ảnh dùng chế độ màu «4 màu (đen trắng đỏ vàng)».</span>
 					</div>
 				<div class="flex-group" style="flex:1 1 100%" id="battStyleRow">
 					<span>Hiển thị pin:</span>

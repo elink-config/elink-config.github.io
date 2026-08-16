@@ -339,10 +339,44 @@ async function setBattStyle() {
   }
 }
 
+// ---- Nhịp làm mới của màn 4 MÀU (cùng lệnh 0x23, ba giá trị) ----
+// Mọi lượt làm mới của panel 4 màu đều chớp ~15s (kể cả lượt "nhảy phút"
+// chỉ quét ô số phút), nên cho chọn: 1 = nhảy phút + full mỗi giờ (mặc
+// định, không tích ô nào), 2 = chỉ full mỗi giờ, 0 = chỉ full lúc 00:00.
+// Hai ô loại trừ nhau; firmware màn 4 màu cần >= 3.3.
+let refreshModeLast = 1;
+
+function applyRefreshModeUI(v) {
+  refreshModeLast = v;
+  const h = document.getElementById('onlyHourlyCHK');
+  const d = document.getElementById('onlyMidnightCHK');
+  if (h) h.checked = (v === 2);
+  if (d) d.checked = (v === 0);
+}
+
+async function setRefreshMode(which) {
+  const h = document.getElementById('onlyHourlyCHK');
+  const d = document.getElementById('onlyMidnightCHK');
+  if (which === 'hour' && h.checked) d.checked = false;   // loại trừ nhau
+  if (which === 'day' && d.checked) h.checked = false;
+  const v = d.checked ? 0 : (h.checked ? 2 : 1);
+  if (await write(EpdCmd.SET_HOURLY_FULL, [v])) {
+    refreshModeLast = v;
+    addLog(v === 0
+      ? 'Đã đặt: chỉ làm mới lúc 00:00 — màn đứng yên cả ngày (đồng hồ sẽ đứng ở 00:00).'
+      : v === 2
+        ? 'Đã đặt: chỉ làm mới mỗi giờ — không nhảy phút nữa (đồng hồ hiện HH:00).'
+        : 'Đã đặt: nhảy phút + làm mới toàn màn mỗi giờ (mặc định).');
+  } else {
+    applyRefreshModeUI(refreshModeLast);  // gửi thất bại: trả UI về trạng thái cũ
+  }
+}
+
 async function setHourlyFull() {
   const chk = document.getElementById('hourlyFullCHK');
   const enabled = chk.checked ? 1 : 0;
   if (await write(EpdCmd.SET_HOURLY_FULL, [enabled])) {
+    // (màn 4 màu không dùng ô này — nó có hàng «Nhịp làm mới» riêng)
     addLog(enabled
       ? "Đã bật: làm mới toàn màn hình mỗi giờ (chế độ đồng hồ)."
       : "Đã tắt: chỉ làm mới toàn màn hình lúc 00:00 (bóng mờ có thể tích tụ trong ngày).");
@@ -681,7 +715,10 @@ function handleNotify(value, idx) {
     // older firmware (96-byte note field)
     const hf = data.length > 205 ? data[205] : (data.length > 109 ? data[109] : null);
     if (hf !== null) {
-      document.getElementById('hourlyFullCHK').checked = hf !== 0;
+      const c = document.getElementById('hourlyFullCHK');
+      if (c) c.checked = hf !== 0;
+      // màn 4 màu: cùng byte này mang BA giá trị (xem setRefreshMode)
+      applyRefreshModeUI(hf > 2 ? 1 : hf);
     }
     // 3 khe ảnh (fw >= 1.5): auto/interval/mask tại offset 212/213/214 (sau
     // u32 activation ở 208 — struct căn 4 byte)
@@ -761,6 +798,18 @@ function handleNotify(value, idx) {
       window.__fwIconRed = /^DIY-7_5V-/.test(devNm) ? FwCheck.atLeast('0.5')
         : (devNm.indexOf('DIY-4_2C') === 0 || /^DIY-7_5-/.test(devNm)) ? false
         : FwCheck.atLeast('2.3');
+      // «Nhịp làm mới»: BWR/7.5" vẫn dùng ô hourly_full cũ (có từ lâu); bản
+      // BỐN MÀU (DIY-4_2C) chỉ nghe ba giá trị của lệnh 0x23 từ v3.3 —
+      // firmware cũ hơn nhận byte nhưng bỏ qua, nên khóa 2 ô cho khỏi hiểu lầm
+      {
+        const ok4c = devNm.indexOf('DIY-4_2C') !== 0 || FwCheck.atLeast('3.3');
+        ['onlyHourlyCHK', 'onlyMidnightCHK'].forEach(id => {
+          const e = document.getElementById(id);
+          if (e) e.disabled = !ok4c;
+        });
+        const rh = document.getElementById('refreshModeHint');
+        if (rh && !ok4c) rh.textContent = 'Cần firmware màn 4 màu ≥ 3.3 — hãy cập nhật ở mục OTA bên dưới.';
+      }
       {
         document.querySelectorAll('input[name="timeFmt"]').forEach(r => { r.disabled = !window.__fwTimeOk; });
         const th = document.getElementById('timeFmtHint');
@@ -1146,13 +1195,17 @@ function updateDitcherOptions() {
   if (canvasSize) document.getElementById('canvasSize').value = canvasSize;
 
   // Màn 4 màu IST7158/JD79668 (driver 05/06, firmware epd_4_2inch_4c):
-  // «làm mới mỗi giờ» và «chữ đậm» của bản BWR không áp dụng — ẩn 2 tùy
-  // chọn, hiện ghi chú nhịp cập nhật thay thế
+  // «chữ đậm» của bản BWR không áp dụng (ẩn), còn «làm mới mỗi giờ» thì CÓ
+  // (fw 4 màu >= v3.2) — hiện kèm ghi chú nhịp cập nhật riêng của màn 4 màu
   const is4c = epdDriverSelect.value === '05' || epdDriverSelect.value === '06';
   const hfRow = document.getElementById('hourlyFullRow');
   const dbRow = document.getElementById('darkBoostRow');
   const hint = document.getElementById('fourColorHint');
+  // màn 4 màu dùng hàng «Nhịp làm mới» 3 lựa chọn thay cho ô hourly_full 2
+  // trạng thái của bản BWR (mọi lượt của màn 4 màu đều là full refresh)
+  const rmRow = document.getElementById('refreshModeRow');
   if (hfRow) hfRow.style.display = is4c ? 'none' : '';
+  if (rmRow) rmRow.style.display = is4c ? '' : 'none';
   if (dbRow) dbRow.style.display = is4c ? 'none' : '';
   if (hint) hint.style.display = is4c ? '' : 'none';
 
