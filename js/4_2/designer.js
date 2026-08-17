@@ -359,13 +359,13 @@
     return out;
   }
 
-  // ---- ẢNH NỀN toàn màn (4.2" fw >= 2.3) ----
+  // ---- ẢNH NỀN toàn màn (4.2" ba màu fw >= 2.3, bốn màu fw >= 3.4) ----
   // Ảnh nền KHÔNG đi cùng bố cục mà nằm ở KHE ẢNH 32KB của thiết bị — chính
   // đường truyền của mục «Truyền hình ảnh», nên nét và màu y hệt (400x300,
   // đen + đỏ). Ở đây chỉ gửi ảnh vào khe rồi báo thiết bị dùng khe đó làm nền.
   window.dsSetBackground = async function () {
     if (!window.__fwBg) {
-      alert('Máy chưa hỗ trợ ảnh nền (cần firmware 4.2" từ v2.3).');
+      alert('Máy chưa hỗ trợ ảnh nền (cần firmware 4.2" ba màu từ v2.3, bốn màu từ v3.4).');
       return;
     }
     const src = document.getElementById('canvas');
@@ -398,7 +398,7 @@
         + 'thành icon (tối đa 176px, phóng to sẽ vỡ).\n\n'
         + 'Thiết bị: ' + (window.__devNm || '(chưa rõ)')
         + '\nFirmware máy báo: ' + (window.__fwStr || '(chưa nhận được)')
-        + '\nCần: 4.2" ba màu, firmware từ v2.3\n\nVẫn thêm dạng icon?')) return;
+        + '\nCần: 4.2" ba màu từ v2.3 hoặc 4.2" bốn màu từ v3.4\n\nVẫn thêm dạng icon?')) return;
 
     const src = document.getElementById('canvas');
     if (!src || !src.width || !src.height) { alert('Chưa có ảnh trong mục «Truyền hình ảnh».'); return; }

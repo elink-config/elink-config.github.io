@@ -217,6 +217,7 @@
 					<button id="sendimgbutton2" type="button" class="primary" onclick="sendimg(1)">Gửi ảnh khe 2</button>
 					<button id="sendimgbutton3" type="button" class="primary" onclick="sendimg(2)">Gửi ảnh khe 3</button>
 					<button type="button" class="secondary" onclick="dsIconFromCanvas()">Thêm ảnh vào thiết kế</button>
+					<button type="button" class="secondary" onclick="dsClearBackground()">Bỏ ảnh nền</button>
 				</div>
 			</div>
 			<!-- Tự đổi ảnh (fw >= 1.5): bật được khi đã có >= 2 khe ảnh trên thiết bị -->
@@ -381,6 +382,14 @@
 							<td><b>CHỈ dành cho màn 4.2" BỐN MÀU (thiết bị DIY-4_2C)</b> — KHÔNG nạp cho máy 3 màu. <br>Thêm mục «Nhịp làm mới» trong «Cài đặt thiết bị»: chọn nhảy phút + làm mới mỗi giờ (mặc định), chỉ làm mới mỗi giờ, hoặc chỉ làm mới lúc 00:00</td>
 							<td>16/08/2026</td>
 							<td><a href="OTA firmware/4_2c/fw_4_2inch_4c_v3.3.bin" download>Tải về</a></td>
+							<td><button type="button" class="primary" onclick="fwInstallRow(this)">Cài ngay</button></td>
+						</tr>
+                        <tr>
+							<td>6</td>
+							<td>3.4</td>
+							<td><b>CHỈ dành cho màn 4.2" BỐN MÀU (thiết bị DIY-4_2C)</b> — KHÔNG nạp cho máy 3 màu. <br>Chế độ «Tự thiết kế» dùng được ẢNH NỀN toàn màn: gửi ảnh vào khe 3 rồi xếp giờ, pin, lịch... đè lên trên</td>
+							<td>17/08/2026</td>
+							<td><a href="OTA firmware/4_2c/fw_4_2inch_4c_v3.4.bin" download>Tải về</a></td>
 							<td><button type="button" class="primary" onclick="fwInstallRow(this)">Cài ngay</button></td>
 						</tr>
 					</tbody>

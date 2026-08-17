@@ -591,9 +591,15 @@ function handleNotify(value, idx) {
         : is7_5 ? '0.3' : '2.1');
       // icon «Tự thiết kế» 2 mặt (đen + ĐỎ): chỉ màn BA MÀU — 4.2" BWR >= 2.3,
       // 7.5" >= 0.5. Bản 4 MÀU (DIY-4_2C) chưa có.
-      // ẢNH NỀN toàn màn cho «Tự thiết kế»: chỉ 4.2" ba màu từ v2.3 (dùng
-      // lại khe ảnh 32KB; bản 7.5"/4 màu không có khe nên không hỗ trợ)
-      window.__fwBg = !/^DIY-(7_5|4_2C)/.test(devNm) && FwCheck.atLeast('2.3');
+      // ẢNH NỀN toàn màn cho «Tự thiết kế» (dùng lại khe ảnh 32KB): 4.2" BA
+      // MÀU từ v2.3, 4.2" BỐN MÀU từ v3.4. Hai dải 2.x chồng nhau nên phải
+      // gate theo TÊN BLE. Bản 7.5" chưa có.
+      const is4c = devNm.indexOf('DIY-4_2C') === 0;
+      window.__fwBg = !is7_5 && FwCheck.atLeast(is4c ? '3.4' : '2.3');
+      // mode 21+22 (Núi tuyết, Hoàng hôn) chỉ BỊ GỠ ở nhánh BA MÀU v2.3 để
+      // lấy RAM cho ảnh nền; bản BỐN MÀU v3.4 lấy RAM từ đệm trang nên VẪN
+      // CÒN hai chế độ này -> không dùng chung cờ __fwBg như trước.
+      window.__fwNoRetro = !is7_5 && !is4c && FwCheck.atLeast('2.3');
       if (window.refreshModeGallery) window.refreshModeGallery();
       window.__fwIconRed = is7_5 ? FwCheck.atLeast('0.5')
         : (devNm.indexOf('DIY-4_2C') === 0) ? false

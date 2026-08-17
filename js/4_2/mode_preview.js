@@ -915,7 +915,7 @@
       // mode 2 + 18 đã bỏ ở firmware v1.7: ẩn card khi thiết bị khai fw >= 1.7
       // mode 2+18 bỏ ở v1.7; 21+22 (Núi tuyết, Hoàng hôn) bỏ ở v2.4 lấy RAM
       if ((v17() && (m.mode === 2 || m.mode === 18)) ||
-          (window.__fwBg && (m.mode === 21 || m.mode === 22))) card.style.display = 'none';
+          (window.__fwNoRetro && (m.mode === 21 || m.mode === 22))) card.style.display = 'none';
       try { m.draw(ctx2d(card.querySelector('canvas')), now); }
       catch (e) { console.error('preview mode ' + m.mode, e); }
     }
@@ -932,7 +932,7 @@
         // mode 2 + 18 đã bỏ ở firmware v1.7 — ẩn/hiện lại theo cờ fw hiện tại
         const gone = MODE_LIST[i].mode === 2 || MODE_LIST[i].mode === 18;
         const gone24 = MODE_LIST[i].mode === 21 || MODE_LIST[i].mode === 22;
-        card.style.display = ((v17() && gone) || (window.__fwBg && gone24)) ? 'none' : '';
+        card.style.display = ((v17() && gone) || (window.__fwNoRetro && gone24)) ? 'none' : '';
         // tên card đổi theo firmware (vd card 13: Đếm ngược -> Lịch dương + âm)
         const nEl = card.querySelector('.mode-name');
         const nTxt = (MODE_LIST[i].nameNew && fwCal()) ? MODE_LIST[i].nameNew : MODE_LIST[i].name;
