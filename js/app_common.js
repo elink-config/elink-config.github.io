@@ -336,6 +336,94 @@ function clearCanvas() {
   return false;
 }
 
+/* ---- Thang xám thử nghiệm ------------------------------------------------
+ * Màn e-ink BWR/BWRY KHÔNG có hạt màu xám: bảng quang học của panel chỉ khai
+ * «2 Grey Level» (đen + trắng), còn «Gray 0..3» trong datasheet IC là tên bốn
+ * kênh LUT của lõi điều khiển — trên panel bốn màu chúng ánh xạ thành ĐEN /
+ * TRẮNG / VÀNG / ĐỎ chứ không phải bốn mức xám.
+ * => Mọi sắc xám chỉ có được bằng TRỘN ĐIỂM (halftone) đen/trắng. Ảnh thử này
+ * in đủ các mức trộn để soi trên máy thật: mức nào còn mịn, mức nào bắt đầu rỗ,
+ * và kiểu trộn 50% nào (ô cờ / sọc ngang / sọc dọc) hợp với panel của bạn.
+ * Vẽ bằng ĐIỂM ĐEN-TRẮNG THUẦN nên khâu dither phía sau giữ nguyên từng điểm. */
+function grayRampTest() {
+  const W = canvas.width, H = canvas.height;
+  // ma trận Bayer: 4x4 cho các ô mức cố định, 8x8 cho dải chuyển mượt
+  const B4 = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+  const B8 = [];
+  for (let y = 0; y < 8; y++)
+    for (let x = 0; x < 8; x++)
+      B8.push(B4[(y & 3) * 4 + (x & 3)] * 4 + B4[((y >> 2) & 3) * 4 + ((x >> 2) & 3)] / 4 | 0);
+
+  fillCanvas('white');
+  paintManager.clearElements();
+  const img = ctx.getImageData(0, 0, W, H);
+  const D = img.data;
+  const put = (x, y, black) => {
+    const o = (y * W + x) * 4;
+    const v = black ? 0 : 255;
+    D[o] = D[o + 1] = D[o + 2] = v; D[o + 3] = 255;
+  };
+
+  const fs = Math.max(9, Math.round(H / 25));      // cỡ chữ nhãn
+  const lab = [];                                   // nhãn vẽ sau cùng
+  const band = (y0, y1, x0, x1, fn) => {
+    for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) put(x, y, fn(x, y));
+  };
+
+  // --- Dải 1: 9 mức trộn cố định (0% -> 100% điểm đen), ma trận 4x4 ---
+  const levels = [0, 2, 4, 6, 8, 10, 12, 14, 16];
+  const y0 = Math.round(H * 0.12), y1 = Math.round(H * 0.30);
+  levels.forEach((lv, i) => {
+    const xa = Math.round(W * i / levels.length), xb = Math.round(W * (i + 1) / levels.length);
+    band(y0, y1, xa, xb, (x, y) => B4[(y & 3) * 4 + (x & 3)] < lv);
+    lab.push([Math.round(lv * 100 / 16) + '%', (xa + xb) / 2, y0 - 3, 'center']);
+  });
+
+  // --- Dải 2: ba kiểu trộn 50% để so độ mịn ---
+  const y2 = Math.round(H * 0.40), y3 = Math.round(H * 0.56);
+  const pat = [
+    ['Ô cờ', (x, y) => ((x + y) & 1) === 0],
+    ['Sọc ngang', (x, y) => (y & 1) === 0],
+    ['Sọc dọc', (x, y) => (x & 1) === 0],
+  ];
+  pat.forEach(([nm, fn], i) => {
+    const xa = Math.round(W * i / 3) + 2, xb = Math.round(W * (i + 1) / 3) - 2;
+    band(y2, y3, xa, xb, fn);
+    lab.push([nm + ' 50%', (xa + xb) / 2, y2 - 3, 'center']);
+  });
+
+  // --- Dải 3: chuyển mượt trắng -> đen (8x8) xem chỗ nào bị vằn ---
+  const y4 = Math.round(H * 0.66), y5 = Math.round(H * 0.82);
+  band(y4, y5, 0, W, (x, y) => B8[(y & 7) * 8 + (x & 7)] < (x / W) * 64);
+  lab.push(['Chuyển mượt trắng → đen', W / 2, y4 - 3, 'center']);
+
+  ctx.putImageData(img, 0, 0);
+
+  // --- Dải 4: màu tham chiếu (vàng/đỏ chỉ có ở màn bốn/sáu màu) ---
+  const md = (document.getElementById('ditherMode') || {}).value;
+  const solids = (md === 'fourColor' || md === 'sixColor')
+    ? [['ĐEN', '#000'], ['TRẮNG', '#fff'], ['VÀNG', '#ff0'], ['ĐỎ', '#f00']]
+    : [['ĐEN', '#000'], ['TRẮNG', '#fff'], ['ĐỎ', '#f00']];
+  const y6 = Math.round(H * 0.88), y7 = Math.round(H * 0.99);
+  solids.forEach(([nm, css], i) => {
+    const xa = Math.round(W * i / solids.length) + 2, xb = Math.round(W * (i + 1) / solids.length) - 2;
+    ctx.fillStyle = css; ctx.fillRect(xa, y6, xb - xa, y7 - y6);
+    ctx.strokeStyle = '#000'; ctx.lineWidth = 1; ctx.strokeRect(xa + 0.5, y6 + 0.5, xb - xa - 1, y7 - y6 - 1);
+    lab.push([nm, (xa + xb) / 2, y6 - 3, 'center']);
+  });
+
+  ctx.fillStyle = '#000';
+  ctx.font = 'bold ' + fs + 'px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('THANG XÁM (trộn điểm đen/trắng)', W / 2, fs);
+  ctx.font = fs + 'px sans-serif';
+  lab.forEach(([t, x, y, al]) => { ctx.textAlign = al; ctx.fillText(t, x, y); });
+  ctx.textAlign = 'left';
+
+  paintManager.saveToHistory();
+  addLog('Đã vẽ ảnh thử thang xám — bấm «Gửi ảnh khe 1» để xem trên máy thật.');
+}
+
 function convertDithering() {
   paintManager.redrawTextElements();
   paintManager.redrawLineSegments();
