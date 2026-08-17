@@ -163,10 +163,13 @@ async function preConnect() {
 function updateButtonStatus(busy = false) {
   const connected = gattServer != null && gattServer.connected;
   const dis = (busy || !connected) ? 'disabled' : null;
-  document.getElementById('reconnectbutton').disabled = (gattServer == null || connected) ? 'disabled' : null;
-  document.getElementById('sendbookbutton').disabled = (dis || !book) ? 'disabled' : null;
+  // xem chú thích cùng chỗ ở js/reader_4_2/reader.js: thiếu MỘT id là hỏng
+  // cả giao diện, mà hub và trang standalone không có cùng bộ nút
+  const set = (id, v) => { const e = document.getElementById(id); if (e) e.disabled = v; };
+  set('reconnectbutton', (gattServer == null || connected) ? 'disabled' : null);
+  set('sendbookbutton', (dis || !book) ? 'disabled' : null);
   ['rprevbutton', 'rnextbutton', 'rhomebutton', 'rgotobutton', 'fullEverybutton', 'clockModebutton', 'syncClockbutton', 'btnApply', 'sendcmdbutton']
-    .forEach(id => document.getElementById(id).disabled = dis);
+    .forEach(id => set(id, dis));
 }
 
 /* ================= Điều khiển đọc sách ================= */

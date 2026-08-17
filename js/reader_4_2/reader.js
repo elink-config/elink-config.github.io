@@ -149,10 +149,15 @@ async function preConnect() {
 function updateButtonStatus(busy = false) {
   const connected = gattServer != null && gattServer.connected;
   const dis = (busy || !connected) ? 'disabled' : null;
-  document.getElementById('reconnectbutton').disabled = (gattServer == null || connected) ? 'disabled' : null;
-  document.getElementById('sendbookbutton').disabled = (dis || !book) ? 'disabled' : null;
+  // Hàm này chạy TRONG body.onload lúc hub nạp app: một id thiếu là ném lỗi
+  // và cả giao diện không dựng được («Lỗi tải giao diện»). Vì trang hub và
+  // trang standalone không có cùng bộ nút (nút kết nối nằm ở khung chung của
+  // hub), luôn kiểm tra phần tử có tồn tại đã.
+  const set = (id, v) => { const e = document.getElementById(id); if (e) e.disabled = v; };
+  set('reconnectbutton', (gattServer == null || connected) ? 'disabled' : null);
+  set('sendbookbutton', (dis || !book) ? 'disabled' : null);
   ['rprevbutton', 'rnextbutton', 'rhomebutton', 'rgotobutton', 'fullEverybutton', 'clockModebutton', 'syncClockbutton', 'btnApply', 'otabutton', 'sendcmdbutton']
-    .forEach(id => document.getElementById(id).disabled = dis);
+    .forEach(id => set(id, dis));
 }
 
 /* ================= Điều khiển đọc sách ================= */
