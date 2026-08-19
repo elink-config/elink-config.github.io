@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  const VER = '20260818a'; // cache-buster, keep in sync with index.html
+  const VER = '20260819a'; // cache-buster, keep in sync with index.html
 
   const EPD42_SERVICE = '62750001-d828-918d-fb46-b6c11c675aec';
   const HM213_SERVICE = '0000ff00-0000-1000-8000-00805f9b34fb';
@@ -319,7 +319,13 @@
         const s = await act213Query();
         return !/act=off/.test(s);
       }
-      if (type === '4_2' || type === '4_2c' || type === '7_5') {
+      // MỌI máy còn lại đều là firmware họ EPD (4.2 / 4.2 bốn màu / 7.3 /
+      // 7.5 / 7.5 chữ lớn / 10.2 và HAI máy đọc sách): ngay khi bật thông
+      // báo, máy đẩy "mac=…" + "act=on/off". Trước đây chỉ liệt kê 3 máy nên
+      // các máy thêm sau (đặc biệt máy đọc sách) chỉ ghi dòng «chưa kích
+      // hoạt» vào log mà KHÔNG hiện cửa sổ kích hoạt. Máy DLG-CLOCK có giao
+      // diện kích hoạt riêng trong template nên vẫn không chặn ở đây.
+      if (type !== 'dlg') {
         // the status burst arrives with the connect notifications; give a
         // slow link a moment before deciding
         const st = await actWaitFor(() => actState, 2500);

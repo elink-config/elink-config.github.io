@@ -290,6 +290,16 @@ function convertUC8159(blackWhiteData, redWhiteData) {
   return payloadData;
 }
 
+// Option driver dang chon — NULL-SAFE (bay da gap o webtool 7.3" va 10.2"):
+// select khong co muc nao duoc chon -> selectedIndex -1 -> undefined
+// .getAttribute nem TypeError NGAY DAU sendimg/updateDitcherOptions nen nut
+// «Gửi ảnh» chet im lang. Thieu lua chon thi lay muc dau.
+function getDriverOption() {
+  const sel = document.getElementById('epddriver');
+  if (!sel) return null;
+  return sel.options[sel.selectedIndex] || sel.options[0] || null;
+}
+
 async function sendimg(slot = 0) {
   if (cropManager.isCropMode()) {
     alert("Vui lòng hoàn tất cắt ảnh trước! Đã hủy gửi.");
@@ -304,13 +314,14 @@ async function sendimg(slot = 0) {
 
   const canvasSize = document.getElementById('canvasSize').value;
   const ditherMode = document.getElementById('ditherMode').value;
-  const epdDriverSelect = document.getElementById('epddriver');
-  const selectedOption = epdDriverSelect.options[epdDriverSelect.selectedIndex];
+  const selectedOption = getDriverOption();
+  const drvSize = selectedOption ? selectedOption.getAttribute('data-size') : canvasSize;
+  const drvColor = selectedOption ? selectedOption.getAttribute('data-color') : ditherMode;
 
-  if (selectedOption.getAttribute('data-size') !== canvasSize) {
+  if (drvSize !== canvasSize) {
     if (!confirm("Cảnh báo: kích thước canvas không khớp driver, tiếp tục?")) return;
   }
-  if (selectedOption.getAttribute('data-color') !== ditherMode) {
+  if (drvColor !== ditherMode) {
     if (!confirm("Cảnh báo: chế độ màu không khớp driver, tiếp tục?")) return;
   }
 
@@ -501,7 +512,16 @@ function handleNotify(value, idx) {
     const epddriver = document.getElementById("epddriver");
     epdpins.value = bytes2hex(data.slice(0, 7));
     if (data.length > 10) epdpins.value += bytes2hex(data.slice(10, 11));
-    epddriver.value = bytes2hex(data.slice(7, 8));
+    // Driver may dang luu (byte 7): may tung nap firmware khac con giu model
+    // cu, gia tri do KHONG co trong select nen gan thang se lam select mat
+    // lua chon (selectedIndex -1) va moi thao tac doc option sau do nem loi.
+    const drvHex = bytes2hex(data.slice(7, 8));
+    if ([...epddriver.options].some(o => o.value === drvHex)) {
+      epddriver.value = drvHex;
+    } else {
+      addLog(`⚠ Thiết bị báo driver "${drvHex}" không thuộc máy này — giữ lựa chọn hiện tại. ` +
+        `Bấm «Áp dụng» ở mục Driver để ghi lại driver đúng cho máy.`);
+    }
     updateDitcherOptions();
     // config byte 11 = current display mode: highlight it in the gallery
     if (data.length > 11) {
@@ -735,8 +755,8 @@ let imgOffsetX = 0, imgOffsetY = 0;  // pan offset in canvas pixels (drag to mov
 
 
 function updateDitcherOptions() {
-  const epdDriverSelect = document.getElementById('epddriver');
-  const selectedOption = epdDriverSelect.options[epdDriverSelect.selectedIndex];
+  const selectedOption = getDriverOption();
+  if (!selectedOption) return;
   const colorMode = selectedOption.getAttribute('data-color');
   const canvasSize = selectedOption.getAttribute('data-size');
 
