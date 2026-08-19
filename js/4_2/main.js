@@ -160,8 +160,8 @@ function crc32(buf) {
 
 async function sendAsset() {
   if (assetBusy) return;
-  // chỉ máy lịch 4.2" BA MÀU mới có vùng dữ liệu này
-  if (((bleDevice && bleDevice.name) || '').indexOf('DIY-4_2-') !== 0) return;
+  { const nm = (bleDevice && bleDevice.name) || '';  // 4.2" BA MÀU và BỐN MÀU dùng CHUNG blob này
+    if (nm.indexOf('DIY-4_2-') !== 0 && nm.indexOf('DIY-4_2C-') !== 0) return; }
   assetBusy = true;
   try {
     addLog('Máy chưa có dữ liệu hiển thị (font + âm lịch) — đang gửi xuống…');
