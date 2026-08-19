@@ -59,6 +59,16 @@
 					</div>
 				</div>
 			</div>
+			<!-- BẮT BUỘC phải có (dù ẩn ở chế độ thường): sendChunks()/handleNotify()
+			     đọc thẳng 2 ô này, thiếu là gửi sách lỗi «reading 'value'» của null. -->
+			<div class="flex-container options">
+				<div class="flex-group debug">
+					<label for="mtusize">MTU:</label>
+					<input type="number" id="mtusize" value="20" min="0" max="255">
+					<label for="interleavedcount">Khoảng xác nhận:</label>
+					<input type="number" id="interleavedcount" value="32" min="0" max="500">
+				</div>
+			</div>
 			<div class="status-bar"><b>Trạng thái: </b><span id="status"></span></div>
 			<progress id="sendProgress" max="100" value="0" style="width:100%;height:14px;display:none"></progress>
 			<div class="flex-container">
