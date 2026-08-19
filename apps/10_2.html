@@ -43,7 +43,10 @@
 			<p class="mode-gallery-hint">Màn 10.2" firmware ≥ 0.3: các chế độ đồng hồ <b>nhảy từng phút không chớp màn</b> (cập nhật cục bộ như bản 4.2"); firmware 0.1/0.2 cũ làm mới mỗi giờ. Các chế độ lịch làm mới lúc 00:00.</p>
 			<div class="mode-gallery" id="modeGallery"></div>
 			<div class="flex-container">
-				<div class="flex-group" style="flex:1 1 100%">
+				<!-- che do «Ghi chu» da bo o firmware 10.2" v1.0 (nan mode 19 -> 14
+				     «Lich duong + am»); GIU phan tu nhung an vi js/4_2/main.js dung
+				     chung co truy cap id sendnotebutton -->
+				<div class="flex-group" style="flex:1 1 100%; display:none">
 					<label for="noteTXT">Ghi chú:</label>
 					<input type="text" id="noteTXT" maxlength="190" style="flex:1" placeholder="Nội dung cho màn hình «Ghi chú» (tối đa 190 byte)">
 					<button id="sendnotebutton" type="button" class="primary" onclick="sendNote()">Gửi ghi chú</button>

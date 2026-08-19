@@ -913,7 +913,8 @@
         '<button id="' + m.id + '" type="button" class="primary" onclick="syncTime(' + m.mode + ')">Áp dụng</button>';
       gallery.appendChild(card);
       // mode 2 + 18 đã bỏ ở firmware v1.7: ẩn card khi thiết bị khai fw >= 1.7
-      if (v17() && (m.mode === 2 || m.mode === 18)) card.style.display = 'none';
+      if ((v17() && (m.mode === 2 || m.mode === 18)) ||
+          (m.mode === 19 && window.__noNote)) card.style.display = 'none';
       try { m.draw(ctx2d(card.querySelector('canvas')), now); }
       catch (e) { console.error('preview mode ' + m.mode, e); }
     }
@@ -928,7 +929,8 @@
     document.querySelectorAll('.mode-card').forEach((card, i) => {
       if (MODE_LIST[i]) {
         // mode 2 + 18 đã bỏ ở firmware v1.7 — ẩn/hiện lại theo cờ fw hiện tại
-        const gone = MODE_LIST[i].mode === 2 || MODE_LIST[i].mode === 18;
+        const gone = MODE_LIST[i].mode === 2 || MODE_LIST[i].mode === 18 ||
+                     (MODE_LIST[i].mode === 19 && window.__noNote);
         card.style.display = (v17() && gone) ? 'none' : '';
         // tên card đổi theo firmware (vd card 13: Đếm ngược -> Lịch dương + âm)
         const nEl = card.querySelector('.mode-name');

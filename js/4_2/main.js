@@ -753,6 +753,12 @@ function handleNotify(value, idx) {
         const th = document.getElementById('timeFmtHint');
         if (th && window.__fwTimeOk) th.textContent = 'Thiết bị vẽ lại ngay khi đổi.';
       }
+      // man 10.2" (fw >= 1.0) BO che do «Ghi chu» — an card 19 va o nhap
+      window.__noNote = /^DIY-10_2-/.test(devNm) && FwCheck.atLeast('1.0');
+      {
+        const nr = document.getElementById('sendnotebutton');
+        if (nr && window.__noNote && nr.parentElement) nr.parentElement.style.display = 'none';
+      }
       if (window.refreshModeGallery) window.refreshModeGallery();
       // «Hiển thị pin»: BWR/4 màu cần fw >= 1.9, màn 10.2" (đánh số 0.x
       // riêng) có từ v0.4 — máy cũ mờ radio + giữ hint nhắc cập nhật
