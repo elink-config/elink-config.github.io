@@ -28,7 +28,7 @@ const BOOK_DATA_OFF = 0x5000;   // mục lục 4 sector (fw r1.0+: 4000 trang)
 const MAX_PAGES_PART = 900;     // truyện tranh: chip 2MB chứa ~350 trang/phần
 let devFlashBytes = 512 * 1024;  // mặc định chip chuẩn; cập nhật khi nhận flash=
 function storeDataCap() {
-  const end = devFlashBytes - 2 * 4096;  // 2 sector hệ thống trên đỉnh chip
+  const end = devFlashBytes - 4096;  // chỉ config ở sector cuối (act ở 0x3C000)
   return Math.max(0, end - 0x40000 - BOOK_DATA_OFF - 4096);  // chừa 1 sector lề
 }
 function textPartCap() {
