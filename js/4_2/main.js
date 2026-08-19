@@ -134,11 +134,11 @@ let mtuNotifyResolve = null;
 let imgRdyResolve = null;
 
 /* ---- Vùng dữ liệu ở flash (lệnh 0x2C) --------------------------------------
- * Bốn bảng âm lịch đã được tách khỏi firmware để trả RAM cho máy (firmware
+ * Font hiển thị + bốn bảng âm lịch đã tách khỏi firmware để trả RAM (firmware
  * DA14585 nạp trọn vào 96KB SysRAM nên mảng const cũng ăn RAM). Máy nạp dây
  * đã có sẵn blob trong ảnh nạp; máy cập nhật qua OTA thì CHƯA có, vì OTA chỉ
  * ghi bank firmware — lúc đó máy báo 'asset=none' và hàm dưới tự gửi.
- * Không gửi thì máy vẫn chạy, chỉ mất phần âm lịch / tiết khí. */
+ * KHONG co du lieu nay thi may KHONG HIEN DUOC CHU (font nam trong do). */
 let assetResolve = null;
 let assetBusy = false;
 
@@ -164,11 +164,11 @@ async function sendAsset() {
   if (((bleDevice && bleDevice.name) || '').indexOf('DIY-4_2-') !== 0) return;
   assetBusy = true;
   try {
-    addLog('Máy chưa có bảng dữ liệu âm lịch — đang gửi xuống…');
-    const r = await fetch('OTA%20firmware/4_2/lunar_asset.bin?v=' + Date.now());
-    if (!r.ok) { addLog('Không tải được lunar_asset.bin'); return; }
+    addLog('Máy chưa có dữ liệu hiển thị (font + âm lịch) — đang gửi xuống…');
+    const r = await fetch('OTA%20firmware/4_2/asset.bin?v=' + Date.now());
+    if (!r.ok) { addLog('Không tải được asset.bin'); return; }
     const raw = new Uint8Array(await r.arrayBuffer());
-    if (raw.length < 16 || raw[0] !== 0x45 || raw[1] !== 0x50) { addLog('lunar_asset.bin hỏng'); return; }
+    if (raw.length < 16 || raw[0] !== 0x45 || raw[1] !== 0x50) { addLog('asset.bin hỏng'); return; }
     const body = raw.subarray(16);              // bỏ header, máy tự dựng lại
     const crc = crc32(body);
 
@@ -180,7 +180,7 @@ async function sendAsset() {
     const step = Math.max(16, mtu - 4);
     for (let off = 0; off < body.length; off += step) {
       if (!await write(EpdCmd.ASSET, [0x01, ...body.subarray(off, off + step)])) {
-        addLog('Gửi bảng dữ liệu thất bại.');
+        addLog('Gửi dữ liệu hiển thị thất bại.');
         return;
       }
     }
@@ -189,10 +189,10 @@ async function sendAsset() {
     await write(EpdCmd.ASSET, [0x02, crc & 0xFF, (crc >>> 8) & 0xFF, (crc >>> 16) & 0xFF, (crc >>> 24) & 0xFF]);
     const m = await fin;
     addLog(m.startsWith('asset=') && m !== 'asset=none' && m !== 'asset=err'
-      ? 'Đã gửi xong bảng dữ liệu âm lịch (' + body.length + ' byte).'
-      : 'Máy không nhận được bảng dữ liệu — thử kết nối lại.');
+      ? 'Đã gửi xong dữ liệu hiển thị (' + body.length + ' byte).'
+      : 'Máy không nhận được dữ liệu — thử kết nối lại.');
   } catch (e) {
-    addLog('Gửi bảng dữ liệu lỗi: ' + e.message);
+    addLog('Gửi dữ liệu hiển thị lỗi: ' + e.message);
   } finally {
     assetBusy = false;
   }
