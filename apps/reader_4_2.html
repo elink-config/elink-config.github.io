@@ -213,9 +213,13 @@
 							<td><a href="OTA firmware/reader_4_2/fw_reader_4_2inch_r1.0.bin" download>Tải về</a></td>
 							<td><button type="button" class="primary" onclick="fwInstallRow(this)">Cài ngay</button></td>
 						</tr>
-						<tr class="fw-alt">
+						<!-- HÀNG «ĐỔI NGƯỢC 4.2R -> 4.2» ĐÃ GỠ 20/08/2026: bản 2.4 làm CHẾT
+						     máy (dò chữ ký kích hoạt ở 0x7E000 -> driver flash tràn ngược,
+						     nát RAM lúc boot: không lên màn, không quảng bá BLE). Gắn lại
+						     hàng này bằng bản 2.5 SAU KHI đã nạp thử máy thật. -->
+						<tr class="fw-alt" hidden>
 							<td>—</td>
-							<td>2.4</td>
+							<td>—</td>
 							<td><b>ĐỔI MÁY ĐỌC SÁCH VỀ MÁY LỊCH 4.2"</b> — không phải firmware đọc sách! Nạp bản này thì máy quay về giao diện lịch/đồng hồ của màn 4.2": 22 giao diện, «Tự thiết kế», 3 khe ảnh. Sau khi nạp, tên Bluetooth đổi thành <b>DIY-4_2-xxxx</b> — kết nối lại sẽ thấy giao diện lịch. Muốn quay lại máy đọc sách thì nạp firmware r1.0 ở bảng firmware của máy 4.2".<br><b>Sách trong máy sẽ hỏng</b>: bản lịch dùng lại mấy sector nằm trong kho sách, nên khi đổi về máy đọc sách thì gửi sách lại. Ba nút đã hàn vẫn dùng được (nút TX đổi giao diện). <b>Phải là bản 2.4 trở lên</b> — bản cũ hơn không nhận lại mã kích hoạt, máy sẽ báo chưa kích hoạt.</td>
 							<td>18/08/2026</td>
 							<td><a href="OTA firmware/4_2/fw_4_2inch_v2.4.bin" download>Tải về</a></td>
