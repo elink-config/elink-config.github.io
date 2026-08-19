@@ -17,18 +17,19 @@ const EpdCmd = {
 const EPD_SERVICE = '62750001-d828-918d-fb46-b6c11c675aec';
 const EPD_CHAR = '62750002-d828-918d-fb46-b6c11c675aec';
 
-// kho sách trên máy: vùng riêng từ 0x39000 tới (dung lượng chip - 2 sector
-// hệ thống); dữ liệu bắt đầu tại +0x3000. Dung lượng chip đọc từ thông báo
-// flash= (JEDEC) lúc kết nối — chip 512KB: 260KB sách; chip 2MB (FM25Q16A):
-// ~1.8MB. Mục lục trên máy tối đa ~2000 trang nên sách CHỮ còn bị trần
-// 1900 trang x cỡ trang ước lượng theo font/hướng đang chọn.
+// kho sách trên máy: vùng riêng từ 0x40000 tới (dung lượng chip - 2 sector
+// hệ thống); dữ liệu bắt đầu tại +0x5000. Kho bắt đầu ở 0x40000 (không phải
+// 0x39000) vì firmware CHỪA khe hệ thống của bản lịch — OTA hai chiều lịch
+// <-> đọc sách không mất kích hoạt. Dung lượng chip đọc từ thông báo flash=
+// (JEDEC) lúc kết nối — chip 512KB: 224KB sách; chip 2MB (FM25Q16A): ~1.76MB.
+// Mục lục trên máy tối đa 4000 trang nên sách CHỮ còn bị trần 3900 trang.
 const BOOK_IDX_OFF = 0x1000;
 const BOOK_DATA_OFF = 0x5000;   // mục lục 4 sector (fw r1.0+: 4000 trang)
 const MAX_PAGES_PART = 900;     // truyện tranh: chip 2MB chứa ~350 trang/phần
 let devFlashBytes = 512 * 1024;  // mặc định chip chuẩn; cập nhật khi nhận flash=
 function storeDataCap() {
   const end = devFlashBytes - 2 * 4096;  // 2 sector hệ thống trên đỉnh chip
-  return Math.max(0, end - 0x39000 - BOOK_DATA_OFF - 4096);  // chừa 1 sector lề
+  return Math.max(0, end - 0x40000 - BOOK_DATA_OFF - 4096);  // chừa 1 sector lề
 }
 function textPartCap() {
   const [cpl, lpp] = previewMetric();  // trần mục lục 4000 trang (chừa lề 3900)
