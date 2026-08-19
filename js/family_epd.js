@@ -46,7 +46,9 @@ async function sendTimeSync(mode) {
     (timestamp >> 8) & 0xFF,
     timestamp & 0xFF,
     -(new Date().getTimezoneOffset() / 60),
-    mode
+    // app 4.2 đánh lại số mode từ BWR v2.6 / 4 màu v3.6; máy đời cũ vẫn hiểu
+    // bảng số cũ nên quy đổi ở đây. App khác không định nghĩa modeToWire.
+    (typeof modeToWire === 'function') ? modeToWire(mode) : mode
   ]);
   if (await write(EpdCmd.SET_TIME, data)) {
     addLog("Đã đồng bộ thời gian!");

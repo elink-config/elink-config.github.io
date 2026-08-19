@@ -95,6 +95,31 @@ const canvasSizes = [
 ];
 
 
+
+/* ---- Quy đổi SỐ MODE cho máy chạy firmware đời cũ ---------------------------
+ * BWR v2.6 / 4 màu v3.6 đánh lại số mode cho liền mạch (số thẻ = số mode).
+ * Máy chưa cập nhật vẫn hiểu bảng số CŨ, nên phải quy đổi lúc gửi và lúc đọc
+ * config về. Bỏ bảng này khi không còn máy nào chạy firmware trước mốc đó. */
+const MODE_NEW2OLD = { 1:1, 2:3, 3:4, 4:5, 5:6, 6:7, 7:8, 8:9, 9:10, 10:11, 11:12,
+                       12:13, 13:14, 14:15, 15:16, 16:17, 17:19, 18:21, 19:22,
+                       20:23, 21:24, 22:20 };
+const MODE_OLD2NEW = Object.fromEntries(Object.entries(MODE_NEW2OLD).map(([n, o]) => [o, +n]));
+
+function modeNumberingIsNew() {
+  const nm = (bleDevice && bleDevice.name) || '';
+  return FwCheck.atLeast(nm.indexOf('DIY-4_2C') === 0 ? '3.6' : '2.6');
+}
+// số gửi XUỐNG máy
+function modeToWire(m) {
+  if (modeNumberingIsNew()) return m;
+  return MODE_NEW2OLD[m] !== undefined ? MODE_NEW2OLD[m] : m;
+}
+// số máy BÁO LÊN (config) -> số thẻ
+function modeFromWire(m) {
+  if (modeNumberingIsNew()) return m;
+  return MODE_OLD2NEW[m] !== undefined ? MODE_OLD2NEW[m] : m;
+}
+
 async function write(cmd, data, withResponse = true) {
   if (!epdCharacteristic) {
     addLog("Dịch vụ không khả dụng, vui lòng kiểm tra kết nối Bluetooth");
@@ -591,7 +616,8 @@ function handleNotify(value, idx) {
     updateDitcherOptions();
     // config byte 11 = current display mode: highlight it in the gallery
     if (data.length > 11) {
-      deviceMode = data[11];
+      // config trả SỐ CỦA MÁY; quy về số thẻ để tô đúng ô đang chọn
+      deviceMode = modeFromWire(data[11]);
       if (typeof highlightMode === 'function') highlightMode(deviceMode);
     }
     // clock cleanup cadence (1 = full refresh hourly; 0xFF -> enabled):
@@ -691,7 +717,9 @@ function handleNotify(value, idx) {
       // mode 21+22 (Núi tuyết, Hoàng hôn) chỉ BỊ GỠ ở nhánh BA MÀU v2.3 để
       // lấy RAM cho ảnh nền; bản BỐN MÀU v3.4 lấy RAM từ đệm trang nên VẪN
       // CÒN hai chế độ này -> không dùng chung cờ __fwBg như trước.
-      window.__fwNoRetro = !is7_5 && !is4c && FwCheck.atLeast('2.3');
+      // Bản 3 màu gỡ «Núi tuyết»/«Hoàng hôn» ở v2.3 rồi THÊM LẠI ở v2.6 (đủ RAM
+      // sau khi đưa font xuống flash). Chỉ ẩn hai thẻ đó ở khoảng giữa.
+      window.__fwNoRetro = !is7_5 && !is4c && FwCheck.atLeast('2.3') && !FwCheck.atLeast('2.6');
       if (window.refreshModeGallery) window.refreshModeGallery();
       window.__fwIconRed = is7_5 ? FwCheck.atLeast('0.5')
         : (devNm.indexOf('DIY-4_2C') === 0) ? false
