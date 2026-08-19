@@ -17,7 +17,7 @@ const EpdCmd = {
 const EPD_SERVICE = '62750001-d828-918d-fb46-b6c11c675aec';
 const EPD_CHAR = '62750002-d828-918d-fb46-b6c11c675aec';
 
-// kho sách trên máy: vùng riêng từ 0x40000 tới (dung lượng chip - 2 sector
+// kho sách trên máy: vùng riêng từ 0x40000 tới (dung lượng chip - 1 sector
 // hệ thống); dữ liệu bắt đầu tại +0x5000. Kho bắt đầu ở 0x40000 (không phải
 // 0x39000) vì firmware CHỪA khe hệ thống của bản lịch — OTA hai chiều lịch
 // <-> đọc sách không mất kích hoạt. Dung lượng chip đọc từ thông báo flash=
