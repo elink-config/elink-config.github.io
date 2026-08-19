@@ -31,6 +31,7 @@ const EpdCmd = {
   DARK_BOOST: 0x28, // [0/1] chữ đậm cho màn lô in nhạt (ép 0°C khi làm mới toàn màn)
   BATT_STYLE: 0x29, // [0/1/2] hiển thị pin: chỉ icon / phần trăm / điện áp (fw >= 1.9)
   CUSTOM_BG: 0x2B, // [0..3] ảnh nền «Tự thiết kế»: 0 tắt, 1-3 = khe ảnh (4.2 >= 2.3)
+  ASSET: 0x2C, // nạp blob dữ liệu vào flash: [00 len_u16] mở / [01 data] / [02 crc32_u32] chốt
   TIME_FMT: 0x2A, // [0/1] định dạng giờ: 24h / 12h (BWR >= 2.1, 4 màu >= 3.0, 7.5" V1 >= 0.3)
 
   WRITE_IMG: 0x30, // v1.6
@@ -131,6 +132,71 @@ let mtuNotifyResolve = null;
 // là gói dồn đống làm cạn MSG heap BLE -> thiết bị reset (lỗi v1.5).
 // Resolve true khi 'img=rdy', false khi 'img=err' hoặc hết giờ.
 let imgRdyResolve = null;
+
+/* ---- Vùng dữ liệu ở flash (lệnh 0x2C) --------------------------------------
+ * Bốn bảng âm lịch đã được tách khỏi firmware để trả RAM cho máy (firmware
+ * DA14585 nạp trọn vào 96KB SysRAM nên mảng const cũng ăn RAM). Máy nạp dây
+ * đã có sẵn blob trong ảnh nạp; máy cập nhật qua OTA thì CHƯA có, vì OTA chỉ
+ * ghi bank firmware — lúc đó máy báo 'asset=none' và hàm dưới tự gửi.
+ * Không gửi thì máy vẫn chạy, chỉ mất phần âm lịch / tiết khí. */
+let assetResolve = null;
+let assetBusy = false;
+
+function waitAsset(timeoutMs) {
+  return new Promise(resolve => {
+    const t = setTimeout(() => { assetResolve = null; resolve(''); }, timeoutMs);
+    assetResolve = (m) => { clearTimeout(t); resolve(m); };
+  });
+}
+
+function crc32(buf) {
+  let c = 0xFFFFFFFF;
+  for (let i = 0; i < buf.length; i++) {
+    c ^= buf[i];
+    for (let k = 0; k < 8; k++) c = (c >>> 1) ^ (0xEDB88320 & -(c & 1));
+  }
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+
+async function sendAsset() {
+  if (assetBusy) return;
+  // chỉ máy lịch 4.2" BA MÀU mới có vùng dữ liệu này
+  if (((bleDevice && bleDevice.name) || '').indexOf('DIY-4_2-') !== 0) return;
+  assetBusy = true;
+  try {
+    addLog('Máy chưa có bảng dữ liệu âm lịch — đang gửi xuống…');
+    const r = await fetch('OTA%20firmware/4_2/lunar_asset.bin?v=' + Date.now());
+    if (!r.ok) { addLog('Không tải được lunar_asset.bin'); return; }
+    const raw = new Uint8Array(await r.arrayBuffer());
+    if (raw.length < 16 || raw[0] !== 0x45 || raw[1] !== 0x50) { addLog('lunar_asset.bin hỏng'); return; }
+    const body = raw.subarray(16);              // bỏ header, máy tự dựng lại
+    const crc = crc32(body);
+
+    const rdy = waitAsset(8000);                // máy xóa 3 sector rồi mới báo
+    if (!await write(EpdCmd.ASSET, [0x00, body.length & 0xFF, body.length >> 8])) return;
+    if (await rdy !== 'asset=rdy') { addLog('Máy không mở được vùng dữ liệu.'); return; }
+
+    const mtu = parseInt(document.getElementById('mtusize').value) || 20;
+    const step = Math.max(16, mtu - 4);
+    for (let off = 0; off < body.length; off += step) {
+      if (!await write(EpdCmd.ASSET, [0x01, ...body.subarray(off, off + step)])) {
+        addLog('Gửi bảng dữ liệu thất bại.');
+        return;
+      }
+    }
+
+    const fin = waitAsset(5000);
+    await write(EpdCmd.ASSET, [0x02, crc & 0xFF, (crc >>> 8) & 0xFF, (crc >>> 16) & 0xFF, (crc >>> 24) & 0xFF]);
+    const m = await fin;
+    addLog(m.startsWith('asset=') && m !== 'asset=none' && m !== 'asset=err'
+      ? 'Đã gửi xong bảng dữ liệu âm lịch (' + body.length + ' byte).'
+      : 'Máy không nhận được bảng dữ liệu — thử kết nối lại.');
+  } catch (e) {
+    addLog('Gửi bảng dữ liệu lỗi: ' + e.message);
+  } finally {
+    assetBusy = false;
+  }
+}
 
 async function writeImage(data, step = 'bw') {
   const chunkSize = document.getElementById('mtusize').value - 2;
@@ -582,6 +648,12 @@ function handleNotify(value, idx) {
         addLog("Đồng hồ thiết bị chưa được đồng bộ — bấm «Sync time», hoặc chọn thẳng một giao diện (lệnh chọn giao diện tự gửi kèm ngày giờ).");
       }
       updateButtonStatus();
+    } else if (msg.startsWith('asset=')) {
+      // Vùng dữ liệu ở flash (bảng âm lịch tách khỏi firmware để trả RAM).
+      // 'asset=none' = máy chưa có blob — hay gặp ở máy vừa cập nhật qua OTA
+      // vì OTA chỉ ghi bank firmware. Tự gửi luôn, khách không phải làm gì.
+      if (assetResolve) { const f = assetResolve; assetResolve = null; f(msg); }
+      else if (msg === 'asset=none') sendAsset();
     } else if (msg.startsWith('img=') && imgRdyResolve) {
       // trả lời lệnh mở khe ảnh: 'img=rdy' (xóa flash xong) / 'img=err'
       const f = imgRdyResolve; imgRdyResolve = null; f(msg === 'img=rdy');
