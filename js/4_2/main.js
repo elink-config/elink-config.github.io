@@ -272,7 +272,10 @@ async function writeImage(data, step = 'bw') {
   for (let i = 0; i < data.length; i += chunkSize) {
     const currentTime = (new Date().getTime() - startTime) / 1000.0;
     const pct = ((100 * i) / data.length) >> 0;
-    setStatus(`Khối ${step == 'bw' ? 'đen trắng' : 'màu'}: ${chunkIdx + 1}/${count} (${pct}%), thời gian: ${currentTime}s`);
+    const stepName = step == 'bw' ? 'đen trắng' : 'màu';
+    setStatus(`Khối ${stepName}: ${chunkIdx + 1}/${count} (${pct}%), thời gian: ${currentTime}s`);
+    syncOverlayStep(`Đang truyền ảnh (${stepName})…`);
+    syncOverlayProgress(i, data.length);
     const payload = [
       (step == 'bw' ? 0x0F : 0x00) | (i == 0 ? 0x00 : 0xF0),
       ...data.slice(i, i + chunkSize),
@@ -475,6 +478,10 @@ async function sendimg(slot = 0) {
 
   startTime = new Date().getTime();
   window.__imgSending = true;  // chặn retry fw= ghi lại CCCD giữa phiên gửi
+  // Lớp phủ chặn thao tác suốt lượt gửi: một tấm ảnh là hàng trăm gói, bấm
+  // nút khác giữa chừng là lệnh chen vào luồng và máy nhận nhầm.
+  syncOverlayShow('Đang gửi ảnh vào khe ' + (slot + 1) + '…',
+    'Vui lòng không tắt máy và không đóng trang cho đến khi gửi xong.');
   try {
   const status = document.getElementById("status");
   status.parentElement.style.display = "block";
@@ -494,6 +501,7 @@ async function sendimg(slot = 0) {
   // trong lúc erase là gói dồn đống cạn MSG heap BLE -> thiết bị reset (v1.5)
   if (slotCapable) {
     setStatus(`Đang chuẩn bị khe ${slot + 1} (xóa flash)…`);
+    syncOverlayStep(`Đang chuẩn bị khe ${slot + 1}…`, 'Thiết bị đang xóa vùng nhớ của khe, mất khoảng một giây.');
     const rdyWait = FwCheck.atLeast('1.6') ? waitImgRdy(8000) : null;
     if (!await write(EpdCmd.IMG_SLOT, [0x01, slot])) {
       imgRdyResolve = null;
@@ -574,7 +582,7 @@ async function sendimg(slot = 0) {
     setStatus('Gửi ảnh lỗi: ' + m + ' — hãy tải lại trang rồi thử lại.');
     updateButtonStatus();
     return false;
-  } finally { window.__imgSending = false; }
+  } finally { window.__imgSending = false; syncOverlayHide(); }
 }
 
 
@@ -1031,7 +1039,9 @@ async function otaUpdate(preBuf) {
   if (!preBuf && !confirm('Cập nhật firmware qua BLE?\nKhông tắt nguồn thiết bị trong quá trình cập nhật!')) return;
 
   const otaStatus = document.getElementById('otaProgress');
-  const show = (t) => { if (otaStatus) otaStatus.textContent = t; };
+  const show = (t) => { if (otaStatus) otaStatus.textContent = t; syncOverlayStep(t); };
+  syncOverlayShow('Đang nâng cấp firmware…',
+    'TUYỆT ĐỐI không tắt nguồn thiết bị và không đóng trang. Máy sẽ tự khởi động lại khi xong.');
   const btn = document.getElementById('otabutton');
   btn.disabled = 'disabled';
   try {
@@ -1072,6 +1082,7 @@ async function otaUpdate(preBuf) {
       if (!await write(buf[0], buf.subarray(1), true)) throw new Error('gửi dữ liệu thất bại');
       p += 128;
       show('Tiến độ: ' + ((100 * p / (firmSize + 64)) >> 0) + '%');
+      syncOverlayProgress(p, firmSize + 64);
     }
 
     // 0xA4: kết thúc — thiết bị tự khởi động lại vào firmware mới
@@ -1085,6 +1096,7 @@ async function otaUpdate(preBuf) {
     addLog('OTA thất bại: ' + (e.message || e));
   } finally {
     btn.disabled = null;
+    syncOverlayHide();
     updateButtonStatus();
   }
 }

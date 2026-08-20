@@ -409,6 +409,30 @@ label {
     margin-left: auto;
 }
 
+/* Hàng nút chính: mọi nút cùng bề rộng tối thiểu nên các hàng thẳng cột với
+   nhau, thay vì so le theo độ dài chữ. <span> bọc nút (dsBgRow…) dùng
+   display:contents để không thành một ô riêng — JS vẫn ẩn/hiện được như cũ. */
+.flex-group.btn-row {
+    gap: 8px;
+}
+
+.flex-group.btn-row button {
+    min-width: 136px;
+    text-align: center;
+    justify-content: center;
+}
+
+.flex-group.btn-row > span {
+    display: contents;
+}
+
+@media (max-width: 560px) {
+    .flex-group.btn-row button {
+        min-width: 0;
+        flex: 1 1 45%;
+    }
+}
+
 .flex-container.options {
     padding: 12px;
     background: var(--md-sys-color-surface-container-low);

@@ -558,6 +558,9 @@
 
   window.dsUpload = async function () {
     if (!st.widgets.length) { alert('Thiết kế còn trống — hãy thêm ít nhất một thành phần.'); return; }
+    syncOverlayShow('Đang gửi thiết kế ' + (dsDesign + 1) + ' lên thiết bị…',
+      'Vui lòng không tắt máy và không đóng trang cho đến khi gửi xong.');
+    try {
 
     // ẢNH NỀN còn nợ máy: hai nút «Làm nền» / «Bỏ ảnh nền» chỉ đổi ở trình
     // duyệt, tới đây mới thật sự gửi. Gửi TRƯỚC bố cục vì nền là lớp dưới cùng.
@@ -579,6 +582,7 @@
           return;
         }
         addLog('Đang gửi ảnh nền của «Tự thiết kế ' + (dsDesign + 1) + '»…');
+        syncOverlayStep('Đang gửi ảnh nền…');
         if (!await sendBgFromStore(bgSlot, st.bgPrev)) { addLog('Gửi ảnh nền thất bại — chưa gửi bố cục.'); return; }
         if (typeof imgSlotMask === 'number') imgSlotMask |= (1 << bgSlot);
         if (!newFwB) st.bg = 3;
@@ -605,6 +609,7 @@
         bits = black;
       }
       const chunk = Math.max(16, (Number(document.getElementById('mtusize').value) || 20) - 5);
+      syncOverlayStep('Đang gửi icon…');
       addLog('Đang gửi icon ' + st.icon.w + 'x' + st.icon.h +
              (twoPlane ? ' (2 mặt đen+ĐỎ, ' : ' (') + bits.length + ' byte, khối ' + chunk + ')...');
       // fw moi: [0x03, idx, w, h, planes] -> icon RIENG cua thiet ke dang sua
@@ -668,7 +673,9 @@
     if (six) {
       const room = Math.max(32, (Number(document.getElementById('mtusize').value) || 20) - 10);
       sent = true;
+      syncOverlayStep('Đang gửi bố cục…');
       for (let off = 0; off < buf.length && sent; off += room) {
+        syncOverlayProgress(off, buf.length);
         const part = buf.subarray(off, Math.min(off + room, buf.length));
         sent = await write(EpdCmd.SET_LAYOUT,
           [0xF0, dsDesign, off & 0xFF, (off >> 8) & 0xFF, ...part]);
@@ -687,6 +694,12 @@
       const cardMode = (typeof fwHasNewSlots === 'function' && fwHasNewSlots()) ? (22 + dsDesign) : 20;
       addLog('Thiết bị tự chuyển sang «Tự thiết kế ' + (dsDesign + 1) + '» và hiển thị sau ~30 giây.');
       if (typeof highlightMode === 'function') highlightMode(cardMode);
+    }
+    } catch (e) {
+      console.error(e);
+      addLog('Lỗi khi gửi thiết kế: ' + ((e && e.message) ? e.message : e));
+    } finally {
+      syncOverlayHide();
     }
   };
 

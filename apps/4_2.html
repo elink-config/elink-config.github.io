@@ -251,15 +251,15 @@
 			</div>
 			<div class="status-bar"><b>Trạng thái: </b><span id="status"></span></div>
 			<div class="flex-container">
-				<div class="flex-group">
+				<div class="flex-group btn-row">
 					<button type="button" class="secondary debug" onclick="rotateCanvas()">Xoay canvas</button>
 					<button type="button" class="secondary" onclick="clearCanvas()">Xóa canvas</button>
 					<button type="button" class="secondary debug" onclick="downloadDataArray()">Tải mảng dữ liệu</button>
 					<button id="sendimgbutton" type="button" class="primary" onclick="sendimg(0)">Gửi ảnh khe 1</button>
 					<button id="sendimgbutton2" type="button" class="primary" onclick="sendimg(1)">Gửi ảnh khe 2</button>
 					<button id="sendimgbutton3" type="button" class="primary" onclick="sendimg(2)">Gửi ảnh khe 3</button>
-						<button id="sendimgbutton4" type="button" class="primary" onclick="sendimg(3)" style="display:none">Gửi ảnh khe 4</button>
-						<button id="sendimgbutton5" type="button" class="primary" onclick="sendimg(4)" style="display:none">Gửi ảnh khe 5</button>
+					<button id="sendimgbutton4" type="button" class="primary" onclick="sendimg(3)" style="display:none">Gửi ảnh khe 4</button>
+					<button id="sendimgbutton5" type="button" class="primary" onclick="sendimg(4)" style="display:none">Gửi ảnh khe 5</button>
 					<span id="dsBgRow" style="display:none"><button type="button" class="secondary" onclick="dsBgToDesign(0)">Làm nền Thiết kế 1</button><button type="button" class="secondary" onclick="dsBgToDesign(1)">Làm nền Thiết kế 2</button></span><span id="dsBgOldRow"><button type="button" class="secondary" onclick="dsIconFromCanvas()">Thêm ảnh vào thiết kế</button></span>
 					<button type="button" class="secondary" onclick="dsClearBackground()">Bỏ ảnh nền</button>
 				</div>
@@ -278,7 +278,7 @@
 				</div>
 			</div>
 			<div class="flex-container">
-				<div class="flex-group">
+				<div class="flex-group btn-row">
 					<button type="button" class="secondary" onclick="reloadImage()">Tải lại</button>
 					<button type="button" class="secondary" onclick="stretchToScreen()">Kéo giãn đầy màn</button>
 					<button type="button" class="secondary" onclick="fitToScreen()">Vừa màn hình</button>

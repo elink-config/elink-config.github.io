@@ -74,7 +74,14 @@ async function reConnect() {
 }
 
 function setStatus(statusText) {
-  document.getElementById("status").innerHTML = statusText;
+  const el = document.getElementById("status");
+  if (!el) return;
+  el.innerHTML = statusText;
+  // Thanh trạng thái RỖNG thì ẩn hẳn. Trước đây một lượt gửi dừng giữa chừng
+  // để lại cái thanh xanh trống trơn nằm chắn giữa giao diện.
+  const bar = el.parentElement;
+  if (bar && bar.classList.contains('status-bar'))
+    bar.style.display = statusText ? 'block' : 'none';
 }
 
 function fillCanvas(style) {
@@ -387,8 +394,21 @@ function applyDither() {
  * Mọi bước trong luồng nạp đều có đồng hồ đếm ngược nên lớp phủ này luôn được
  * gỡ; đồng hồ 5 phút bên dưới chỉ là chốt chặn cuối, phòng lỗi ngoài dự tính. */
 let syncOverlayGuard = null;
+// Đếm LỒNG NHAU: gửi bố cục có gọi vào đường gửi ảnh, mà đường đó cũng bật/tắt
+// lớp phủ — không đếm thì bước con xong là lớp phủ biến mất giữa chừng.
+let syncOverlayDepth = 0;
+
+// đổi chữ trên lớp phủ đang mở mà KHÔNG động tới bộ đếm lồng nhau
+function syncOverlayStep(title, note) {
+  const t = document.getElementById('syncOverlayTitle');
+  if (!t) return;
+  t.textContent = title;
+  const n = document.getElementById('syncOverlayNote');
+  if (n && note) n.textContent = note;
+}
 
 function syncOverlayShow(title, note) {
+  syncOverlayDepth++;
   let ov = document.getElementById('syncOverlay');
   if (!ov) {
     const st = document.createElement('style');
@@ -431,7 +451,7 @@ function syncOverlayShow(title, note) {
   document.getElementById('syncOverlayBar').style.width = '0%';
   ov.style.display = 'flex';
   if (syncOverlayGuard) clearTimeout(syncOverlayGuard);
-  syncOverlayGuard = setTimeout(syncOverlayHide, 300000);
+  syncOverlayGuard = setTimeout(function () { syncOverlayHide(true); }, 300000);
 }
 
 function syncOverlayProgress(done, total) {
@@ -443,7 +463,10 @@ function syncOverlayProgress(done, total) {
   if (pctEl) pctEl.textContent = pct + '%';
 }
 
-function syncOverlayHide() {
+function syncOverlayHide(force) {
+  if (force) syncOverlayDepth = 0;
+  else if (syncOverlayDepth > 0) syncOverlayDepth--;
+  if (syncOverlayDepth > 0) return;      // còn bước ngoài đang chạy
   if (syncOverlayGuard) { clearTimeout(syncOverlayGuard); syncOverlayGuard = null; }
   const ov = document.getElementById('syncOverlay');
   if (ov) ov.style.display = 'none';
