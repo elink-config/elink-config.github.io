@@ -423,7 +423,7 @@ function getDriverOption() {
 async function sendimg(slot = 0) {
   if (cropManager.isCropMode()) {
     alert("Vui lòng hoàn tất cắt ảnh trước! Đã hủy gửi.");
-    return;
+    return false;
   }
 
   // 3 khe ảnh cần firmware >= 1.5; đời cũ chỉ hiển thị được (không lưu khe)
@@ -431,10 +431,10 @@ async function sendimg(slot = 0) {
   // khe 4,5 (chỉ số 3,4) và hai khe NỀN (5,6) chỉ có từ BWR v2.7 / 4 màu v3.7
   if (slot > 2 && !fwHasNewSlots()) {
     alert('Máy chưa hỗ trợ khe này — cần firmware 4.2" ba màu từ v2.7, bốn màu từ v3.7.');
-    return;
+    return false;
   }
   if (!slotCapable && slot > 0) {
-    if (!confirm('Firmware của thiết bị chưa hỗ trợ 3 khe ảnh (cần v1.5). Ảnh sẽ chỉ hiển thị, không lưu vào khe. Tiếp tục?')) return;
+    if (!confirm('Firmware của thiết bị chưa hỗ trợ 3 khe ảnh (cần v1.5). Ảnh sẽ chỉ hiển thị, không lưu vào khe. Tiếp tục?')) return false;
   }
 
   const canvasSize = document.getElementById('canvasSize').value;
@@ -448,10 +448,10 @@ async function sendimg(slot = 0) {
   const drvId = selectedOption ? selectedOption.value : '';
 
   if (drvSize !== canvasSize) {
-    if (!confirm("Cảnh báo: kích thước canvas không khớp driver, tiếp tục?")) return;
+    if (!confirm("Cảnh báo: kích thước canvas không khớp driver, tiếp tục?")) return false;
   }
   if (drvColor !== ditherMode) {
-    if (!confirm("Cảnh báo: chế độ màu không khớp driver, tiếp tục?")) return;
+    if (!confirm("Cảnh báo: chế độ màu không khớp driver, tiếp tục?")) return false;
   }
 
   // Máy vừa cập nhật OTA tự được gửi blob font/âm lịch ngay lúc kết nối
@@ -490,14 +490,14 @@ async function sendimg(slot = 0) {
       imgRdyResolve = null;
       setStatus('Không mở được khe ảnh — thử lại.');
       updateButtonStatus();
-      return;
+      return false;
     }
     addLog(`Đã gửi lệnh mở khe ${slot + 1}, đợi thiết bị báo xóa xong…`);
     if (rdyWait && !await rdyWait) {
       setStatus('Không mở được khe ảnh (thiết bị không báo sẵn sàng) — thử lại.');
       addLog('Thiết bị không báo «img=rdy» sau 8 giây.');
       updateButtonStatus();
-      return;
+      return false;
     }
   }
 
@@ -524,7 +524,7 @@ async function sendimg(slot = 0) {
   } else {
     addLog("Firmware không hỗ trợ chế độ màu này.");
     updateButtonStatus();
-    return;
+    return false;
   }
 
   if (!ok) {
@@ -532,7 +532,7 @@ async function sendimg(slot = 0) {
     // nối hoặc khi lần gửi sau thành công
     setStatus('Truyền ảnh thất bại — chưa làm mới màn hình.');
     updateButtonStatus();
-    return;
+    return false;
   }
 
   // chốt khe (ghi trailer hợp lệ) TRƯỚC khi làm mới màn
@@ -554,6 +554,7 @@ async function sendimg(slot = 0) {
   setTimeout(() => {
     status.parentElement.style.display = "none";
   }, 5000);
+  return true;
   } catch (e) {
     // Trước đây khối này CHỈ có finally: một ReferenceError giữa lượt gửi
     // (ví dụ biến epdDriverSelect đã bị xoá) làm cả lượt chết IM LẶNG —
@@ -563,6 +564,7 @@ async function sendimg(slot = 0) {
     addLog('Lỗi khi gửi ảnh: ' + m);
     setStatus('Gửi ảnh lỗi: ' + m + ' — hãy tải lại trang rồi thử lại.');
     updateButtonStatus();
+    return false;
   } finally { window.__imgSending = false; }
 }
 

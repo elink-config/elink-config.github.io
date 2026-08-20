@@ -885,7 +885,7 @@
     { mode: 18, name: 'Núi tuyết 8-bit', tick: 'Cập nhật lúc 0h', id: 'retromtnmodebutton', draw: m21 },
     { mode: 19, name: 'Hoàng hôn 8-bit', tick: 'Làm mới mỗi phút', id: 'retrosunsetmodebutton', draw: m22 },
     { mode: 20, name: 'Khủng long 8-bit', tick: 'Cập nhật lúc 0h', id: 'retrowinmodebutton', draw: m23 },
-    { mode: 21, name: 'Thành phố pixel', tick: 'Làm mới mỗi phút', id: 'retrocitymodebutton', draw: m24 },
+    { mode: 21, name: 'Thành phố 8-bit', tick: 'Làm mới mỗi phút', id: 'retrocitymodebutton', draw: m24 },
     { mode: 22, name: 'Tự thiết kế 1', tick: 'Làm mới mỗi phút', id: 'custommodebutton', draw: m20 },
     { mode: 23, name: 'Tự thiết kế 2', tick: 'Làm mới mỗi phút', id: 'custommodebutton2', draw: m20 },
   ];

@@ -380,34 +380,19 @@
     }
     const src = document.getElementById('canvas');
     if (!src || !src.width) { alert('Chưa có ảnh trong mục «Truyền hình ảnh».'); return; }
-    if (!confirm('Dùng ảnh đang có làm NỀN của thiết kế?\n\nẢnh sẽ được gửi vào khe 3 của thiết bị (ảnh cũ trong khe 3 bị thay).')) return;
-    if (typeof sendimg !== 'function') { alert('Không tìm thấy chức năng gửi ảnh.'); return; }
-    await sendimg(2);                       // khe 3
-    if (!await write(EpdCmd.CUSTOM_BG, [3])) return;
-    st.bg = 3;
-    st.bgPrev = src.toDataURL('image/png'); // chỉ để xem trước trên web
+    // Cũng chỉ ghi ở trình duyệt: firmware cũ mượn KHE ẢNH 3 làm nền nên lúc
+    // «Gửi lên thiết bị» mới đẩy ảnh vào khe đó (xem khối bgPend ở dsUpload).
+    st.bgPrev = src.toDataURL('image/png');
+    st.bgPend = 'set';
     bgImg = null;
     save(); redraw();
-    addLog('Đã đặt ảnh nền cho «Tự thiết kế» — bấm «Gửi lên thiết bị» để xếp pin/giờ lên trên.');
+    addLog('Đã đặt ảnh nền cho «Tự thiết kế» (mới ở trình duyệt) — bấm «Gửi lên thiết bị» để áp lên máy.');
   };
 
-  window.dsClearBackground = async function () {
-    st.bg = 0; st.bgPrev = null; bgImg = null; save(); redraw();
-    if (typeof fwHasNewSlots === 'function' && fwHasNewSlots()) {
-      // fw >= 2.7/3.7: nền nằm ở KHE NỀN RIÊNG của thiết kế. Trước đây hàm này
-      // chỉ xoá bản xem trước trên web — máy vẫn giữ nền, bấm xong tưởng xong
-      // mà màn hình không đổi. Lệnh [0x27 04 khe] hạ khe đó ở thiết bị.
-      const slot = (typeof IMG_BG_SLOT === 'function') ? IMG_BG_SLOT(dsDesign) : 5 + dsDesign;
-      if (await write(EpdCmd.IMG_SLOT, [0x04, slot])) {
-        if (typeof imgSlotMask === 'number') imgSlotMask &= ~(1 << slot);
-        addLog(`Đã bỏ ảnh nền của Thiết kế ${dsDesign + 1} trên thiết bị.`);
-        return;
-      }
-      addLog('Không gửi được lệnh bỏ ảnh nền — kiểm tra kết nối rồi thử lại.');
-      return;
-    }
-    if (window.__fwBg) await write(EpdCmd.CUSTOM_BG, [0]);
-    addLog('Đã bỏ ảnh nền của thiết kế.');
+  window.dsClearBackground = function () {
+    // Cũng chỉ đổi ở trình duyệt: việc xoá trên máy để dành cho «Gửi lên thiết bị».
+    st.bg = 0; st.bgPrev = null; st.bgPend = 'clear'; bgImg = null; save(); redraw();
+    addLog('Đã bỏ ảnh nền (mới ở trình duyệt) — bấm «Gửi lên thiết bị» để xoá trên máy.');
   };
 
   window.dsIconFromCanvas = function () {
@@ -489,6 +474,33 @@
 
   window.dsUpload = async function () {
     if (!st.widgets.length) { alert('Thiết kế còn trống — hãy thêm ít nhất một thành phần.'); return; }
+
+    // ẢNH NỀN còn nợ máy: hai nút «Làm nền» / «Bỏ ảnh nền» chỉ đổi ở trình
+    // duyệt, tới đây mới thật sự gửi. Gửi TRƯỚC bố cục vì nền là lớp dưới cùng.
+    if (st.bgPend) {
+      const newFwB = (typeof fwHasNewSlots === 'function' && fwHasNewSlots());
+      const bgSlot = newFwB ? ((typeof IMG_BG_SLOT === 'function') ? IMG_BG_SLOT(dsDesign) : 5 + dsDesign) : 2;
+      if (st.bgPend === 'clear') {
+        if (newFwB) {
+          if (!await write(EpdCmd.IMG_SLOT, [0x04, bgSlot])) { addLog('Không xoá được ảnh nền trên máy — dừng lại.'); return; }
+          if (typeof imgSlotMask === 'number') imgSlotMask &= ~(1 << bgSlot);
+        } else if (window.__fwBg) {
+          if (!await write(EpdCmd.CUSTOM_BG, [0])) return;
+        }
+        st.bg = 0;
+        addLog('Đã xoá ảnh nền trên thiết bị.');
+      } else if (st.bgPend === 'set' && st.bgPrev) {
+        if (!newFwB && !window.__fwBg) {
+          alert('Máy chưa hỗ trợ ảnh nền toàn màn (cần 4.2" ba màu từ v2.3, bốn màu từ v3.4).');
+          return;
+        }
+        addLog('Đang gửi ảnh nền của «Tự thiết kế ' + (dsDesign + 1) + '»…');
+        if (!await sendBgFromStore(bgSlot, st.bgPrev)) { addLog('Gửi ảnh nền thất bại — chưa gửi bố cục.'); return; }
+        if (typeof imgSlotMask === 'number') imgSlotMask |= (1 << bgSlot);
+        if (!newFwB) st.bg = 3;
+      }
+      st.bgPend = null; save();
+    }
     // the icon travels first (chunked into its own flash sector); the
     // layout upload afterwards switches the device to mode 20
     if (st.widgets.some(w => w.type === 10)) {
@@ -626,15 +638,52 @@
 
   // Gui anh dang co o muc «Truyen hinh anh» lam NEN cua mot thiet ke (khe nen
   // RIENG cua thiet ke do, khong dung toi khe anh cua nguoi dung).
-  window.dsBgToDesign = async function (d) {
+  // Sửa trạng thái của MỘT thiết kế, kể cả thiết kế không mở trên màn hình.
+  function patchDesign(d, fn) {
+    if (d === dsDesign) { fn(st); save(); return; }
+    const key = (d === 0) ? LS_KEY_BASE : LS_KEY_BASE + '_d' + d;
+    let s2 = null;
+    try { s2 = JSON.parse(localStorage.getItem(key)); } catch (e) {}
+    if (!s2 || !s2.widgets) s2 = { widgets: [], frame: 0, t1: '', t2: '' };
+    fn(s2);
+    try { localStorage.setItem(key, JSON.stringify(s2)); } catch (e) {}
+  }
+
+  /* ẢNH NỀN chỉ đổi Ở TRÌNH DUYỆT; máy chỉ nhận khi bấm «Gửi lên thiết bị».
+   * st.bgPrev = ảnh nền (dataURL — vừa để xem trước, vừa là bản đem gửi)
+   * st.bgPend = 'set' | 'clear' | rỗng — việc còn nợ máy ở lần gửi kế tiếp.
+   * Nhờ vậy nút này không đụng gì tới thiết bị nên KHÔNG cần hỏi xác nhận. */
+  window.dsBgToDesign = function (d) {
     const src = document.getElementById('canvas');
-    if (!src || !src.width) { alert('Chua co anh trong muc «Truyen hinh anh».'); return; }
-    if (typeof sendimg !== 'function') { alert('Khong tim thay chuc nang gui anh.'); return; }
-    if (!confirm('Dung anh dang co lam NEN cua «Tu thiet ke ' + (d + 1) + '»?' + '\n\n' + 'Anh vao khe nen rieng, KHONG dung toi 5 khe anh cua ban.')) return;
-    await sendimg(IMG_BG_SLOT(d));
-    if (d === dsDesign) { st.bgPrev = src.toDataURL('image/png'); bgImg = null; save(); redraw(); }
-    addLog('Da gui anh nen cho «Tu thiet ke ' + (d + 1) + '».');
+    if (!src || !src.width) { alert('Chưa có ảnh trong mục «Truyền hình ảnh».'); return; }
+    const url = src.toDataURL('image/png');
+    patchDesign(d, s => { s.bgPrev = url; s.bgPend = 'set'; });
+    if (d === dsDesign) { bgImg = null; redraw(); }
+    addLog('Đã đặt ảnh nền cho «Tự thiết kế ' + (d + 1) + '» (mới ở trình duyệt) — bấm «Gửi lên thiết bị» của thiết kế đó để áp lên máy.');
   };
+
+  // Nạp ảnh nền đã lưu vào khe của thiết bị. Đường gửi ảnh đọc thẳng #canvas
+  // nên phải mượn canvas một lát rồi TRẢ LẠI đúng ảnh người dùng đang có.
+  async function sendBgFromStore(slot, dataUrl) {
+    const cv = document.getElementById('canvas');
+    if (!cv || !cv.width) { alert('Không tìm thấy khung ảnh.'); return false; }
+    if (typeof sendimg !== 'function') { alert('Không tìm thấy chức năng gửi ảnh.'); return false; }
+    const c2 = cv.getContext('2d');
+    const snapshot = cv.toDataURL('image/png');
+    const load = u => new Promise(res => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = u; });
+    const img = await load(dataUrl);
+    if (!img) { alert('Ảnh nền đã lưu bị hỏng — hãy chọn lại.'); return false; }
+    let ok = false;
+    try {
+      c2.clearRect(0, 0, cv.width, cv.height);
+      c2.drawImage(img, 0, 0, cv.width, cv.height);
+      ok = (await sendimg(slot)) !== false;
+    } finally {
+      const back = await load(snapshot);
+      if (back) { c2.clearRect(0, 0, cv.width, cv.height); c2.drawImage(back, 0, 0); }
+    }
+    return ok;
+  }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
