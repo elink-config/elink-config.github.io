@@ -666,7 +666,7 @@
     // nên phải chẻ. Máy đời trước vẫn nhận trọn gói như cũ.
     let sent;
     if (six) {
-      const room = Math.max(32, (Number(document.getElementById('mtusize').value) || 20) - 8);
+      const room = Math.max(32, (Number(document.getElementById('mtusize').value) || 20) - 10);
       sent = true;
       for (let off = 0; off < buf.length && sent; off += room) {
         const part = buf.subarray(off, Math.min(off + room, buf.length));
