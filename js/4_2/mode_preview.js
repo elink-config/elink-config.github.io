@@ -916,10 +916,7 @@
       // Máy chạy firmware TRƯỚC đợt đánh lại số (BWR < 2.6 / 4 màu < 3.6) thì
       // hai thẻ «Núi tuyết»/«Hoàng hôn» chỉ có ở bản 4 màu — bản 3 màu đời đó
       // đã gỡ. Firmware mới có đủ ở cả hai bản nên không ẩn nữa.
-      if (window.__fwNoRetro && (m.mode === 18 || m.mode === 19)) card.style.display = 'none';
-      // «Tự thiết kế 2» chỉ có từ BWR v2.7 / 4 màu v3.7
-      if (m.mode === 23 && !(typeof fwHasNewSlots === 'function' && fwHasNewSlots()))
-        card.style.display = 'none';
+      if (cardHidden(m.mode)) card.style.display = 'none';
       try { m.draw(ctx2d(card.querySelector('canvas')), now); }
       catch (e) { console.error('preview mode ' + m.mode, e); }
     }
@@ -929,14 +926,25 @@
 
   // vẽ lại toàn bộ thumbnail — updateDitcherOptions (main.js) gọi khi đổi
   // driver để bật/tắt các điểm nhấn VÀNG của màn 4 màu (driver 05/06)
+  /* Thẻ nào PHẢI ẨN với firmware đang kết nối — MỘT quy tắc duy nhất, dùng
+   * cho cả lượt dựng thẻ lẫn lượt vẽ lại mỗi phút. Trước đây hai chỗ có hai
+   * bộ luật riêng, mà bộ ở refreshModeGallery vẫn đánh theo SỐ MODE ĐỜI CŨ
+   * (2 = Đồng hồ, 18 = Mặt trăng — hai mode đã bỏ ở v1.7). Sau khi đánh lại
+   * số, 18 là «Núi tuyết 8-bit» nên cứ kết nối vào là thẻ đó BIẾN MẤT, còn
+   * «Tự thiết kế 2» thì hiện ra cả trên máy chưa hỗ trợ. */
+  function cardHidden(mode) {
+    // Núi tuyết + Hoàng hôn: bản BA MÀU gỡ ở v2.3, thêm lại ở v2.6
+    if (window.__fwNoRetro && (mode === 18 || mode === 19)) return true;
+    // «Tự thiết kế 2» chỉ có từ BWR v2.7 / 4 màu v3.7
+    if (mode === 23 && !(typeof fwHasNewSlots === 'function' && fwHasNewSlots())) return true;
+    return false;
+  }
+
   window.refreshModeGallery = function () {
     const t = new Date();
     document.querySelectorAll('.mode-card').forEach((card, i) => {
       if (MODE_LIST[i]) {
-        // mode 2 + 18 đã bỏ ở firmware v1.7 — ẩn/hiện lại theo cờ fw hiện tại
-        const gone = MODE_LIST[i].mode === 2 || MODE_LIST[i].mode === 18;
-        const gone24 = MODE_LIST[i].mode === 21 || MODE_LIST[i].mode === 22;
-        card.style.display = ((v17() && gone) || (window.__fwNoRetro && gone24)) ? 'none' : '';
+        card.style.display = cardHidden(MODE_LIST[i].mode) ? 'none' : '';
         // tên card đổi theo firmware (vd card 13: Đếm ngược -> Lịch dương + âm)
         const nEl = card.querySelector('.mode-name');
         const nTxt = (MODE_LIST[i].nameNew && fwCal()) ? MODE_LIST[i].nameNew : MODE_LIST[i].name;
