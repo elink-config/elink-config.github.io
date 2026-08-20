@@ -198,9 +198,22 @@ async function setImgAuto() {
   const hours = sel ? parseInt(sel.value) : 24;
   updateImgAutoUI();
   if (await write(EpdCmd.IMG_SLOT, [0x03, auto, hours])) {
-    addLog(auto
-      ? `Đã bật tự động đổi ảnh mỗi ${hours} giờ (khe 1 → 2 → 3 → 1).`
-      : 'Đã tắt tự động đổi ảnh.');
+    if (!auto) { addLog('Đã tắt tự động đổi ảnh.'); return; }
+    // vòng đổi THẬT: chỉ gồm khe đang có ảnh (trước đây ghi cứng «1 → 2 → 3»
+    // nên máy 5 khe đọc log ra sai)
+    const total = (typeof IMG_SLOTS === 'number') ? IMG_SLOTS : 3;
+    const order = [];
+    for (let i = 0; i < total; i++) if (imgSlotMask & (1 << i)) order.push(i + 1);
+    // Mốc đổi ảnh của máy là timestamp / (chu kỳ x 3600) — 1/12/24 giờ đều
+    // chia hết 86400 nên mốc luôn rơi đúng đầu giờ, canh theo 00:00. Tính ra
+    // giờ đồng hồ cho người dùng biết lần đổi kế tiếp rơi vào lúc nào.
+    const now = new Date();
+    const tzs = now.getTimezoneOffset() * 60;
+    const devNow = Math.floor(now.getTime() / 1000) - tzs;   // đúng giá trị máy đang giữ
+    const nextDev = (Math.floor(devNow / (hours * 3600)) + 1) * hours * 3600;
+    const nextLocal = new Date((nextDev + tzs) * 1000);
+    addLog(`Đã bật tự động đổi ảnh mỗi ${hours} giờ (lần lượt khe ${order.join(' → ')} → ${order[0]}). ` +
+           `Bộ đếm bắt đầu lại từ bây giờ — lần đổi kế tiếp vào ${nextLocal.toLocaleString('vi-VN')}.`);
   }
 }
 
