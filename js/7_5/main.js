@@ -426,41 +426,16 @@ function updateButtonStatus(forceDisabled = false) {
   // (7.5" rst=P4): bấm Sync time là máy vẽ lại mode lỗi và reset ngay,
   // không có cách nào thoát sang mode khác.
   const modeStatus = status;
-  document.getElementById("reconnectbutton").disabled = (gattServer == null || gattServer.connected) ? 'disabled' : null;
-  document.getElementById("synctimebutton").disabled = status;
-  document.getElementById("sendcmdbutton").disabled = status;
-  document.getElementById("calendarmodebutton").disabled = modeStatus;
-  document.getElementById("clockmodebutton").disabled = modeStatus;
-  document.getElementById("combomodebutton").disabled = modeStatus;
-  document.getElementById("redcombomodebutton").disabled = modeStatus;
-  document.getElementById("vncalendarmodebutton").disabled = modeStatus;
-  document.getElementById("digitalmodebutton").disabled = modeStatus;
-  document.getElementById("analogmodebutton").disabled = modeStatus;
-  document.getElementById("dayblocmodebutton").disabled = modeStatus;
-  document.getElementById("weekmodebutton").disabled = modeStatus;
-  document.getElementById("digitalcalmodebutton").disabled = modeStatus;
-  document.getElementById("analogdaymodebutton").disabled = modeStatus;
-  document.getElementById("minimalmodebutton").disabled = modeStatus;
-  document.getElementById("vanniemodebutton").disabled = modeStatus;
-  document.getElementById("countdownmodebutton").disabled = modeStatus;
-  document.getElementById("twomonthmodebutton").disabled = modeStatus;
-  document.getElementById("yearmodebutton").disabled = modeStatus;
-  document.getElementById("thermomodebutton").disabled = modeStatus;
-  document.getElementById("moonmodebutton").disabled = modeStatus;
-  document.getElementById("notemodebutton").disabled = modeStatus;
-  document.getElementById("custommodebutton").disabled = modeStatus;
-  document.getElementById("retromtnmodebutton").disabled = modeStatus;
-  document.getElementById("retrosunsetmodebutton").disabled = modeStatus;
-  document.getElementById("retrowinmodebutton").disabled = modeStatus;
-  document.getElementById("retrocitymodebutton").disabled = modeStatus;
-  document.getElementById("uploadlayoutbutton").disabled = status;
-  document.getElementById("sendnotebutton").disabled = status;
-  document.getElementById("clearscreenbutton").disabled = status;
-  document.getElementById("sendimgbutton").disabled = status;
-  document.getElementById("sendimgbutton2").disabled = status;
-  document.getElementById("sendimgbutton3").disabled = status;
-  document.getElementById("setDriverbutton").disabled = status;
-  document.getElementById("otabutton").disabled = status;
+  // KHÔNG liệt kê id nút giao diện ở đây nữa. Gallery do mode_preview.js dựng
+  // ĐỘNG từ MODE_LIST, mà MODE_LIST thay đổi theo firmware — danh sách id cứng
+  // lệch một cái là getElementById trả null, ném lỗi NGAY TRONG body.onload và
+  // giết cả lượt dựng giao diện («Lỗi tải giao diện: Cannot set properties of
+  // null»). Quét thẳng nút trong #modeGallery thì luôn khớp.
+  const set = (id, v) => { const e = document.getElementById(id); if (e) e.disabled = v; };
+  set("reconnectbutton", (gattServer == null || gattServer.connected) ? 'disabled' : null);
+  ["synctimebutton", "sendcmdbutton", "uploadlayoutbutton", "sendnotebutton", "clearscreenbutton", "sendimgbutton", "sendimgbutton2", "sendimgbutton3", "setDriverbutton", "otabutton"]
+    .forEach(id => set(id, status));
+  document.querySelectorAll('#modeGallery button').forEach(b => { b.disabled = modeStatus; });
 }
 
 setInterval(tickSystemTime, 1000);
