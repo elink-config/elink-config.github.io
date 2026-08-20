@@ -19,14 +19,14 @@ const IMG_BG_SLOT = d => 5 + d;   // khe nền của thiết kế d (0/1)
 // Bo cuc luc do dai 350 byte nen PHAI gui chia manh (0xF0/0xF1).
 function fwHasSixText() {
   const nm = (bleDevice && bleDevice.name) || '';
-  if (nm.indexOf('DIY-4_2C') === 0) return FwCheck.atLeast('3.8');
-  if (nm.indexOf('DIY-4_2-') === 0) return FwCheck.atLeast('2.8');
+  if (nm.indexOf('DIY-4_2C') === 0) return FwCheck.atLeast('3.5');
+  if (nm.indexOf('DIY-4_2-') === 0) return FwCheck.atLeast('2.4');
   return false;
 }
 
 function fwHasNewSlots() {
   const nm = (bleDevice && bleDevice.name) || '';
-  return FwCheck.atLeast(nm.indexOf('DIY-4_2C') === 0 ? '3.7' : '2.7');
+  return FwCheck.atLeast(nm.indexOf('DIY-4_2C') === 0 ? '3.5' : '2.4');
 }
 let timeSynced = false;     // device clock is valid (reported or just synced);
                             // gates the mode gallery in [Điều khiển thiết bị]
@@ -125,7 +125,7 @@ const MODE_OLD2NEW = Object.fromEntries(Object.entries(MODE_NEW2OLD).map(([n, o]
 
 function modeNumberingIsNew() {
   const nm = (bleDevice && bleDevice.name) || '';
-  return FwCheck.atLeast(nm.indexOf('DIY-4_2C') === 0 ? '3.6' : '2.6');
+  return FwCheck.atLeast(nm.indexOf('DIY-4_2C') === 0 ? '3.5' : '2.4');
 }
 // số gửi XUỐNG máy
 function modeToWire(m) {
@@ -802,7 +802,7 @@ function handleNotify(value, idx) {
       // CÒN hai chế độ này -> không dùng chung cờ __fwBg như trước.
       // Bản 3 màu gỡ «Núi tuyết»/«Hoàng hôn» ở v2.3 rồi THÊM LẠI ở v2.6 (đủ RAM
       // sau khi đưa font xuống flash). Chỉ ẩn hai thẻ đó ở khoảng giữa.
-      window.__fwNoRetro = !is7_5 && !is4c && FwCheck.atLeast('2.3') && !FwCheck.atLeast('2.6');
+      window.__fwNoRetro = !is7_5 && !is4c && FwCheck.atLeast('2.3') && !FwCheck.atLeast('2.4');
       if (window.refreshModeGallery) window.refreshModeGallery();
       window.__fwIconRed = is7_5 ? FwCheck.atLeast('0.5')
         : (devNm.indexOf('DIY-4_2C') === 0) ? false

@@ -516,7 +516,15 @@
 							<td><a href="OTA firmware/4_2/fw_4_2inch_v2.3.bin" download>Tải về</a></td>
 							<td><button type="button" class="primary" onclick="fwInstallRow(this)">Cài ngay</button></td>
                         </tr>
-						<tr class="fw-alt">
+						<tr>
+								<td>15</td>
+								<td>2.4</td>
+								<td><b>5 khe ảnh</b> (trước là 3) và <b>hai mục «Tự thiết kế» riêng biệt</b> — mỗi mục có bố cục, ảnh nền và icon riêng, ảnh nền không còn chiếm khe ảnh. Thêm 6 dòng chữ tự nhập và hai thành phần «Thứ», «Ngày dương». Có lại hai giao diện «Núi tuyết 8-bit» và «Hoàng hôn 8-bit».<br>LƯU Ý: nạp xong máy về như mới (kích hoạt vẫn giữ) — cần gửi lại ảnh và thiết kế</td>
+								<td>20/08/2026</td>
+								<td><a href="OTA firmware/4_2/fw_4_2inch_v2.4.bin" download>Tải về</a></td>
+								<td><button type="button" class="primary" onclick="fwInstallRow(this)">Cài ngay</button></td>
+							</tr>
+							<tr class="fw-alt">
 							<td>—</td>
 							<td>r1.0</td>
 							<td><b>ĐỔI MÁY 4.2" THÀNH MÁY ĐỌC SÁCH</b> — không phải firmware lịch! Nạp bản này thì máy 4.2" (400×300) thành máy đọc sách: gửi sách tiếng Việt vào máy, 3 cỡ chữ, lật trang bằng nút bấm. Sau khi nạp, tên Bluetooth đổi thành <b>DIY-4_2R-xxxx</b> — kết nối lại sẽ thấy giao diện đọc sách. Muốn quay về lịch/đồng hồ thì nạp lại firmware 4.2" mới nhất ở các hàng trên.<br><b>PHẢI hàn thêm 3 nút bấm</b> thì mới lật trang được:<details style="margin-top:6px"><summary style="cursor:pointer">Hướng dẫn hàn nút &amp; cách dùng (kèm ảnh vị trí)</summary><p style="margin:6px 0 0">Hàn 3 nút từ các điểm test xuống <b>GND</b> (nhấn = nối đất, nên nối tiếp điện trở ~1kΩ). Mặc định: trang sau = <b>SWCLK (P1_4)</b>, trang trước = <b>TX (P0_4)</b>, trang chủ = <b>SWDIO (P1_5)</b>. Đừng hàn vào pad <b>RX/URX</b> hay <b>VBAT</b>. Không có nút nguồn: bật/tắt Bluetooth nằm trong menu Trang chủ trên máy. Ở màn Trang chủ, hai nút trang sau/trước <b>di chuyển menu</b>, nút trang chủ <b>chọn</b>.</p><div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:6px"><figure style="flex:1 1 300px;max-width:520px;margin:0"><img src="img/board_6tp_v1.jpg" style="width:100%;display:block;border-radius:6px" alt="[Thiếu ảnh img/board_6tp_v1.jpg]"><figcaption style="font-size:12px;margin-top:4px">Board «Alibaba Group 20181101»: GND = pad thứ 2, Trang trước = pad <b>UTX</b> (thứ 4) trong hàng 5 chân; hàng 2 chân cạnh MCU: <b>SWDIO bên trái = Trang chủ</b>, <b>SWCLK bên phải = Trang sau</b>.</figcaption></figure><figure style="flex:1 1 300px;max-width:520px;margin:0"><img src="img/board_6tp_v2.jpg" style="width:100%;display:block;border-radius:6px" alt="[Thiếu ảnh img/board_6tp_v2.jpg]"><figcaption style="font-size:12px;margin-top:4px">Board «BZT06629»: GND = <b>TP2</b> (thứ 2), Trang trước = <b>TP7</b> (thứ 4) trong hàng 6 chân; dưới thạch anh: <b>TP5 = Trang sau</b>, <b>TP6 ngay dưới = Trang chủ</b>.</figcaption></figure></div></details></td>
