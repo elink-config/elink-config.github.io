@@ -287,9 +287,11 @@
     sel = -1; save(); redraw();
   };
 
-  window.dsClear = function () {
-    if (!confirm('Xóa toàn bộ thiết kế?')) return;
+  window.dsClear = async function () {
+    if (!confirm('Xóa toàn bộ thiết kế, KỂ CẢ ảnh nền đang dùng?')) return;
     st.widgets = []; sel = -1; save(); redraw();
+    // «Xóa hết» mà chừa lại ảnh nền thì màn hình vẫn còn nguyên nền — bỏ luôn
+    await window.dsClearBackground();
   };
 
   window.dsSetFrame = function (v) { st.frame = Number(v) || 0; save(); redraw(); };
@@ -391,7 +393,20 @@
 
   window.dsClearBackground = async function () {
     st.bg = 0; st.bgPrev = null; bgImg = null; save(); redraw();
-    if (!(typeof fwHasNewSlots === 'function' && fwHasNewSlots()) && window.__fwBg) await write(EpdCmd.CUSTOM_BG, [0]);
+    if (typeof fwHasNewSlots === 'function' && fwHasNewSlots()) {
+      // fw >= 2.7/3.7: nền nằm ở KHE NỀN RIÊNG của thiết kế. Trước đây hàm này
+      // chỉ xoá bản xem trước trên web — máy vẫn giữ nền, bấm xong tưởng xong
+      // mà màn hình không đổi. Lệnh [0x27 04 khe] hạ khe đó ở thiết bị.
+      const slot = (typeof IMG_BG_SLOT === 'function') ? IMG_BG_SLOT(dsDesign) : 5 + dsDesign;
+      if (await write(EpdCmd.IMG_SLOT, [0x04, slot])) {
+        if (typeof imgSlotMask === 'number') imgSlotMask &= ~(1 << slot);
+        addLog(`Đã bỏ ảnh nền của Thiết kế ${dsDesign + 1} trên thiết bị.`);
+        return;
+      }
+      addLog('Không gửi được lệnh bỏ ảnh nền — kiểm tra kết nối rồi thử lại.');
+      return;
+    }
+    if (window.__fwBg) await write(EpdCmd.CUSTOM_BG, [0]);
     addLog('Đã bỏ ảnh nền của thiết kế.');
   };
 

@@ -760,6 +760,12 @@ function handleNotify(value, idx) {
       }
       const bgRow = document.getElementById('dsBgRow');
       if (bgRow) bgRow.style.display = fwHasNewSlots() ? '' : 'none';
+      // «Thêm ảnh vào thiết kế» là nút của thời MỘT thiết kế: nó tự đoán xem
+      // máy nhận được ảnh nền hay chỉ nhận icon. Có hai nút «Làm nền Thiết kế
+      // 1/2» rồi thì nó chỉ làm nền cho thiết kế đang chọn — thừa và dễ nhầm.
+      // Vẫn giữ cho firmware CŨ (một thiết kế, hoặc chỉ nhận icon).
+      const bgOld = document.getElementById('dsBgOldRow');
+      if (bgOld) bgOld.style.display = fwHasNewSlots() ? 'none' : '';
       const dRow = document.getElementById('dsDesignRow');
       if (dRow) dRow.style.display = fwHasNewSlots() ? '' : 'none';
       if (typeof updateImgAutoUI === 'function') updateImgAutoUI();
