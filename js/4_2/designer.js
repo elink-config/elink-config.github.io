@@ -369,11 +369,9 @@
   // Ảnh nền KHÔNG đi cùng bố cục mà nằm ở KHE ẢNH 32KB của thiết bị — chính
   // đường truyền của mục «Truyền hình ảnh», nên nét và màu y hệt (400x300,
   // đen + đỏ). Ở đây chỉ gửi ảnh vào khe rồi báo thiết bị dùng khe đó làm nền.
-  // ĐƯỜNG CŨ — chỉ dùng cho firmware TRƯỚC 2.7/3.7. Nó mượn KHE ẢNH SỐ 3 làm
-  // nền; từ 2.7/3.7 mỗi thiết kế có khe nền riêng nên dùng dsBgToDesign.
+  // ĐƯỜNG CŨ — chỉ cho firmware TRƯỚC 2.7/3.7 (mượn KHE ẢNH SỐ 3 làm nền).
   window.dsSetBackground = async function () {
-    if (typeof fwHasNewSlots === 'function' && fwHasNewSlots())
-      return window.dsBgToDesign(typeof dsDesign === 'number' ? dsDesign : 0);
+    if ((typeof fwHasNewSlots === 'function' && fwHasNewSlots())) return window.dsBgToDesign(dsDesign);
     if (!window.__fwBg) {
       alert('Máy chưa hỗ trợ ảnh nền (cần firmware 4.2" ba màu từ v2.3, bốn màu từ v3.4).');
       return;
@@ -393,9 +391,7 @@
 
   window.dsClearBackground = async function () {
     st.bg = 0; st.bgPrev = null; bgImg = null; save(); redraw();
-    // fw mới không còn lệnh 0x2B; muốn bỏ nền thì gửi ảnh trắng vào khe nền
-    if (!(typeof fwHasNewSlots === 'function' && fwHasNewSlots()) && window.__fwBg)
-      await write(EpdCmd.CUSTOM_BG, [0]);
+    if (!(typeof fwHasNewSlots === 'function' && fwHasNewSlots()) && window.__fwBg) await write(EpdCmd.CUSTOM_BG, [0]);
     addLog('Đã bỏ ảnh nền của thiết kế.');
   };
 
@@ -403,11 +399,9 @@
     // Máy hỗ trợ ảnh nền (4.2" fw >= 2.3): dùng luôn đường NỀN TOÀN MÀN — ảnh
     // giữ nguyên 400x300 đen+đỏ như mục «Truyền hình ảnh». Đường icon cũ (tối đa
     // 176px, nhét trong 1 sector 4KB) chỉ còn dùng cho firmware/màn chưa hỗ trợ.
-    // fw >= 2.7/3.7: mỗi thiết kế có KHE NỀN RIÊNG -> đi đường mới, KHÔNG được
-    // rơi vào dsSetBackground cũ (nó ghi đè KHE ẢNH SỐ 3 của người dùng rồi gửi
-    // lệnh 0x2B đã bị bỏ -> mất ảnh mà vẫn không có nền).
-    if (typeof fwHasNewSlots === 'function' && fwHasNewSlots())
-      return window.dsBgToDesign(typeof dsDesign === 'number' ? dsDesign : 0);
+    // fw >= 2.7/3.7: mỗi thiết kế có KHE NỀN RIÊNG -> KHÔNG được rơi vào đường
+    // cũ (nó ghi đè KHE ẢNH SỐ 3 rồi gửi lệnh 0x2B đã bỏ -> mất ảnh, không nền).
+    if ((typeof fwHasNewSlots === 'function' && fwHasNewSlots())) return window.dsBgToDesign(dsDesign);
     if (window.__fwBg) return window.dsSetBackground();
     // KHÔNG hỗ trợ nền -> phải nói rõ, đừng lặng lẽ tạo icon bé rồi người dùng
     // tưởng nút hỏng (đây chính là chỗ đã gây hiểu nhầm).
@@ -503,7 +497,7 @@
       addLog('Đang gửi icon ' + st.icon.w + 'x' + st.icon.h +
              (twoPlane ? ' (2 mặt đen+ĐỎ, ' : ' (') + bits.length + ' byte, khối ' + chunk + ')...');
       // fw moi: [0x03, idx, w, h, planes] -> icon RIENG cua thiet ke dang sua
-      const newFw = (typeof fwHasNewSlots === 'function') && fwHasNewSlots();
+      const newFw = (typeof fwHasNewSlots === 'function' && fwHasNewSlots());
       const hdr = newFw ? 5 : (twoPlane ? 4 : 3);
       const n0 = Math.min(chunk, bits.length);
       const first = new Uint8Array(hdr + n0);
@@ -526,7 +520,7 @@
       addLog("Icon đã gửi xong (thiết bị báo lại 'icon=done').");
     }
     // fw moi: moi thiet ke co khe nen rieng nen KHONG con lenh chon khe nua
-    const newFw2 = (typeof fwHasNewSlots === 'function') && fwHasNewSlots();
+    const newFw2 = (typeof fwHasNewSlots === 'function' && fwHasNewSlots());
     if (!newFw2 && window.__fwBg) await write(EpdCmd.CUSTOM_BG, [st.bg || 0]);
     const enc = new TextEncoder();
     const t1 = enc.encode(st.t1), t2 = enc.encode(st.t2);
@@ -545,14 +539,12 @@
     });
     buf.set(t1, 62);
     buf.set(t2, 110);
-    // fw moi: them chi so thiet ke o dau goi (thiet bi phan biet bang do dai)
     let payload = buf;
     if (newFw2) { payload = new Uint8Array(1 + buf.length); payload[0] = dsDesign; payload.set(buf, 1); }
     if (await write(EpdCmd.SET_LAYOUT, payload)) {
-      const m = newFw2 ? (22 + dsDesign) : 20;
-      addLog('Da gui «Tu thiet ke ' + (dsDesign + 1) + '»!');
-      addLog('Thiet bi tu chuyen sang che do ' + m + ' va hien thi sau ~30 giay.');
-      if (typeof highlightMode === 'function') highlightMode(m);
+      addLog('Đã gửi giao diện tự thiết kế! (thiết bị báo lại \'layout=<số thành phần>\')');
+      addLog('Thiết bị tự chuyển sang chế độ 20 và hiển thị sau ~30 giây.');
+      if (typeof highlightMode === 'function') highlightMode(20);
     }
   };
 
@@ -597,6 +589,37 @@
     redraw();
     setInterval(redraw, 30000); // keep the clock widgets current
   }
+
+  // Doi thiet ke dang sua: nap bo cuc cua thiet ke do tu trinh duyet.
+  window.dsSelectDesign = function (d) {
+    dsDesign = (+d === 1) ? 1 : 0;
+    let s2 = null;
+    try { s2 = JSON.parse(localStorage.getItem(lsKey())); } catch (e) {}
+    st = (s2 && s2.widgets) ? s2 : { widgets: [], frame: 0, t1: '', t2: '' };
+    st.widgets = (st.widgets || []).filter(w => TYPES[w.type]).map(w => {
+      const max = TYPES[w.type].sizes - 1;
+      w.size = Math.max(0, Math.min(max, w.size | 0));
+      return w;
+    });
+    bgImg = null;
+    const f = document.getElementById('dsFrame'); if (f) f.value = st.frame || 0;
+    const a = document.getElementById('dsText1'); if (a) a.value = st.t1 || '';
+    const b = document.getElementById('dsText2'); if (b) b.value = st.t2 || '';
+    redraw();
+    addLog('Dang sua «Tu thiet ke ' + (dsDesign + 1) + '».');
+  };
+
+  // Gui anh dang co o muc «Truyen hinh anh» lam NEN cua mot thiet ke (khe nen
+  // RIENG cua thiet ke do, khong dung toi khe anh cua nguoi dung).
+  window.dsBgToDesign = async function (d) {
+    const src = document.getElementById('canvas');
+    if (!src || !src.width) { alert('Chua co anh trong muc «Truyen hinh anh».'); return; }
+    if (typeof sendimg !== 'function') { alert('Khong tim thay chuc nang gui anh.'); return; }
+    if (!confirm('Dung anh dang co lam NEN cua «Tu thiet ke ' + (d + 1) + '»?' + '\n\n' + 'Anh vao khe nen rieng, KHONG dung toi 5 khe anh cua ban.')) return;
+    await sendimg(IMG_BG_SLOT(d));
+    if (d === dsDesign) { st.bgPrev = src.toDataURL('image/png'); bgImg = null; save(); redraw(); }
+    addLog('Da gui anh nen cho «Tu thiet ke ' + (d + 1) + '».');
+  };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
