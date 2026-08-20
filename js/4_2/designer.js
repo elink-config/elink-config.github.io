@@ -558,8 +558,8 @@
 
   window.dsUpload = async function () {
     if (!st.widgets.length) { alert('Thiết kế còn trống — hãy thêm ít nhất một thành phần.'); return; }
-    syncOverlayShow('Đang gửi thiết kế ' + (dsDesign + 1) + ' lên thiết bị…',
-      'Vui lòng không tắt máy và không đóng trang cho đến khi gửi xong.');
+    syncOverlayShow('Đang chuẩn bị gửi thiết kế ' + (dsDesign + 1) + '…',
+      'Ảnh nền, icon và bố cục được gửi lần lượt. Vui lòng không tắt máy và không đóng trang.');
     try {
 
     // ẢNH NỀN còn nợ máy: hai nút «Làm nền» / «Bỏ ảnh nền» chỉ đổi ở trình
@@ -569,6 +569,8 @@
       const bgSlot = newFwB ? ((typeof IMG_BG_SLOT === 'function') ? IMG_BG_SLOT(dsDesign) : 5 + dsDesign) : 2;
       if (st.bgPend === 'clear') {
         if (newFwB) {
+          syncOverlayStep('Đang bỏ ảnh nền trên thiết bị…',
+            'Hạ khe nền của Thiết kế ' + (dsDesign + 1) + '; 5 khe ảnh của bạn không bị đụng tới.');
           if (!await write(EpdCmd.IMG_SLOT, [0x04, bgSlot])) { addLog('Không xoá được ảnh nền trên máy — dừng lại.'); return; }
           if (typeof imgSlotMask === 'number') imgSlotMask &= ~(1 << bgSlot);
         } else if (window.__fwBg) {
@@ -582,7 +584,8 @@
           return;
         }
         addLog('Đang gửi ảnh nền của «Tự thiết kế ' + (dsDesign + 1) + '»…');
-        syncOverlayStep('Đang gửi ảnh nền…');
+        syncOverlayStep('Đang gửi ảnh nền…',
+          'Ảnh nền toàn màn đi vào khe nền riêng của Thiết kế ' + (dsDesign + 1) + ', không đụng 5 khe ảnh.');
         if (!await sendBgFromStore(bgSlot, st.bgPrev)) { addLog('Gửi ảnh nền thất bại — chưa gửi bố cục.'); return; }
         if (typeof imgSlotMask === 'number') imgSlotMask |= (1 << bgSlot);
         if (!newFwB) st.bg = 3;
@@ -609,7 +612,8 @@
         bits = black;
       }
       const chunk = Math.max(16, (Number(document.getElementById('mtusize').value) || 20) - 5);
-      syncOverlayStep('Đang gửi icon…');
+      syncOverlayStep('Đang gửi icon…',
+        'Icon ' + st.icon.w + 'x' + st.icon.h + ' được chẻ nhỏ rồi ghi vào flash của Thiết kế ' + (dsDesign + 1) + '.');
       addLog('Đang gửi icon ' + st.icon.w + 'x' + st.icon.h +
              (twoPlane ? ' (2 mặt đen+ĐỎ, ' : ' (') + bits.length + ' byte, khối ' + chunk + ')...');
       // fw moi: [0x03, idx, w, h, planes] -> icon RIENG cua thiet ke dang sua
@@ -673,7 +677,9 @@
     if (six) {
       const room = Math.max(32, (Number(document.getElementById('mtusize').value) || 20) - 10);
       sent = true;
-      syncOverlayStep('Đang gửi bố cục…');
+      syncOverlayStep('Đang gửi bố cục…',
+        'Vị trí các thành phần và nội dung các dòng chữ. Gửi xong máy tự chuyển sang Thiết kế '
+        + (dsDesign + 1) + ' và vẽ lại sau khoảng 30 giây.');
       for (let off = 0; off < buf.length && sent; off += room) {
         syncOverlayProgress(off, buf.length);
         const part = buf.subarray(off, Math.min(off + room, buf.length));
@@ -683,6 +689,8 @@
       if (sent) sent = await write(EpdCmd.SET_LAYOUT,
         [0xF1, dsDesign, buf.length & 0xFF, (buf.length >> 8) & 0xFF]);
     } else {
+      syncOverlayStep('Đang gửi bố cục…',
+        'Vị trí các thành phần và nội dung các dòng chữ. Gửi xong máy tự chuyển sang thiết kế này và vẽ lại sau khoảng 30 giây.');
       let payload = buf;
       if (newFw2) { payload = new Uint8Array(1 + buf.length); payload[0] = dsDesign; payload.set(buf, 1); }
       sent = await write(EpdCmd.SET_LAYOUT, payload);

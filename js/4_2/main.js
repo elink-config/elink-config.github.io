@@ -221,9 +221,8 @@ async function sendAsset() {
   assetBusy = true;
   // phủ kín màn hình: luồng này gần 500 gói, bấm nút khác trong lúc đó là lệnh
   // chen vào giữa và máy nhận nhầm (xem syncOverlayShow ở app_common.js)
-  syncOverlayShow('Đang đồng bộ dữ liệu, vui lòng chờ…',
-    'Thiết bị đang nhận bộ chữ tiếng Việt và bảng âm lịch. Vui lòng không tắt máy, ' +
-    'không đóng trang và chờ đến khi xong rồi hãy thao tác tiếp.');
+  syncOverlayShow('Đang chuẩn bị dữ liệu hiển thị…',
+    'Máy chưa có bộ chữ tiếng Việt và bảng âm lịch — webtool đang tải về để gửi xuống.');
   try {
     addLog('Máy chưa có dữ liệu hiển thị (font + âm lịch) — đang gửi xuống…');
     const r = await fetch('OTA%20firmware/4_2/asset.bin?v=' + Date.now());
@@ -244,6 +243,8 @@ async function sendAsset() {
         addLog('Gửi dữ liệu hiển thị thất bại.');
         return;
       }
+      syncOverlayStep('Đang gửi dữ liệu hiển thị…',
+        'Bộ chữ tiếng Việt + bảng âm lịch (' + body.length + ' byte). Không tắt máy, không đóng trang.');
       syncOverlayProgress(off + step, body.length);
     }
 
@@ -274,7 +275,8 @@ async function writeImage(data, step = 'bw') {
     const pct = ((100 * i) / data.length) >> 0;
     const stepName = step == 'bw' ? 'đen trắng' : 'màu';
     setStatus(`Khối ${stepName}: ${chunkIdx + 1}/${count} (${pct}%), thời gian: ${currentTime}s`);
-    syncOverlayStep(`Đang truyền ảnh (${stepName})…`);
+    syncOverlayStep(`Đang truyền ảnh — lớp ${stepName}`,
+      `Gói ${chunkIdx + 1}/${count}. Ảnh được chẻ nhỏ theo MTU rồi ghi thẳng vào khe ảnh trên thiết bị.`);
     syncOverlayProgress(i, data.length);
     const payload = [
       (step == 'bw' ? 0x0F : 0x00) | (i == 0 ? 0x00 : 0xF0),
@@ -480,8 +482,8 @@ async function sendimg(slot = 0) {
   window.__imgSending = true;  // chặn retry fw= ghi lại CCCD giữa phiên gửi
   // Lớp phủ chặn thao tác suốt lượt gửi: một tấm ảnh là hàng trăm gói, bấm
   // nút khác giữa chừng là lệnh chen vào luồng và máy nhận nhầm.
-  syncOverlayShow('Đang gửi ảnh vào khe ' + (slot + 1) + '…',
-    'Vui lòng không tắt máy và không đóng trang cho đến khi gửi xong.');
+  syncOverlayShow('Đang chuẩn bị gửi ảnh…',
+    'Đang dựng dữ liệu ảnh cho khe ' + (slot + 1) + '. Vui lòng không tắt máy và không đóng trang.');
   try {
   const status = document.getElementById("status");
   status.parentElement.style.display = "block";
@@ -501,7 +503,8 @@ async function sendimg(slot = 0) {
   // trong lúc erase là gói dồn đống cạn MSG heap BLE -> thiết bị reset (v1.5)
   if (slotCapable) {
     setStatus(`Đang chuẩn bị khe ${slot + 1} (xóa flash)…`);
-    syncOverlayStep(`Đang chuẩn bị khe ${slot + 1}…`, 'Thiết bị đang xóa vùng nhớ của khe, mất khoảng một giây.');
+    syncOverlayStep(`Đang chuẩn bị khe ${slot + 1}…`,
+      'Thiết bị đang xóa vùng nhớ 32 KB của khe này. Mất khoảng một giây, chưa truyền ảnh.');
     const rdyWait = FwCheck.atLeast('1.6') ? waitImgRdy(8000) : null;
     if (!await write(EpdCmd.IMG_SLOT, [0x01, slot])) {
       imgRdyResolve = null;
@@ -561,6 +564,8 @@ async function sendimg(slot = 0) {
     }
   }
 
+  syncOverlayStep('Đang làm mới màn hình…',
+    'Đã nhận đủ ảnh. Màn hình e-ink vẽ lại mất khoảng 30 giây — đừng tắt nguồn lúc này.');
   await write(EpdCmd.REFRESH);
   updateButtonStatus();
 
@@ -1039,9 +1044,9 @@ async function otaUpdate(preBuf) {
   if (!preBuf && !confirm('Cập nhật firmware qua BLE?\nKhông tắt nguồn thiết bị trong quá trình cập nhật!')) return;
 
   const otaStatus = document.getElementById('otaProgress');
-  const show = (t) => { if (otaStatus) otaStatus.textContent = t; syncOverlayStep(t); };
-  syncOverlayShow('Đang nâng cấp firmware…',
-    'TUYỆT ĐỐI không tắt nguồn thiết bị và không đóng trang. Máy sẽ tự khởi động lại khi xong.');
+  const show = (t) => { if (otaStatus) otaStatus.textContent = t; };
+  syncOverlayShow('Đang chuẩn bị nâng cấp firmware…',
+    'TUYỆT ĐỐI không tắt nguồn thiết bị và không đóng trang trong suốt quá trình.');
   const btn = document.getElementById('otabutton');
   btn.disabled = 'disabled';
   try {
@@ -1051,6 +1056,8 @@ async function otaUpdate(preBuf) {
     buf[0] = 0xa0; buf[1] = 0x00;
     dv.setUint32(2, firmSize, true);
     show('Đang xoá flash…');
+    syncOverlayStep('Đang xóa vùng nhớ firmware…',
+      'Thiết bị xóa bank firmware dự phòng trước khi nhận bản mới. Mất vài giây.');
     if (!await write(buf[0], buf.subarray(1, 6), true)) throw new Error('lệnh 0xA0 thất bại');
 
     // gửi từng trang 256 byte, chia đôi 128+128 (0xA2 nửa đầu, 0xA3 nửa sau)
@@ -1082,12 +1089,16 @@ async function otaUpdate(preBuf) {
       if (!await write(buf[0], buf.subarray(1), true)) throw new Error('gửi dữ liệu thất bại');
       p += 128;
       show('Tiến độ: ' + ((100 * p / (firmSize + 64)) >> 0) + '%');
+      syncOverlayStep('Đang gửi firmware…',
+        'Đã gửi ' + (p >> 10) + '/' + ((firmSize + 64) >> 10) + ' KB. TUYỆT ĐỐI không tắt nguồn thiết bị.');
       syncOverlayProgress(p, firmSize + 64);
     }
 
     // 0xA4: kết thúc — thiết bị tự khởi động lại vào firmware mới
     buf.fill(0x00); buf[0] = 0xa4;
     await write(buf[0], buf.subarray(1, 4), true);
+    syncOverlayStep('Đang chốt bản mới…',
+      'Thiết bị ghi trang đầu rồi tự khởi động lại. Chờ máy hiện lại rồi hãy kết nối.');
     show('Hoàn tất — thiết bị đang khởi động lại.');
     addLog('Cập nhật xong! Thiết bị khởi động lại với firmware mới.');
   } catch (e) {

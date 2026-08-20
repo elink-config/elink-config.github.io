@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  const VER = '20260820x'; // cache-buster, keep in sync with index.html
+  const VER = '20260820y'; // cache-buster, keep in sync with index.html
 
   const EPD42_SERVICE = '62750001-d828-918d-fb46-b6c11c675aec';
   const HM213_SERVICE = '0000ff00-0000-1000-8000-00805f9b34fb';
