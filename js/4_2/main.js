@@ -210,6 +210,11 @@ async function sendAsset() {
   { const nm = (bleDevice && bleDevice.name) || '';  // 4.2" BA MÀU và BỐN MÀU dùng CHUNG blob này
     if (nm.indexOf('DIY-4_2-') !== 0 && nm.indexOf('DIY-4_2C-') !== 0) return; }
   assetBusy = true;
+  // phủ kín màn hình: luồng này gần 500 gói, bấm nút khác trong lúc đó là lệnh
+  // chen vào giữa và máy nhận nhầm (xem syncOverlayShow ở app_common.js)
+  syncOverlayShow('Đang đồng bộ dữ liệu, vui lòng chờ…',
+    'Thiết bị đang nhận bộ chữ tiếng Việt và bảng âm lịch. Vui lòng không tắt máy, ' +
+    'không đóng trang và chờ đến khi xong rồi hãy thao tác tiếp.');
   try {
     addLog('Máy chưa có dữ liệu hiển thị (font + âm lịch) — đang gửi xuống…');
     const r = await fetch('OTA%20firmware/4_2/asset.bin?v=' + Date.now());
@@ -230,6 +235,7 @@ async function sendAsset() {
         addLog('Gửi dữ liệu hiển thị thất bại.');
         return;
       }
+      syncOverlayProgress(off + step, body.length);
     }
 
     const fin = waitAsset(5000);
@@ -242,6 +248,7 @@ async function sendAsset() {
     addLog('Gửi dữ liệu hiển thị lỗi: ' + e.message);
   } finally {
     assetBusy = false;
+    syncOverlayHide();
   }
 }
 

@@ -378,6 +378,77 @@ function applyDither() {
   }
 }
 
+/* ---- Màn chờ CHẶN THAO TÁC khi đang đồng bộ dữ liệu xuống máy --------------
+ * Bộ chữ tiếng Việt + bảng âm lịch nằm ở flash chứ không nằm trong firmware
+ * (để trả RAM), nên máy vừa lên firmware qua OTA phải được nạp gần 500 gói —
+ * mất hàng chục giây. Bấm nút khác trong lúc đó là lệnh chen vào giữa luồng,
+ * máy nhận nhầm và giao diện đứng im như treo. Phủ kín màn hình để KHÔNG ai
+ * bấm được gì cho tới khi xong.
+ * Mọi bước trong luồng nạp đều có đồng hồ đếm ngược nên lớp phủ này luôn được
+ * gỡ; đồng hồ 5 phút bên dưới chỉ là chốt chặn cuối, phòng lỗi ngoài dự tính. */
+let syncOverlayGuard = null;
+
+function syncOverlayShow(title, note) {
+  let ov = document.getElementById('syncOverlay');
+  if (!ov) {
+    const st = document.createElement('style');
+    st.textContent = '@keyframes syncSpin{to{transform:rotate(360deg)}}';
+    document.head.appendChild(st);
+
+    ov = document.createElement('div');
+    ov.id = 'syncOverlay';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;' +
+      'align-items:center;justify-content:center;padding:20px;' +
+      'background:rgba(15,23,42,.55);backdrop-filter:blur(2px)';
+    ov.innerHTML =
+      '<div style="max-width:380px;width:100%;text-align:center;padding:30px 26px;' +
+        'border-radius:24px;background:var(--md-sys-color-surface-container,#fff);' +
+        'color:var(--md-sys-color-on-surface,#1a1c1e);' +
+        'box-shadow:0 4px 16px rgba(15,23,42,.18),0 8px 32px rgba(0,100,148,.14)">' +
+        '<div style="width:44px;height:44px;margin:0 auto 18px;border-radius:50%;' +
+          'border:4px solid var(--md-sys-color-primary-container,#c8e6ff);' +
+          'border-top-color:var(--md-sys-color-primary,#006494);' +
+          'animation:syncSpin 900ms linear infinite"></div>' +
+        '<div id="syncOverlayTitle" style="font-size:1.05rem;font-weight:600;margin-bottom:8px"></div>' +
+        '<div id="syncOverlayNote" style="font-size:.88rem;line-height:1.5;' +
+          'color:var(--md-sys-color-on-surface-variant,#43474e)"></div>' +
+        '<div style="height:6px;margin-top:18px;border-radius:3px;overflow:hidden;' +
+          'background:var(--md-sys-color-surface-container-high,#eef2f7)">' +
+          '<div id="syncOverlayBar" style="height:100%;width:0%;border-radius:3px;' +
+            'background:var(--md-sys-color-primary,#006494);transition:width .2s"></div>' +
+        '</div>' +
+        '<div id="syncOverlayPct" style="margin-top:8px;font-size:.8rem;' +
+          'color:var(--md-sys-color-on-surface-variant,#43474e)"></div>' +
+      '</div>';
+    document.body.appendChild(ov);
+  }
+  document.getElementById('syncOverlayTitle').textContent =
+    title || 'Đang đồng bộ dữ liệu, vui lòng chờ…';
+  document.getElementById('syncOverlayNote').textContent = note ||
+    'Thiết bị đang nhận bộ chữ tiếng Việt và bảng âm lịch. Vui lòng không tắt máy, ' +
+    'không đóng trang và chờ đến khi xong rồi hãy thao tác tiếp.';
+  document.getElementById('syncOverlayPct').textContent = '';
+  document.getElementById('syncOverlayBar').style.width = '0%';
+  ov.style.display = 'flex';
+  if (syncOverlayGuard) clearTimeout(syncOverlayGuard);
+  syncOverlayGuard = setTimeout(syncOverlayHide, 300000);
+}
+
+function syncOverlayProgress(done, total) {
+  const bar = document.getElementById('syncOverlayBar');
+  if (!bar || !total) return;
+  const pct = Math.min(100, Math.round(done * 100 / total));
+  bar.style.width = pct + '%';
+  const pctEl = document.getElementById('syncOverlayPct');
+  if (pctEl) pctEl.textContent = pct + '%';
+}
+
+function syncOverlayHide() {
+  if (syncOverlayGuard) { clearTimeout(syncOverlayGuard); syncOverlayGuard = null; }
+  const ov = document.getElementById('syncOverlay');
+  if (ov) ov.style.display = 'none';
+}
+
 function checkDebugMode() {
   const link = document.getElementById('debug-toggle');
   const urlParams = new URLSearchParams(window.location.search);
