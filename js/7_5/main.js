@@ -317,6 +317,10 @@ async function sendimg(slot = 0) {
   const selectedOption = getDriverOption();
   const drvSize = selectedOption ? selectedOption.getAttribute('data-size') : canvasSize;
   const drvColor = selectedOption ? selectedOption.getAttribute('data-color') : ditherMode;
+  // mã driver đang chọn ("02", "08"…). PHẢI lấy từ đây: biến epdDriverSelect
+  // đã bị xoá khi thay bằng getDriverOption() nhưng vài chỗ dưới còn gọi tên
+  // cũ -> ReferenceError giữa lượt gửi, lượt gửi chết IM LẶNG (không catch).
+  const drvId = selectedOption ? selectedOption.value : '';
 
   if (drvSize !== canvasSize) {
     if (!confirm("Cảnh báo: kích thước canvas không khớp driver, tiếp tục?")) return;
@@ -365,14 +369,14 @@ async function sendimg(slot = 0) {
     const halfLength = Math.floor(processedData.length / 2);
     const blackWhiteData = processedData.slice(0, halfLength);
     const redWhiteData = processedData.slice(halfLength);
-    if (epdDriverSelect.value === '08' || epdDriverSelect.value === '09') {
+    if (drvId === '08' || drvId === '09') {
       ok = await writeImage(convertUC8159(blackWhiteData, redWhiteData), 'bw');
     } else {
       ok = await writeImage(blackWhiteData, 'bw');
       if (ok) ok = await writeImage(redWhiteData, 'red');
     }
   } else if (ditherMode === 'blackWhiteColor') {
-    if (epdDriverSelect.value === '08' || epdDriverSelect.value === '09') {
+    if (drvId === '08' || drvId === '09') {
       const emptyData = new Uint8Array(processedData.length).fill(0xFF);
       ok = await writeImage(convertUC8159(processedData, emptyData), 'bw');
     } else {
@@ -413,6 +417,15 @@ async function sendimg(slot = 0) {
   setTimeout(() => {
     status.parentElement.style.display = "none";
   }, 5000);
+  } catch (e) {
+    // Trước đây khối này CHỈ có finally: một ReferenceError giữa lượt gửi
+    // (ví dụ biến epdDriverSelect đã bị xoá) làm cả lượt chết IM LẶNG —
+    // thanh trạng thái đứng nguyên ở bước dở dang, nút thì khoá luôn.
+    console.error(e);
+    const m = (e && e.message) ? e.message : String(e);
+    addLog('Lỗi khi gửi ảnh: ' + m);
+    setStatus('Gửi ảnh lỗi: ' + m + ' — hãy tải lại trang rồi thử lại.');
+    updateButtonStatus();
   } finally { window.__imgSending = false; }
 }
 
@@ -741,7 +754,7 @@ function updateDitcherOptions() {
   // Màn 4 màu IST7158/JD79668 (driver 05/06, firmware epd_4_2inch_4c):
   // «chữ đậm» của bản BWR không áp dụng (ẩn), còn «làm mới mỗi giờ» thì CÓ
   // (fw 4 màu >= v3.2) — hiện kèm ghi chú nhịp cập nhật riêng của màn 4 màu
-  const is4c = epdDriverSelect.value === '05' || epdDriverSelect.value === '06';
+  const is4c = selectedOption.value === '05' || selectedOption.value === '06';
   const hfRow = document.getElementById('hourlyFullRow');
   const dbRow = document.getElementById('darkBoostRow');
   const hint = document.getElementById('fourColorHint');

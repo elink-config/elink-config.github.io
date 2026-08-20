@@ -227,6 +227,10 @@ async function sendimg(slot = 0) {
   const selectedOption = getDriverOption();
   const drvSize = selectedOption ? selectedOption.getAttribute('data-size') : canvasSize;
   const drvColor = selectedOption ? selectedOption.getAttribute('data-color') : ditherMode;
+  // mã driver đang chọn ("02", "08"…). PHẢI lấy từ đây: biến epdDriverSelect
+  // đã bị xoá khi thay bằng getDriverOption() nhưng vài chỗ dưới còn gọi tên
+  // cũ -> ReferenceError giữa lượt gửi, lượt gửi chết IM LẶNG (không catch).
+  const drvId = selectedOption ? selectedOption.value : '';
 
   if (drvSize !== canvasSize) {
     if (!confirm("Cảnh báo: kích thước canvas không khớp driver, tiếp tục?")) return;
@@ -273,14 +277,14 @@ async function sendimg(slot = 0) {
     const halfLength = Math.floor(processedData.length / 2);
     const blackWhiteData = processedData.slice(0, halfLength);
     const redWhiteData = processedData.slice(halfLength);
-    if (epdDriverSelect.value === '08' || epdDriverSelect.value === '09') {
+    if (drvId === '08' || drvId === '09') {
       ok = await writeImage(convertUC8159(blackWhiteData, redWhiteData), 'bw');
     } else {
       ok = await writeImage(blackWhiteData, 'bw');
       if (ok) ok = await writeImage(redWhiteData, 'red');
     }
   } else if (ditherMode === 'blackWhiteColor') {
-    if (epdDriverSelect.value === '08' || epdDriverSelect.value === '09') {
+    if (drvId === '08' || drvId === '09') {
       const emptyData = new Uint8Array(processedData.length).fill(0xFF);
       ok = await writeImage(convertUC8159(processedData, emptyData), 'bw');
     } else {
