@@ -369,7 +369,11 @@
   // Ảnh nền KHÔNG đi cùng bố cục mà nằm ở KHE ẢNH 32KB của thiết bị — chính
   // đường truyền của mục «Truyền hình ảnh», nên nét và màu y hệt (400x300,
   // đen + đỏ). Ở đây chỉ gửi ảnh vào khe rồi báo thiết bị dùng khe đó làm nền.
+  // ĐƯỜNG CŨ — chỉ dùng cho firmware TRƯỚC 2.7/3.7. Nó mượn KHE ẢNH SỐ 3 làm
+  // nền; từ 2.7/3.7 mỗi thiết kế có khe nền riêng nên dùng dsBgToDesign.
   window.dsSetBackground = async function () {
+    if (typeof fwHasNewSlots === 'function' && fwHasNewSlots())
+      return window.dsBgToDesign(typeof dsDesign === 'number' ? dsDesign : 0);
     if (!window.__fwBg) {
       alert('Máy chưa hỗ trợ ảnh nền (cần firmware 4.2" ba màu từ v2.3, bốn màu từ v3.4).');
       return;
@@ -389,7 +393,9 @@
 
   window.dsClearBackground = async function () {
     st.bg = 0; st.bgPrev = null; bgImg = null; save(); redraw();
-    if (window.__fwBg) await write(EpdCmd.CUSTOM_BG, [0]);
+    // fw mới không còn lệnh 0x2B; muốn bỏ nền thì gửi ảnh trắng vào khe nền
+    if (!(typeof fwHasNewSlots === 'function' && fwHasNewSlots()) && window.__fwBg)
+      await write(EpdCmd.CUSTOM_BG, [0]);
     addLog('Đã bỏ ảnh nền của thiết kế.');
   };
 
@@ -397,6 +403,11 @@
     // Máy hỗ trợ ảnh nền (4.2" fw >= 2.3): dùng luôn đường NỀN TOÀN MÀN — ảnh
     // giữ nguyên 400x300 đen+đỏ như mục «Truyền hình ảnh». Đường icon cũ (tối đa
     // 176px, nhét trong 1 sector 4KB) chỉ còn dùng cho firmware/màn chưa hỗ trợ.
+    // fw >= 2.7/3.7: mỗi thiết kế có KHE NỀN RIÊNG -> đi đường mới, KHÔNG được
+    // rơi vào dsSetBackground cũ (nó ghi đè KHE ẢNH SỐ 3 của người dùng rồi gửi
+    // lệnh 0x2B đã bị bỏ -> mất ảnh mà vẫn không có nền).
+    if (typeof fwHasNewSlots === 'function' && fwHasNewSlots())
+      return window.dsBgToDesign(typeof dsDesign === 'number' ? dsDesign : 0);
     if (window.__fwBg) return window.dsSetBackground();
     // KHÔNG hỗ trợ nền -> phải nói rõ, đừng lặng lẽ tạo icon bé rồi người dùng
     // tưởng nút hỏng (đây chính là chỗ đã gây hiểu nhầm).
