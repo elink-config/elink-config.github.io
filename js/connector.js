@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  const VER = '20260820g'; // cache-buster, keep in sync with index.html
+  const VER = '20260820h'; // cache-buster, keep in sync with index.html
 
   const EPD42_SERVICE = '62750001-d828-918d-fb46-b6c11c675aec';
   const HM213_SERVICE = '0000ff00-0000-1000-8000-00805f9b34fb';
@@ -165,6 +165,26 @@
     }
   }
 
+  /* Mang di dong hay chop nhoang, va ngay sau khi day ban moi len thi CDN cua
+   * GitHub Pages con dang dung lai -> fetch nem "Failed to fetch" va nguoi dung
+   * KET CUNG o buoc tai giao dien, phai ket noi lai tu dau. Thu lai vai lan,
+   * cach nhau mot chut, roi moi bao hong. */
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+  async function retry(what, fn, tries = 3) {
+    let last;
+    for (let i = 1; i <= tries; i++) {
+      try { return await fn(); } catch (e) {
+        last = e;
+        if (i < tries) {
+          addLog('Tải ' + what + ' chưa được (' + e.message + ') — thử lại lần ' + (i + 1) + '/' + tries + '…');
+          await sleep(400 * i);
+        }
+      }
+    }
+    throw last;
+  }
+
   function loadScript(src) {
     return new Promise((resolve, reject) => {
       const s = document.createElement('script');
@@ -182,15 +202,18 @@
 
     // instantiate the app's sections (templates keep the duplicate element
     // ids of the apps out of the document until one is chosen)
-    const resp = await fetch(cfg.fragment + '?v=' + VER);
-    if (!resp.ok) throw new Error('Không tải được ' + cfg.fragment);
+    const resp = await retry(cfg.fragment, async () => {
+      const r = await fetch(cfg.fragment + '?v=' + VER);
+      if (!r.ok) throw new Error('máy chủ trả ' + r.status);
+      return r;
+    });
     document.getElementById('appMount').insertAdjacentHTML('beforeend', await resp.text());
     document.body.classList.add('app-' + type);
     // họ 4_2 (4_2c / 7_5) dùng chung CSS gating .only-4_2 của app 4_2
     if (cfg.family && cfg.family !== type) document.body.classList.add('app-' + cfg.family);
 
     for (const src of cfg.scripts) {
-      await loadScript(src);
+      await retry(src, () => loadScript(src));
     }
 
     // the app assigns its init to document.body.onload, which never fires for
@@ -639,6 +662,8 @@
       } catch (e) {
         console.error(e);
         addLog('Lỗi tải giao diện: ' + e.message);
+        addLog('Mạng chập chờn hoặc trang vừa được cập nhật. Bấm «Kết nối» thử lại; '
+             + 'nếu vẫn lỗi hãy tải lại trang (Ctrl+F5 / kéo xuống làm mới).');
         return;
       } finally {
         loading = false;
@@ -706,6 +731,8 @@
       }).catch((e) => {
         console.error(e);
         addLog('Lỗi tải giao diện: ' + e.message);
+        addLog('Mạng chập chờn hoặc trang vừa được cập nhật. Bấm «Kết nối» thử lại; '
+             + 'nếu vẫn lỗi hãy tải lại trang (Ctrl+F5 / kéo xuống làm mới).');
       }).finally(() => { loading = false; });
     }
   }
