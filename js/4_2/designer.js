@@ -31,7 +31,19 @@
     8: { name: 'Chữ 1', sizes: 2, dim: null }, // measured from the text
     9: { name: 'Chữ 2', sizes: 2, dim: null },
     10: { name: 'Icon', sizes: 3, dim: s => { const k = s + 1; return st.icon ? [st.icon.w * k, st.icon.h * k] : [48 * k, 48 * k]; } },
+    // «Chữ 3..6» dùng số 11..14 vì 10 đã là Icon từ lâu, không đổi được
+    11: { name: 'Chữ 3', sizes: 2, dim: null },
+    12: { name: 'Chữ 4', sizes: 2, dim: null },
+    13: { name: 'Chữ 5', sizes: 2, dim: null },
+    14: { name: 'Chữ 6', sizes: 2, dim: null },
+    15: { name: 'Thứ', sizes: 2, dim: s => s ? [200, 30] : [100, 16] },
+    16: { name: 'Ngày dương', sizes: 2, dim: s => s ? [220, 30] : [110, 16] },
   };
+
+  // 8, 9 rồi 11..14 -> ô chữ 0..5 (giấu chỗ hụt vì 10 là Icon)
+  const TEXT_TYPES = [8, 9, 11, 12, 13, 14];
+  const isTextType = t => TEXT_TYPES.indexOf(t) >= 0;
+  const textIdx = t => TEXT_TYPES.indexOf(t);
 
   let st = { widgets: [], frame: 0, t1: '', t2: '' }; // st.icon = {w,h,b64} when an icon image was chosen
   let sel = -1, canvas, ctx, dragOff = null;
@@ -56,7 +68,23 @@
 
   function save() { try { localStorage.setItem(lsKey(), JSON.stringify(st)); } catch (e) {} }
 
-  function textOf(w) { return w.type === 8 ? (st.t1 || 'Chữ 1') : (st.t2 || 'Chữ 2'); }
+  // Chữ của một thành phần. Hai ô đầu vẫn nằm ở st.t1/st.t2 để bố cục đã lưu
+  // của người dùng cũ đọc lên nguyên vẹn; ô 3..6 nằm ở st.t[2..5].
+  function textAt(i) {
+    if (i === 0) return st.t1 || '';
+    if (i === 1) return st.t2 || '';
+    return (st.t && st.t[i]) || '';
+  }
+  function setTextAt(i, v) {
+    if (i === 0) { st.t1 = v; return; }
+    if (i === 1) { st.t2 = v; return; }
+    if (!st.t) st.t = [];
+    st.t[i] = v;
+  }
+  function textOf(w) {
+    const i = textIdx(w.type);
+    return textAt(i) || ('Chữ ' + (i + 1));
+  }
 
   function dimOf(w) {
     const t = TYPES[w.type];
@@ -109,8 +137,21 @@
       } break;
       case 8:
       case 9:
+      case 11:
+      case 12:
+      case 13:
+      case 14:
         pv.font(x, w.size ? 30 : 15, 1); x.fillStyle = BK;
         x.fillText(textOf(w), w.x, w.y + (w.size ? 26 : 13));
+        break;
+      case 15:   // chỉ THỨ
+        pv.font(x, w.size ? 30 : 15, 0); x.fillStyle = BK;
+        x.fillText(pv.WD_FULL[now.getDay()], w.x, w.y + (w.size ? 26 : 13));
+        break;
+      case 16:   // chỉ NGÀY DƯƠNG
+        pv.font(x, w.size ? 30 : 15, 0); x.fillStyle = BK;
+        x.fillText(pv.pad2(now.getDate()) + '/' + pv.pad2(now.getMonth() + 1) + '/' + now.getFullYear(),
+                   w.x, w.y + (w.size ? 26 : 13));
         break;
       case 10: {
         const k = (w.size || 0) + 1; // size 0/1/2 -> vẽ 1x/2x/3x (khớp firmware)
@@ -338,8 +379,10 @@
   window.dsSetFrame = function (v) { st.frame = Number(v) || 0; save(); redraw(); };
 
   window.dsTexts = function () {
-    st.t1 = document.getElementById('dsText1').value;
-    st.t2 = document.getElementById('dsText2').value;
+    for (let i = 0; i < 6; i++) {
+      const el = document.getElementById('dsText' + (i + 1));
+      if (el) setTextAt(i, el.value);
+    }
     save(); redraw();
   };
 
@@ -591,12 +634,24 @@
     const newFw2 = (typeof fwHasNewSlots === 'function' && fwHasNewSlots());
     if (!newFw2 && window.__fwBg) await write(EpdCmd.CUSTOM_BG, [st.bg || 0]);
     const enc = new TextEncoder();
-    const t1 = enc.encode(st.t1), t2 = enc.encode(st.t2);
-    if (t1.length > 47 || t2.length > 47) {
-      alert('Ô chữ quá dài (tối đa 47 byte; chữ có dấu chiếm 2-3 byte mỗi chữ).');
+    // Máy đời trước v2.8/v3.8 chỉ hiểu 2 ô chữ (bố cục 158 byte, một gói).
+    const six = (typeof fwHasSixText === 'function') && fwHasSixText();
+    const slots = six ? 6 : 2;
+    const texts = [];
+    for (let i = 0; i < slots; i++) {
+      const b = enc.encode(textAt(i));
+      if (b.length > 47) {
+        alert('Ô «Chữ ' + (i + 1) + '» quá dài (tối đa 47 byte; chữ có dấu chiếm 2-3 byte mỗi chữ).');
+        return;
+      }
+      texts.push(b);
+    }
+    if (!six && st.widgets.some(w => w.type > 10)) {
+      alert('Máy này chỉ dùng được «Chữ 1» và «Chữ 2» (cần firmware 4.2" ba màu từ v2.8, bốn màu từ v3.8).\n\n'
+            + 'Hãy bỏ bớt các thành phần Chữ 3-6 / Thứ / Ngày dương rồi gửi lại.');
       return;
     }
-    const buf = new Uint8Array(158);
+    const buf = new Uint8Array(62 + slots * 48);
     buf[0] = st.widgets.length;
     buf[1] = st.frame;
     st.widgets.forEach((w, i) => {
@@ -605,11 +660,27 @@
       buf[o + 2] = w.x & 0xFF; buf[o + 3] = (w.x >> 8) & 0xFF;
       buf[o + 4] = w.y & 0xFF; buf[o + 5] = (w.y >> 8) & 0xFF;
     });
-    buf.set(t1, 62);
-    buf.set(t2, 110);
-    let payload = buf;
-    if (newFw2) { payload = new Uint8Array(1 + buf.length); payload[0] = dsDesign; payload.set(buf, 1); }
-    if (await write(EpdCmd.SET_LAYOUT, payload)) {
+    texts.forEach((t, i) => buf.set(t, 62 + i * 48));
+
+    // Bố cục 6 ô chữ dài 350 byte — VƯỢT MTU (tối đa 247, tức 244 byte tải)
+    // nên phải chẻ. Máy đời trước vẫn nhận trọn gói như cũ.
+    let sent;
+    if (six) {
+      const room = Math.max(32, (Number(document.getElementById('mtusize').value) || 20) - 8);
+      sent = true;
+      for (let off = 0; off < buf.length && sent; off += room) {
+        const part = buf.subarray(off, Math.min(off + room, buf.length));
+        sent = await write(EpdCmd.SET_LAYOUT,
+          [0xF0, dsDesign, off & 0xFF, (off >> 8) & 0xFF, ...part]);
+      }
+      if (sent) sent = await write(EpdCmd.SET_LAYOUT,
+        [0xF1, dsDesign, buf.length & 0xFF, (buf.length >> 8) & 0xFF]);
+    } else {
+      let payload = buf;
+      if (newFw2) { payload = new Uint8Array(1 + buf.length); payload[0] = dsDesign; payload.set(buf, 1); }
+      sent = await write(EpdCmd.SET_LAYOUT, payload);
+    }
+    if (sent) {
       addLog('Đã gửi giao diện tự thiết kế! (thiết bị báo lại \'layout=<số thành phần>\')');
       // Số mode của «Tự thiết kế» đã đổi: 22 (thiết kế 1) / 23 (thiết kế 2).
       // Máy đời cũ vẫn là 20 — modeToWire/highlightMode tự quy đổi.
@@ -625,8 +696,10 @@
     canvas = document.getElementById('designerCanvas');
     if (!canvas) return;
     ctx = canvas.getContext('2d');
-    document.getElementById('dsText1').value = st.t1 || '';
-    document.getElementById('dsText2').value = st.t2 || '';
+    for (let i = 0; i < 6; i++) {
+      const el = document.getElementById('dsText' + (i + 1));
+      if (el) el.value = textAt(i);
+    }
     document.getElementById('dsFrame').value = String(st.frame || 0);
 
     const down = ev => {
@@ -674,8 +747,10 @@
     });
     bgImg = null;
     const f = document.getElementById('dsFrame'); if (f) f.value = st.frame || 0;
-    const a = document.getElementById('dsText1'); if (a) a.value = st.t1 || '';
-    const b = document.getElementById('dsText2'); if (b) b.value = st.t2 || '';
+    for (let i = 0; i < 6; i++) {
+      const el = document.getElementById('dsText' + (i + 1));
+      if (el) el.value = textAt(i);
+    }
     redraw();
     addLog('Dang sua «Tu thiet ke ' + (dsDesign + 1) + '».');
   };

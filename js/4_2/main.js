@@ -15,6 +15,15 @@ let imgSlotMask = 0;
 // khi thiết bị báo 'fw=' — trước đó cứ coi là 3 cho an toàn.
 let IMG_SLOTS = 3;
 const IMG_BG_SLOT = d => 5 + d;   // khe nền của thiết kế d (0/1)
+// 6 o chu «Tu thiet ke» + thanh phan Thu / Ngay duong: BWR v2.8, 4 mau v3.8.
+// Bo cuc luc do dai 350 byte nen PHAI gui chia manh (0xF0/0xF1).
+function fwHasSixText() {
+  const nm = (bleDevice && bleDevice.name) || '';
+  if (nm.indexOf('DIY-4_2C') === 0) return FwCheck.atLeast('3.8');
+  if (nm.indexOf('DIY-4_2-') === 0) return FwCheck.atLeast('2.8');
+  return false;
+}
+
 function fwHasNewSlots() {
   const nm = (bleDevice && bleDevice.name) || '';
   return FwCheck.atLeast(nm.indexOf('DIY-4_2C') === 0 ? '3.7' : '2.7');
@@ -768,6 +777,10 @@ function handleNotify(value, idx) {
       // Vẫn giữ cho firmware CŨ (một thiết kế, hoặc chỉ nhận icon).
       const bgOld = document.getElementById('dsBgOldRow');
       if (bgOld) bgOld.style.display = fwHasNewSlots() ? 'none' : '';
+      // «Chữ 3..6», «Thứ», «Ngày dương» chỉ có từ BWR v2.8 / 4 màu v3.8 —
+      // máy cũ chỉ hai ô chữ, hiện ra thì người dùng xếp xong mới biết không gửi được
+      const six = fwHasSixText();
+      document.querySelectorAll('.dsTextExtra').forEach(e => { e.style.display = six ? '' : 'none'; });
       const dRow = document.getElementById('dsDesignRow');
       if (dRow) dRow.style.display = fwHasNewSlots() ? '' : 'none';
       if (typeof updateImgAutoUI === 'function') updateImgAutoUI();

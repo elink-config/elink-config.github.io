@@ -92,6 +92,7 @@
 				<button type="button" class="secondary" onclick="dsAdd(8)">+ Chữ 1</button>
 				<button type="button" class="secondary" onclick="dsAdd(9)">+ Chữ 2</button>
 				<button type="button" class="secondary" onclick="dsAdd(10)">+ Icon (lấy từ mục Truyền hình ảnh)</button>
+				<span class="dsTextExtra"><button type="button" class="secondary" onclick="dsAdd(11)">+ Chữ 3</button><button type="button" class="secondary" onclick="dsAdd(12)">+ Chữ 4</button><button type="button" class="secondary" onclick="dsAdd(13)">+ Chữ 5</button><button type="button" class="secondary" onclick="dsAdd(14)">+ Chữ 6</button><button type="button" class="secondary" onclick="dsAdd(15)">+ Thứ</button><button type="button" class="secondary" onclick="dsAdd(16)">+ Ngày dương</button></span>
 			</div>
 			<div class="flex-container" id="dsDesignRow" style="display:none">
 					<div class="flex-group">
@@ -116,6 +117,28 @@
 						<option value="2">Viền kép</option>
 					</select>
 				</div>
+				<details class="mode-gallery-hint" style="margin:6px 0;flex:1 1 100%">
+					<summary>Hướng dẫn dùng «Tự thiết kế» (bấm để mở)</summary>
+					<p style="margin:6px 0 0"><b>Cách làm một màn hình riêng, theo thứ tự:</b></p>
+					<ol style="margin:4px 0 0;padding-left:20px;line-height:1.7">
+						<li>Chọn <b>Thiết kế 1</b> hay <b>Thiết kế 2</b> ở ô trên cùng. Hai thiết kế hoàn toàn tách biệt: bố cục, ảnh nền và icon riêng, tương ứng hai chế độ «Tự thiết kế 1» và «Tự thiết kế 2» trong bộ giao diện.</li>
+						<li>Bấm các nút <b>+ Đồng hồ số</b>, <b>+ Lịch tháng</b>, <b>+ Chữ 1</b>… để thêm thành phần. Tối đa <b>10 thành phần</b> mỗi thiết kế.</li>
+						<li><b>Kéo thả</b> từng thành phần trên khung xem trước để xếp chỗ. Bấm chọn rồi dùng <b>Đổi cỡ</b> để phóng to/thu nhỏ, <b>Xoá</b> để bỏ.</li>
+						<li>Muốn có chữ của riêng bạn thì thêm thành phần <b>Chữ 1…Chữ 6</b> rồi gõ nội dung vào ô <b>Chữ</b> cùng số bên dưới. Mỗi ô tối đa 47 byte — chữ có dấu tốn 2-3 byte mỗi ký tự, nên khoảng 20 chữ cái.</li>
+						<li>Muốn có <b>ảnh nền toàn màn</b>: lên mục <b>Truyền hình ảnh</b> chọn ảnh, chỉnh cắt/màu cho vừa ý, rồi quay lại đây bấm <b>Làm nền Thiết kế 1</b> (hoặc 2).</li>
+						<li>Bấm <b>Gửi lên thiết bị</b>. Máy nhận xong tự chuyển sang chế độ đó và vẽ lại sau khoảng 30 giây.</li>
+					</ol>
+					<p style="margin:8px 0 0"><b>Những điều dễ nhầm:</b></p>
+					<ul style="margin:4px 0 0;padding-left:20px;line-height:1.7">
+						<li><b>Ảnh nền và nút «Bỏ ảnh nền» chỉ đổi trên trình duyệt.</b> Máy chỉ nhận khi bạn bấm <b>Gửi lên thiết bị</b> — nên cứ thử tới lui thoải mái, máy chưa đổi gì cả.</li>
+						<li>Ảnh nền <b>không</b> chiếm khe ảnh nào của mục «Truyền hình ảnh»: mỗi thiết kế có khe nền riêng.</li>
+						<li><b>Xoá hết</b> xoá cả bố cục lẫn ảnh nền của thiết kế đang mở.</li>
+						<li>Thành phần <b>Ngày tháng</b> hiện «Thứ Năm, 20/08/2026». Muốn tách rời thì dùng <b>Thứ</b> và <b>Ngày dương</b>.</li>
+						<li>Thành phần <b>Icon</b> lấy ảnh từ mục «Truyền hình ảnh» qua nút <b>Icon từ ảnh</b>, tối đa 176 px — phóng to hơn sẽ vỡ. Icon khác ảnh nền: icon nhỏ, đặt được ở bất cứ đâu.</li>
+						<li>Bố cục lưu trong <b>trình duyệt này</b>. Đổi máy tính hay xoá dữ liệu duyệt web là mất, phải xếp lại — máy vẫn giữ cái đã gửi.</li>
+						<li>Chữ 3-6, «Thứ» và «Ngày dương» cần firmware 4.2" ba màu từ <b>v2.8</b>, bốn màu từ <b>v3.8</b>. Máy cũ hơn thì các nút đó tự ẩn đi.</li>
+					</ul>
+				</details>
 				<div class="flex-group" style="flex:1 1 100%">
 					<label for="dsText1">Chữ 1:</label>
 					<input id="dsText1" type="text" maxlength="47" style="flex:1" oninput="dsTexts()" placeholder="Nội dung cho thành phần «Chữ 1»">
@@ -123,6 +146,22 @@
 				<div class="flex-group" style="flex:1 1 100%">
 					<label for="dsText2">Chữ 2:</label>
 					<input id="dsText2" type="text" maxlength="47" style="flex:1" oninput="dsTexts()" placeholder="Nội dung cho thành phần «Chữ 2»">
+				</div>
+				<div class="flex-group dsTextRow dsTextExtra" style="flex:1 1 100%">
+					<label for="dsText3">Chữ 3:</label>
+					<input id="dsText3" type="text" maxlength="47" style="flex:1" oninput="dsTexts()" placeholder="Nội dung cho thành phần «Chữ 3»">
+				</div>
+				<div class="flex-group dsTextRow dsTextExtra" style="flex:1 1 100%">
+					<label for="dsText4">Chữ 4:</label>
+					<input id="dsText4" type="text" maxlength="47" style="flex:1" oninput="dsTexts()" placeholder="Nội dung cho thành phần «Chữ 4»">
+				</div>
+				<div class="flex-group dsTextRow dsTextExtra" style="flex:1 1 100%">
+					<label for="dsText5">Chữ 5:</label>
+					<input id="dsText5" type="text" maxlength="47" style="flex:1" oninput="dsTexts()" placeholder="Nội dung cho thành phần «Chữ 5»">
+				</div>
+				<div class="flex-group dsTextRow dsTextExtra" style="flex:1 1 100%">
+					<label for="dsText6">Chữ 6:</label>
+					<input id="dsText6" type="text" maxlength="47" style="flex:1" oninput="dsTexts()" placeholder="Nội dung cho thành phần «Chữ 6»">
 				</div>
 				<div class="flex-group">
 					<button id="uploadlayoutbutton" type="button" class="primary" onclick="dsUpload()">Gửi lên thiết bị</button>
