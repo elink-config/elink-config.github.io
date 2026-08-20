@@ -144,10 +144,23 @@ async function write(cmd, data, withResponse = true) {
   // goi/anh lam nghen dien thoai yeu; tien do da co o thanh trang thai)
   if (cmd !== EpdCmd.WRITE_IMG) addLog(bytes2hex(payload), '⇑');
   try {
-    if (withResponse)
-      await epdCharacteristic.writeValueWithResponse(Uint8Array.from(payload));
-    else
-      await epdCharacteristic.writeValueWithoutResponse(Uint8Array.from(payload));
+    // Web Bluetooth KHÔNG có timeout: thiết bị treo/reset giữa chừng thì lời
+    // hứa này KHÔNG BAO GIỜ kết thúc — cả lượt gửi đứng im, không một dòng
+    // báo lỗi nào (triệu chứng «Đang chuẩn bị khe 1 (xóa flash)…» đứng mãi).
+    // Bọc đồng hồ đếm ngược để còn trả false mà báo cho người dùng biết.
+    const p = withResponse
+      ? epdCharacteristic.writeValueWithResponse(Uint8Array.from(payload))
+      : epdCharacteristic.writeValueWithoutResponse(Uint8Array.from(payload));
+    let timer = null;
+    const late = await Promise.race([
+      p.then(() => false),
+      new Promise(r => { timer = setTimeout(() => r(true), 8000); })
+    ]);
+    if (timer) clearTimeout(timer);
+    if (late) {
+      addLog(`write: thiết bị không trả lời lệnh 0x${(cmd || 0).toString(16)} sau 8s (treo hoặc mất kết nối)`);
+      return false;
+    }
   } catch (e) {
     console.error(e);
     if (e.message) addLog("write: " + e.message);
@@ -430,6 +443,16 @@ async function sendimg(slot = 0) {
     if (!confirm("Cảnh báo: chế độ màu không khớp driver, tiếp tục?")) return;
   }
 
+  // Máy vừa cập nhật OTA tự được gửi blob font/âm lịch ngay lúc kết nối
+  // (asset=none). Đó là hàng TRĂM gói trên cùng một characteristic: bấm «Gửi
+  // ảnh» lúc ấy thì lệnh mở khe nằm xếp hàng SAU cả luồng đó, màn hình đứng ở
+  // «Đang chuẩn bị khe…» rất lâu như bị treo. Chờ cho xong rồi mới gửi.
+  if (assetBusy) {
+    setStatus('Đang nạp dữ liệu hiển thị cho máy — chờ xong rồi gửi ảnh…');
+    addLog('Hoãn gửi ảnh: đang nạp dữ liệu hiển thị (font + âm lịch) cho máy.');
+    while (assetBusy) await new Promise(r => setTimeout(r, 300));
+  }
+
   startTime = new Date().getTime();
   window.__imgSending = true;  // chặn retry fw= ghi lại CCCD giữa phiên gửi
   try {
@@ -458,8 +481,10 @@ async function sendimg(slot = 0) {
       updateButtonStatus();
       return;
     }
+    addLog(`Đã gửi lệnh mở khe ${slot + 1}, đợi thiết bị báo xóa xong…`);
     if (rdyWait && !await rdyWait) {
       setStatus('Không mở được khe ảnh (thiết bị không báo sẵn sàng) — thử lại.');
+      addLog('Thiết bị không báo «img=rdy» sau 8 giây.');
       updateButtonStatus();
       return;
     }
@@ -625,7 +650,9 @@ function handleNotify(value, idx) {
     // u32 activation ở 208 — struct căn 4 byte)
     if (data.length >= 216) {
       const auto = data[212], itv = data[213];
-      imgSlotMask = (data[214] <= 7) ? data[214] : 0;
+      // 7 khe (5 ảnh + 2 nền «Tự thiết kế») nên mask hợp lệ tới 0x7F. Ngưỡng
+      // cũ là 7: máy đã dùng từ khe 4 trở lên báo mask > 7 và bị coi là RỖNG.
+      imgSlotMask = (data[214] <= 0x7F) ? data[214] : 0;
       document.getElementById('imgAutoCHK').checked = auto === 1;
       const r = document.querySelector(`input[name="imgInterval"][value="${itv}"]`);
       if (r) r.checked = true;
