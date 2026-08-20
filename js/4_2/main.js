@@ -252,7 +252,7 @@ async function sendAsset() {
     await write(EpdCmd.ASSET, [0x02, crc & 0xFF, (crc >>> 8) & 0xFF, (crc >>> 16) & 0xFF, (crc >>> 24) & 0xFF]);
     const m = await fin;
     addLog(m.startsWith('asset=') && m !== 'asset=none' && m !== 'asset=err'
-      ? 'Đã gửi xong dữ liệu hiển thị (' + body.length + ' byte).'
+      ? 'Đã gửi xong dữ liệu hiển thị (' + body.length + ' byte) — thiết bị đang vẽ lại toàn màn hình, khoảng 30 giây.'
       : 'Máy không nhận được dữ liệu — thử kết nối lại.');
   } catch (e) {
     addLog('Gửi dữ liệu hiển thị lỗi: ' + e.message);
