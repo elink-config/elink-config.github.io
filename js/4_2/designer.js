@@ -570,8 +570,11 @@
     if (newFw2) { payload = new Uint8Array(1 + buf.length); payload[0] = dsDesign; payload.set(buf, 1); }
     if (await write(EpdCmd.SET_LAYOUT, payload)) {
       addLog('Đã gửi giao diện tự thiết kế! (thiết bị báo lại \'layout=<số thành phần>\')');
-      addLog('Thiết bị tự chuyển sang chế độ 20 và hiển thị sau ~30 giây.');
-      if (typeof highlightMode === 'function') highlightMode(20);
+      // Số mode của «Tự thiết kế» đã đổi: 22 (thiết kế 1) / 23 (thiết kế 2).
+      // Máy đời cũ vẫn là 20 — modeToWire/highlightMode tự quy đổi.
+      const cardMode = (typeof fwHasNewSlots === 'function' && fwHasNewSlots()) ? (22 + dsDesign) : 20;
+      addLog('Thiết bị tự chuyển sang «Tự thiết kế ' + (dsDesign + 1) + '» và hiển thị sau ~30 giây.');
+      if (typeof highlightMode === 'function') highlightMode(cardMode);
     }
   };
 
