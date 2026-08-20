@@ -213,7 +213,13 @@
     x.fillStyle = '#f6f4ec'; x.fillRect(0, 0, 400, 300);
     // ảnh nền toàn màn (nếu đã đặt) — vẽ trước, widget nằm đè lên
     if (st.bgPrev) {
-      if (!bgImg) { bgImg = new Image(); bgImg.onload = () => redraw(); bgImg.src = st.bgPrev; }
+      // ảnh tải xong thì vẽ lại CẢ trình sửa lẫn thẻ xem trước — thẻ của
+      // thiết kế không mở cũng đi qua đây (xem withDesign)
+      if (!bgImg) {
+        bgImg = new Image();
+        bgImg.onload = () => { redraw(); if (window.refreshModeGallery) window.refreshModeGallery(); };
+        bgImg.src = st.bgPrev;
+      }
       if (bgImg.complete && bgImg.naturalWidth) x.drawImage(bgImg, 0, 0, 400, 300);
     }
     if (st.frame >= 1) { x.strokeStyle = pv.BK; x.lineWidth = 2; x.strokeRect(3, 3, 394, 294); }
@@ -227,15 +233,50 @@
     }
   }
 
-  // the mode-20 gallery card renders through this hook
-  window.renderCustomLayout = function (x, now) {
-    if (!st.widgets.length) {
-      pv.font(x, 15, 0);
-      pv.center(x, 'Chưa có giao diện tự thiết kế', 200, 140, pv.BK);
-      pv.center(x, 'Tạo trong mục «Thiết kế màn hình»', 200, 168, pv.BK);
-      return;
+  /* Vẽ bố cục của MỘT thiết kế bất kỳ, kể cả thiết kế không mở trong trình
+   * sửa. Mọi hàm vẽ (drawWidget, dimOf, textOf, iconImage) đều đọc thẳng st
+   * nên cách gọn nhất là TRÁO TẠM st + hai bộ đệm ảnh rồi trả lại, khỏi luồn
+   * tham số qua cả chục chỗ. Không có nó thì thẻ «Tự thiết kế 2» vẽ đúng cái
+   * đang mở trong trình sửa — nhìn như bố cục và ảnh nền của thiết kế 1 bị
+   * chép sang thiết kế 2 (dữ liệu thật thì không sao). */
+  const otherCache = { raw: undefined, st: null, icon: null, bg: null };
+  function withDesign(d, fn) {
+    if (d === dsDesign) return fn();
+    const key = (d === 0) ? LS_KEY_BASE : LS_KEY_BASE + '_d' + d;
+    let raw = null;
+    try { raw = localStorage.getItem(key); } catch (e) {}
+    if (otherCache.raw !== raw) {           // chỉ dựng lại khi dữ liệu đã đổi
+      otherCache.raw = raw;
+      let s2 = null;
+      try { s2 = JSON.parse(raw); } catch (e) {}
+      otherCache.st = (s2 && s2.widgets) ? s2 : { widgets: [], frame: 0, t1: '', t2: '' };
+      otherCache.st.widgets = (otherCache.st.widgets || []).filter(w => TYPES[w.type]).map(w => {
+        const max = TYPES[w.type].sizes - 1;
+        w.size = Math.max(0, Math.min(max, w.size | 0));
+        return w;
+      });
+      otherCache.icon = null; otherCache.bg = null;
     }
-    renderLayout(x, now, false);
+    const bSt = st, bIcon = iconImg, bBg = bgImg;
+    st = otherCache.st; iconImg = otherCache.icon; bgImg = otherCache.bg;
+    try { return fn(); }
+    finally {
+      otherCache.icon = iconImg; otherCache.bg = bgImg;   // giữ đệm vừa dựng
+      st = bSt; iconImg = bIcon; bgImg = bBg;
+    }
+  }
+
+  // the gallery cards render through this hook (design 0 = thẻ 22, 1 = thẻ 23)
+  window.renderCustomLayout = function (x, now, d) {
+    return withDesign((d === 1) ? 1 : 0, function () {
+      if (!st.widgets.length) {
+        pv.font(x, 15, 0);
+        pv.center(x, 'Chưa có giao diện tự thiết kế', 200, 140, pv.BK);
+        pv.center(x, 'Tạo trong mục «Thiết kế màn hình»', 200, 168, pv.BK);
+        return;
+      }
+      renderLayout(x, now, false);
+    });
   };
 
   function redraw() { if (ctx) renderLayout(ctx, new Date(), true); }

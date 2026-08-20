@@ -657,8 +657,8 @@
     font(x, 12, v17() ? 1 : 0); multi(x, [['Âm Lịch 21/5 - Ngày Canh Thìn  -  ', BK], ['Lễ Vu Lan còn 52 ngày', RED]], 200, 266);
   }
 
-  function m20(x, now) { // Tự thiết kế (chế độ 20)
-    if (window.renderCustomLayout) { window.renderCustomLayout(x, now); return; }
+  function m20(x, now, design) { // Tự thiết kế 1 (thẻ 22) / 2 (thẻ 23)
+    if (window.renderCustomLayout) { window.renderCustomLayout(x, now, design || 0); return; }
     font(x, 15, 0);
     center(x, 'Chưa có giao diện tự thiết kế', 200, 140, BK);
     center(x, 'Tạo trong mục «Thiết kế màn hình»', 200, 168, BK);
@@ -886,8 +886,8 @@
     { mode: 19, name: 'Hoàng hôn 8-bit', tick: 'Làm mới mỗi phút', id: 'retrosunsetmodebutton', draw: m22 },
     { mode: 20, name: 'Khủng long 8-bit', tick: 'Cập nhật lúc 0h', id: 'retrowinmodebutton', draw: m23 },
     { mode: 21, name: 'Thành phố 8-bit', tick: 'Làm mới mỗi phút', id: 'retrocitymodebutton', draw: m24 },
-    { mode: 22, name: 'Tự thiết kế 1', tick: 'Làm mới mỗi phút', id: 'custommodebutton', draw: m20 },
-    { mode: 23, name: 'Tự thiết kế 2', tick: 'Làm mới mỗi phút', id: 'custommodebutton2', draw: m20 },
+    { mode: 22, name: 'Tự thiết kế 1', tick: 'Làm mới mỗi phút', id: 'custommodebutton', draw: (x, n) => m20(x, n, 0) },
+    { mode: 23, name: 'Tự thiết kế 2', tick: 'Làm mới mỗi phút', id: 'custommodebutton2', draw: (x, n) => m20(x, n, 1) },
   ];
 
   // highlight the mode the device reports (config byte 11) or was just set to
