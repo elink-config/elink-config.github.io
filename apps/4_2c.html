@@ -91,7 +91,7 @@
 			</div>
 		</fieldset>
 		<fieldset>
-			<legend>Thiết kế màn hình (chế độ 20)</legend>
+			<legend>Thiết kế màn hình</legend>
 			<p class="mode-gallery-hint">Bấm nút để thêm thành phần, kéo-thả trên khung để sắp xếp, chọn thành phần rồi «Đổi cỡ»/«Xóa». Đồng hồ và nhiệt độ vẫn tự cập nhật mỗi phút không chớp màn hình như các chế độ khác.</p>
 			<div class="designer-palette">
 				<button type="button" class="secondary" onclick="dsAdd(1)">+ Đồng hồ số</button>
@@ -105,7 +105,17 @@
 				<button type="button" class="secondary" onclick="dsAdd(9)">+ Chữ 2</button>
 				<button type="button" class="secondary" onclick="dsAdd(10)">+ Icon (lấy từ mục Truyền hình ảnh)</button>
 			</div>
-			<canvas id="designerCanvas" width="400" height="300" class="designer-canvas"></canvas>
+			<div class="flex-container" id="dsDesignRow" style="display:none">
+					<div class="flex-group">
+						<label for="dsDesignSel">Đang sửa:</label>
+						<select id="dsDesignSel" onchange="dsSelectDesign(+this.value)">
+							<option value="0">Tự thiết kế 1 (chế độ 22)</option>
+							<option value="1">Tự thiết kế 2 (chế độ 23)</option>
+						</select>
+						<span class="mode-gallery-hint" style="margin:0">Hai thiết kế độc lập: bố cục, ảnh nền và icon riêng.</span>
+					</div>
+				</div>
+				<canvas id="designerCanvas" width="400" height="300" class="designer-canvas"></canvas>
 			<div class="flex-container">
 				<div class="flex-group">
 					<button type="button" class="secondary" onclick="dsCycleSize()">Đổi cỡ</button>
@@ -216,7 +226,9 @@
 					<button id="sendimgbutton" type="button" class="primary" onclick="sendimg(0)">Gửi ảnh khe 1</button>
 					<button id="sendimgbutton2" type="button" class="primary" onclick="sendimg(1)">Gửi ảnh khe 2</button>
 					<button id="sendimgbutton3" type="button" class="primary" onclick="sendimg(2)">Gửi ảnh khe 3</button>
-					<button type="button" class="secondary" onclick="dsIconFromCanvas()">Thêm ảnh vào thiết kế</button>
+						<button id="sendimgbutton4" type="button" class="primary" onclick="sendimg(3)" style="display:none">Gửi ảnh khe 4</button>
+						<button id="sendimgbutton5" type="button" class="primary" onclick="sendimg(4)" style="display:none">Gửi ảnh khe 5</button>
+					<span id="dsBgRow" style="display:none"><button type="button" class="secondary" onclick="dsBgToDesign(0)">Làm nền Thiết kế 1</button><button type="button" class="secondary" onclick="dsBgToDesign(1)">Làm nền Thiết kế 2</button></span><button type="button" class="secondary" onclick="dsIconFromCanvas()">Thêm ảnh vào thiết kế</button>
 					<button type="button" class="secondary" onclick="dsClearBackground()">Bỏ ảnh nền</button>
 				</div>
 			</div>

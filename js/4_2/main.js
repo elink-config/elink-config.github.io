@@ -10,6 +10,15 @@ let deviceMode = null;      // display mode reported by the device config
 // 3 khe ảnh (fw >= 1.5): mask bit0..2 = khe đã có ảnh trên thiết bị (đọc từ
 // config blob byte 214); cần >= 2 khe mới bật được «Tự động đổi ảnh»
 let imgSlotMask = 0;
+// Số KHE ẢNH của máy: 3 với firmware cũ, 5 từ BWR v2.7 / 4 màu v3.7 (khe 5 và
+// 6 là NỀN của hai «Tự thiết kế», không tính vào đây). fwSlots() gọi được sau
+// khi thiết bị báo 'fw=' — trước đó cứ coi là 3 cho an toàn.
+let IMG_SLOTS = 3;
+const IMG_BG_SLOT = d => 5 + d;   // khe nền của thiết kế d (0/1)
+function fwHasNewSlots() {
+  const nm = (bleDevice && bleDevice.name) || '';
+  return FwCheck.atLeast(nm.indexOf('DIY-4_2C') === 0 ? '3.7' : '2.7');
+}
 let timeSynced = false;     // device clock is valid (reported or just synced);
                             // gates the mode gallery in [Điều khiển thiết bị]
 
@@ -399,6 +408,11 @@ async function sendimg(slot = 0) {
 
   // 3 khe ảnh cần firmware >= 1.5; đời cũ chỉ hiển thị được (không lưu khe)
   const slotCapable = FwCheck.atLeast('1.5');
+  // khe 4,5 (chỉ số 3,4) và hai khe NỀN (5,6) chỉ có từ BWR v2.7 / 4 màu v3.7
+  if (slot > 2 && !fwHasNewSlots()) {
+    alert('Máy chưa hỗ trợ khe này — cần firmware 4.2" ba màu từ v2.7, bốn màu từ v3.7.');
+    return;
+  }
   if (!slotCapable && slot > 0) {
     if (!confirm('Firmware của thiết bị chưa hỗ trợ 3 khe ảnh (cần v1.5). Ảnh sẽ chỉ hiển thị, không lưu vào khe. Tiếp tục?')) return;
   }
@@ -714,6 +728,17 @@ function handleNotify(value, idx) {
       // gate theo TÊN BLE. Bản 7.5" chưa có.
       const is4c = devNm.indexOf('DIY-4_2C') === 0;
       window.__fwBg = !is7_5 && FwCheck.atLeast(is4c ? '3.4' : '2.3');
+      // 5 khe ảnh + 2 khe nền riêng cho «Tự thiết kế» (BWR 2.7 / 4 màu 3.7)
+      IMG_SLOTS = fwHasNewSlots() ? 5 : 3;
+      for (let i = 4; i <= 5; i++) {
+        const b = document.getElementById('sendimgbutton' + i);
+        if (b) b.style.display = IMG_SLOTS >= i ? '' : 'none';
+      }
+      const bgRow = document.getElementById('dsBgRow');
+      if (bgRow) bgRow.style.display = fwHasNewSlots() ? '' : 'none';
+      const dRow = document.getElementById('dsDesignRow');
+      if (dRow) dRow.style.display = fwHasNewSlots() ? '' : 'none';
+      if (typeof updateImgAutoUI === 'function') updateImgAutoUI();
       // mode 21+22 (Núi tuyết, Hoàng hôn) chỉ BỊ GỠ ở nhánh BA MÀU v2.3 để
       // lấy RAM cho ảnh nền; bản BỐN MÀU v3.4 lấy RAM từ đệm trang nên VẪN
       // CÒN hai chế độ này -> không dùng chung cờ __fwBg như trước.

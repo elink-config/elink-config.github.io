@@ -173,7 +173,9 @@ function disconnect() {
 // dùng được khi checkbox bật (yêu cầu tính năng v1.5)
 function slotCount(mask) {
   let n = 0;
-  for (let i = 0; i < 3; i++) if (mask & (1 << i)) n++;
+  // chỉ đếm KHE ẢNH; khe nền của «Tự thiết kế» nằm ở bit 5/6, không tính
+  const total = (typeof IMG_SLOTS === "number") ? IMG_SLOTS : 3;
+  for (let i = 0; i < total; i++) if (mask & (1 << i)) n++;
   return n;
 }
 
@@ -186,8 +188,8 @@ function updateImgAutoUI() {
     r.disabled = !enough || !chk.checked;
   });
   document.getElementById('imgAutoHint').textContent = enough
-    ? `Đã có ảnh ở ${slotCount(imgSlotMask)} khe — thiết bị sẽ tự chuyển khe theo chu kỳ đã chọn (mốc tính theo 00:00).`
-    : 'Cần gửi ảnh vào ít nhất 2 khe để bật tự đổi ảnh (khe 1 → 2 → 3 → 1).';
+    ? `Đã có ảnh ở ${slotCount(imgSlotMask)} khe — thiết bị sẽ tự chuyển khe theo chu kỳ đã chọn (mốc tính theo 00:00). Đổi chu kỳ thì bộ đếm bắt đầu lại từ đầu.`
+    : `Cần gửi ảnh vào ít nhất 2 khe để bật tự đổi ảnh (lần lượt khe 1 → ${(typeof IMG_SLOTS === 'number') ? IMG_SLOTS : 3} → quay lại 1).`;
 }
 
 async function setImgAuto() {

@@ -9,7 +9,13 @@
  */
 (function () {
   const pv = window.__pv; // helpers exposed by mode_preview.js
-  const LS_KEY = 'customLayout_v1';
+  // Tu BWR v2.7 / 4 mau v3.7 co HAI «Tu thiet ke», moi cai bo cuc + anh nen +
+  // icon rieng. Bo cuc luu rieng trong trinh duyet theo tung thiet ke; khoa cu
+  // (mot thiet ke) van doc duoc cho thiet ke 1.
+  let dsDesign = 0;                                   // 0 = Thiet ke 1, 1 = Thiet ke 2
+  const LS_KEY_BASE = 'customLayout_v1';
+  const lsKey = () => dsDesign === 0 ? LS_KEY_BASE : LS_KEY_BASE + '_d' + dsDesign;
+  const LS_KEY = LS_KEY_BASE;
   const MAXW = 10;
 
   // widget metadata: display name and bounding box per size (mirrors the
@@ -37,7 +43,7 @@
   // vuot khoang -> ICON_DIMS[size] = undefined -> getImageData nem loi va
   // designer khong ve duoc gi.
   try {
-    const s = JSON.parse(localStorage.getItem(LS_KEY));
+    const s = JSON.parse(localStorage.getItem(lsKey()));
     if (s && s.widgets) {
       st = s;
       st.widgets = st.widgets.filter(w => TYPES[w.type]).map(w => {
@@ -48,7 +54,7 @@
     }
   } catch (e) {}
 
-  function save() { try { localStorage.setItem(LS_KEY, JSON.stringify(st)); } catch (e) {} }
+  function save() { try { localStorage.setItem(lsKey(), JSON.stringify(st)); } catch (e) {} }
 
   function textOf(w) { return w.type === 8 ? (st.t1 || 'Chữ 1') : (st.t2 || 'Chữ 2'); }
 
@@ -485,12 +491,19 @@
       const chunk = Math.max(16, (Number(document.getElementById('mtusize').value) || 20) - 5);
       addLog('Đang gửi icon ' + st.icon.w + 'x' + st.icon.h +
              (twoPlane ? ' (2 mặt đen+ĐỎ, ' : ' (') + bits.length + ' byte, khối ' + chunk + ')...');
-      const hdr = twoPlane ? 4 : 3;                 // [0x02,w,h,planes] | [0x00,w,h]
+      // fw moi: [0x03, idx, w, h, planes] -> icon RIENG cua thiet ke dang sua
+      const newFw = (typeof fwHasNewSlots === 'function') && fwHasNewSlots();
+      const hdr = newFw ? 5 : (twoPlane ? 4 : 3);
       const n0 = Math.min(chunk, bits.length);
       const first = new Uint8Array(hdr + n0);
-      first[0] = twoPlane ? 0x02 : 0x00;
-      first[1] = st.icon.w; first[2] = st.icon.h;
-      if (twoPlane) first[3] = 2;
+      if (newFw) {
+        first[0] = 0x03; first[1] = dsDesign;
+        first[2] = st.icon.w; first[3] = st.icon.h; first[4] = twoPlane ? 2 : 1;
+      } else {
+        first[0] = twoPlane ? 0x02 : 0x00;
+        first[1] = st.icon.w; first[2] = st.icon.h;
+        if (twoPlane) first[3] = 2;
+      }
       first.set(bits.slice(0, n0), hdr);
       if (!await write(EpdCmd.SET_ICON, first)) return;
       for (let off = n0; off < bits.length; off += chunk) {
@@ -501,8 +514,9 @@
       }
       addLog("Icon đã gửi xong (thiết bị báo lại 'icon=done').");
     }
-    // nhắc thiết bị dùng (hoặc bỏ) khe ảnh làm nền trước khi nhận bố cục
-    if (window.__fwBg) await write(EpdCmd.CUSTOM_BG, [st.bg || 0]);
+    // fw moi: moi thiet ke co khe nen rieng nen KHONG con lenh chon khe nua
+    const newFw2 = (typeof fwHasNewSlots === 'function') && fwHasNewSlots();
+    if (!newFw2 && window.__fwBg) await write(EpdCmd.CUSTOM_BG, [st.bg || 0]);
     const enc = new TextEncoder();
     const t1 = enc.encode(st.t1), t2 = enc.encode(st.t2);
     if (t1.length > 47 || t2.length > 47) {
@@ -520,10 +534,14 @@
     });
     buf.set(t1, 62);
     buf.set(t2, 110);
-    if (await write(EpdCmd.SET_LAYOUT, buf)) {
-      addLog('Đã gửi giao diện tự thiết kế! (thiết bị báo lại \'layout=<số thành phần>\')');
-      addLog('Thiết bị tự chuyển sang chế độ 20 và hiển thị sau ~30 giây.');
-      if (typeof highlightMode === 'function') highlightMode(20);
+    // fw moi: them chi so thiet ke o dau goi (thiet bi phan biet bang do dai)
+    let payload = buf;
+    if (newFw2) { payload = new Uint8Array(1 + buf.length); payload[0] = dsDesign; payload.set(buf, 1); }
+    if (await write(EpdCmd.SET_LAYOUT, payload)) {
+      const m = newFw2 ? (22 + dsDesign) : 20;
+      addLog('Da gui «Tu thiet ke ' + (dsDesign + 1) + '»!');
+      addLog('Thiet bi tu chuyen sang che do ' + m + ' va hien thi sau ~30 giay.');
+      if (typeof highlightMode === 'function') highlightMode(m);
     }
   };
 

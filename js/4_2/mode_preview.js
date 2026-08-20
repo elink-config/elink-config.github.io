@@ -887,6 +887,7 @@
     { mode: 20, name: 'Khủng long 8-bit', tick: 'Cập nhật lúc 0h', id: 'retrowinmodebutton', draw: m23 },
     { mode: 21, name: 'Thành phố pixel', tick: 'Làm mới mỗi phút', id: 'retrocitymodebutton', draw: m24 },
     { mode: 22, name: 'Tự thiết kế 1', tick: 'Làm mới mỗi phút', id: 'custommodebutton', draw: m20 },
+    { mode: 23, name: 'Tự thiết kế 2', tick: 'Làm mới mỗi phút', id: 'custommodebutton2', draw: m20 },
   ];
 
   // highlight the mode the device reports (config byte 11) or was just set to
@@ -916,6 +917,9 @@
       // hai thẻ «Núi tuyết»/«Hoàng hôn» chỉ có ở bản 4 màu — bản 3 màu đời đó
       // đã gỡ. Firmware mới có đủ ở cả hai bản nên không ẩn nữa.
       if (window.__fwNoRetro && (m.mode === 18 || m.mode === 19)) card.style.display = 'none';
+      // «Tự thiết kế 2» chỉ có từ BWR v2.7 / 4 màu v3.7
+      if (m.mode === 23 && !(typeof fwHasNewSlots === 'function' && fwHasNewSlots()))
+        card.style.display = 'none';
       try { m.draw(ctx2d(card.querySelector('canvas')), now); }
       catch (e) { console.error('preview mode ' + m.mode, e); }
     }
