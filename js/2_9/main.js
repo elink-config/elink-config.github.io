@@ -201,6 +201,11 @@ async function writeRedPlane(data, sub, label) {
   for (let i = 0; i < data.length; i += chunkSize) {
     const t = (new Date().getTime() - startTime) / 1000.0;
     setStatus(`${label}: ${idx + 1}/${count}, thời gian: ${t}s`);
+    if (typeof syncOverlayStep === 'function') {
+      syncOverlayStep('Đang truyền ảnh — lớp màu đỏ',
+        `Gói ${idx + 1}/${count}. Mặt đỏ được ghi thẳng vào flash của thiết bị.`);
+      syncOverlayProgress(i, data.length);
+    }
     const payload = [0x9e, sub, i & 0xFF, (i >> 8) & 0xFF, ...data.slice(i, i + chunkSize)];
     if (!await write(payload, true)) return false;
     idx++;
@@ -273,6 +278,9 @@ async function otaUpdate(preBuf) {
 
   const otaStatus = document.getElementById('otaProgress');
   const show = (t) => { if (otaStatus) otaStatus.textContent = t; };
+  // lop phu chan thao tac suot lượt OTA (app_common.js — nhu ban 4.2")
+  syncOverlayShow('Đang chuẩn bị nâng cấp firmware…',
+    'TUYỆT ĐỐI không tắt nguồn thiết bị và không đóng trang trong suốt quá trình.');
 
   setDisId('otabutton', true);
   try {
@@ -284,6 +292,8 @@ async function otaUpdate(preBuf) {
     buf[0] = 0xa0; buf[1] = 0x00;
     dv.setUint32(2, firmSize, true);
     show('Đang xoá flash…');
+    syncOverlayStep('Đang xóa vùng nhớ firmware…',
+      'Thiết bị xóa bank firmware dự phòng trước khi nhận bản mới. Mất vài giây.');
     await write(buf, true);
 
     // gửi từng trang 256 byte, chia đôi 128+128 (0xA2 nửa đầu, 0xA3 nửa sau)
@@ -314,11 +324,16 @@ async function otaUpdate(preBuf) {
       await write(buf, true);
       p += 128;
       show('Tiến độ: ' + ((100 * p / (firmSize + 64)) >> 0) + '%');
+      syncOverlayStep('Đang gửi firmware…',
+        'Đã gửi ' + (p >> 10) + '/' + ((firmSize + 64) >> 10) + ' KB. TUYỆT ĐỐI không tắt nguồn thiết bị.');
+      syncOverlayProgress(p, firmSize + 64);
     }
 
     // 0xA4: kết thúc — thiết bị tự khởi động lại vào firmware mới
     buf.fill(0x00); buf[0] = 0xa4;
     await write(buf.subarray(0, 4), true);
+    syncOverlayStep('Đang chốt bản mới…',
+      'Thiết bị ghi trang đầu rồi tự khởi động lại. Chờ máy hiện lại rồi hãy kết nối.');
     show('Hoàn tất — thiết bị đang khởi động lại.');
     addLog('Cập nhật xong! Thiết bị khởi động lại với firmware mới.');
   } catch (e) {
@@ -327,6 +342,7 @@ async function otaUpdate(preBuf) {
     addLog('OTA thất bại: ' + (e.message || e));
   } finally {
     setDisId('otabutton', false);
+    syncOverlayHide();
   }
 }
 
@@ -342,6 +358,9 @@ async function waitIdle(label) {
     const st = await readStatus(true);
     if (!st || !st.refreshing) return true;
     setStatus(`${label}: màn hình đang làm mới, chờ… ${i + 1}s`);
+    if (typeof syncOverlayStep === 'function')
+      syncOverlayStep('Đang chờ màn hình rảnh…',
+        `Thiết bị đang vẽ lại toàn màn (${i + 1}s). Chờ xong mới truyền để ảnh không mất lớp màu.`);
     await sleep(1000);
   }
   return true; // quá 45s: cứ gửi, phần hiển thị sẽ được thiết bị xếp hàng
@@ -359,10 +378,16 @@ async function sendimg() {
 
   updateButtonStatus(true);
 
+  // lop phu chan thao tac: mot tam anh la hang tram goi BLE, bam nut khac
+  // giua chung la lenh chen vao va thiet bi nhan nham (app_common.js)
+  syncOverlayShow('Đang chuẩn bị gửi ảnh…',
+    'Không tắt máy và không đóng trang cho đến khi màn hình hiện xong.');
+
   const threeColor = document.getElementById('ditherMode').value === 'threeColor';
   let sent = false;
   if (threeColor && !await waitIdle('Gửi ảnh')) {
     updateButtonStatus();
+    syncOverlayHide();
     return;
   }
   if (threeColor) {
@@ -399,11 +424,14 @@ async function sendimg() {
   if (!sent) {
     addLog('Gửi ảnh thất bại — kiểm tra kết nối rồi thử lại.');
     setStatus('Gửi ảnh thất bại.');
+    syncOverlayHide();
     setTimeout(() => { status.parentElement.style.display = "none"; }, 5000);
     return;
   }
   addLog(`Đã truyền xong dữ liệu (${sendTime}s) — màn hình đang làm mới…`);
   setStatus('Màn hình đang làm mới…');
+  syncOverlayStep('Đang làm mới màn hình…',
+    'Màn e-ink vẽ lại toàn bộ, mất khoảng 15-25 giây. Đừng tắt máy giữa chừng.');
 
   // chờ thiết bị xác nhận đã chuyển sang chế độ ảnh (đọc trạng thái, ~2-8s;
   // lâu hơn nếu lệnh phải xếp hàng sau một lần làm mới đang chạy — màn BWR
@@ -423,6 +451,7 @@ async function sendimg() {
     addLog('Chưa thấy thiết bị xác nhận hiển thị ảnh — kiểm tra màn hình rồi thử «Gửi hình ảnh» lại.');
     setStatus('Chưa có xác nhận từ thiết bị.');
   }
+  syncOverlayHide();
   setTimeout(() => {
     status.parentElement.style.display = "none";
   }, 5000);
@@ -446,9 +475,12 @@ async function saveImageFlash() {
   const status = document.getElementById("status");
   status.parentElement.style.display = "block";
   updateButtonStatus(true);
+  syncOverlayShow('Đang lưu ảnh vào bộ nhớ…',
+    'Mặt đen trắng và mặt màu đỏ được ghi vào flash để ảnh còn sau khi mất nguồn.');
 
   if (!await waitIdle('Lưu ảnh')) {
     updateButtonStatus();
+    syncOverlayHide();
     return;
   }
 
@@ -465,6 +497,7 @@ async function saveImageFlash() {
     }
   }
   updateButtonStatus();
+  syncOverlayHide();
   setStatus(ok ? 'Đã lưu ảnh 3 màu vào flash!' : 'Lưu ảnh 3 màu thất bại.');
   addLog(ok ? 'Đã lưu ảnh 3 màu vào flash!' : 'Lưu ảnh 3 màu thất bại — thử lại.');
   setTimeout(() => { status.parentElement.style.display = "none"; }, 4000);

@@ -388,6 +388,8 @@
       const mtu = parseInt(document.getElementById('mtusize').value) || 244;
       const chunk = Math.max(16, mtu - 8);
       addLog('Đang gửi ảnh ' + ic.w + 'x' + ic.h + ' (' + ic.bits.length + ' byte)…');
+      syncOverlayStep('Đang gửi ảnh của thiết kế…',
+        ic.w + 'x' + ic.h + ' (' + ic.bits.length + ' byte). Ảnh đi trước, bố cục gửi sau.');
       const n0 = Math.min(chunk, ic.bits.length);
       const first = new Uint8Array(4 + n0);
       first.set([0x9c, 0x00, ic.w, ic.h]);
@@ -483,6 +485,23 @@
 
     redraw();
     setInterval(redraw, 30000); // giữ giờ trong thiết kế luôn đúng
+  }
+
+  // Lop phu cho (syncOverlay* o app_common.js) cho luot gui thiet ke —
+  // BOC NGOAI dsUpload de khong phai rai syncOverlayHide() vao tung nhanh
+  // return ben trong (co nhieu nhanh: thiet ke rong, thieu anh, write loi…).
+  {
+    const _dsUpload = window.dsUpload;
+    window.dsUpload = async function () {
+      if (!st.widgets.length) {
+        alert('Thiết kế còn trống — hãy thêm ít nhất một thành phần.');
+        return;
+      }
+      syncOverlayShow('Đang gửi thiết kế…',
+        'Ảnh của thiết kế đi trước, bố cục gửi sau. Không tắt máy, không đóng trang.');
+      try { return await _dsUpload.apply(this, arguments); }
+      finally { syncOverlayHide(); }
+    };
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);

@@ -75,6 +75,12 @@ async function writeImage(data) {
   for (let i = 0; i < data.length; i += chunkSize) {
     let currentTime = (new Date().getTime() - startTime) / 1000.0;
     setStatus(`Khối đen trắng: ${chunkIdx + 1}/${count}, thời gian: ${currentTime}s`);
+    // lop phu cho (app_common.js) — chi chay khi app co nap app_common
+    if (typeof syncOverlayStep === 'function') {
+      syncOverlayStep('Đang truyền ảnh — lớp đen trắng',
+        `Gói ${chunkIdx + 1}/${count}. Ảnh được chẻ nhỏ theo MTU rồi ghi vào bộ đệm thiết bị.`);
+      syncOverlayProgress(i, data.length);
+    }
     const payload = [0x93, i & 0xFF, (i >> 8) & 0xFF, ...data.slice(i, i + chunkSize)];
     if (!await write(payload, true)) return false;
     chunkIdx++;

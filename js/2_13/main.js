@@ -283,6 +283,9 @@ async function otaUpdate(preBuf) {
 
   const otaStatus = document.getElementById('otaProgress');
   const show = (t) => { if (otaStatus) otaStatus.textContent = t; };
+  // lop phu chan thao tac suot lượt OTA (app_common.js — nhu ban 4.2")
+  syncOverlayShow('Đang chuẩn bị nâng cấp firmware…',
+    'TUYỆT ĐỐI không tắt nguồn thiết bị và không đóng trang trong suốt quá trình.');
 
   setDisId('otabutton', true);
   try {
@@ -294,6 +297,8 @@ async function otaUpdate(preBuf) {
     // (2 byte thap) van dung khi firmware dich < 64KB (vd ban "temp" cau noi).
     dv.setUint32(2, firmSize, true);
     show('Đang xoá flash…');
+    syncOverlayStep('Đang xóa vùng nhớ firmware…',
+      'Thiết bị xóa bank firmware dự phòng trước khi nhận bản mới. Mất vài giây.');
     await write(buf, true);
 
     // gửi từng trang 256 byte, chia đôi 128+128 (0xA2 nửa đầu, 0xA3 nửa sau)
@@ -324,11 +329,16 @@ async function otaUpdate(preBuf) {
       await write(buf, true);
       p += 128;
       show('Tiến độ: ' + ((100 * p / (firmSize + 64)) >> 0) + '%');
+      syncOverlayStep('Đang gửi firmware…',
+        'Đã gửi ' + (p >> 10) + '/' + ((firmSize + 64) >> 10) + ' KB. TUYỆT ĐỐI không tắt nguồn thiết bị.');
+      syncOverlayProgress(p, firmSize + 64);
     }
 
     // 0xA4: kết thúc — thiết bị tự khởi động lại vào firmware mới
     buf.fill(0x00); buf[0] = 0xa4;
     await write(buf.subarray(0, 4), true);
+    syncOverlayStep('Đang chốt bản mới…',
+      'Thiết bị ghi trang đầu rồi tự khởi động lại. Chờ máy hiện lại rồi hãy kết nối.');
     show('Hoàn tất — thiết bị đang khởi động lại.');
     addLog('Cập nhật xong! Thiết bị khởi động lại với firmware mới.');
   } catch (e) {
@@ -337,6 +347,7 @@ async function otaUpdate(preBuf) {
     addLog('OTA thất bại: ' + (e.message || e));
   } finally {
     setDisId('otabutton', false);
+    syncOverlayHide();
   }
 }
 
@@ -353,6 +364,11 @@ async function sendimg() {
 
   updateButtonStatus(true);
 
+  // lop phu chan thao tac: mot tam anh la hang tram goi BLE, bam nut khac
+  // giua chung la lenh chen vao va thiet bi nhan nham (app_common.js)
+  syncOverlayShow('Đang chuẩn bị gửi ảnh…',
+    'Không tắt máy và không đóng trang cho đến khi màn hình hiện xong.');
+
   const data = canvas2bytesBW(canvas);
   addLog(`Bắt đầu gửi ảnh ${canvas.width}x${canvas.height} (${data.length} byte)`);
   let sent = false;
@@ -366,11 +382,14 @@ async function sendimg() {
   if (!sent) {
     addLog('Gửi ảnh thất bại — kiểm tra kết nối rồi thử lại.');
     setStatus('Gửi ảnh thất bại.');
+    syncOverlayHide();
     setTimeout(() => { status.parentElement.style.display = "none"; }, 5000);
     return;
   }
   addLog(`Đã truyền xong dữ liệu (${sendTime}s) — màn hình đang làm mới…`);
   setStatus('Màn hình đang làm mới…');
+  syncOverlayStep('Đang làm mới màn hình…',
+    'Màn e-ink vẽ lại toàn bộ, mất khoảng 15-25 giây. Đừng tắt máy giữa chừng.');
 
   // chờ thiết bị xác nhận đã chuyển sang chế độ ảnh (đọc trạng thái, ~2-8s;
   // lâu hơn nếu lệnh phải xếp hàng sau một lần làm mới đang chạy)
@@ -392,6 +411,7 @@ async function sendimg() {
     addLog('Chưa thấy thiết bị xác nhận hiển thị ảnh — kiểm tra màn hình rồi thử «Gửi hình ảnh» lại.');
     setStatus('Chưa có xác nhận từ thiết bị.');
   }
+  syncOverlayHide();
   setTimeout(() => {
     status.parentElement.style.display = "none";
   }, 5000);
