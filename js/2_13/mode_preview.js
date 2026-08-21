@@ -313,15 +313,19 @@
     x.lineCap = 'butt';
     x.fillStyle = BK; x.beginPath(); x.arc(cx, cy, 2, 0, 7); x.fill();
   }
-  const WD_SUN = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
-  function headerInv(x, gx, gy, gw, cw) {
-    x.fillStyle = BK; x.fillRect(gx, gy, gw, 13);
+  const WD_MON = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];   // thứ Hai đầu tuần
+  function header(x, gx, gy, gw, cw) {
     font(x, 8, 1);
-    for (let i = 0; i < 7; i++) center(x, WD_SUN[i], gx + i * cw + cw / 2, gy + 10, WH);
+    for (let i = 0; i < 7; i++) {
+      const wknd = i >= 5;                     // T7/CN đảo màu (màn 2.13" không có đỏ)
+      if (wknd) { x.fillStyle = BK; x.fillRect(gx + i * cw, gy, cw, 12); }
+      center(x, WD_MON[i], gx + i * cw + cw / 2, gy + 10, wknd ? WH : BK);
+    }
+    line(x, gx, gy + 12, gx + gw - 1, gy + 12, BK, 1);
   }
-  // lưới tháng CN-cột-đầu; lunarSub = thêm âm lịch nhỏ; hôm nay ô ngược màu
-  function gridSun(x, now, gx, gy, cw, rh, lunarSub) {
-    const first = new Date(now.getFullYear(), now.getMonth(), 1).getDay();
+  // lưới tháng T2-cột-đầu; lunarSub = thêm âm lịch nhỏ; hôm nay ô ngược màu
+  function gridMon(x, now, gx, gy, cw, rh, lunarSub) {
+    const first = (new Date(now.getFullYear(), now.getMonth(), 1).getDay() + 6) % 7;
     const maxD = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
     for (let d = 1; d <= maxD; d++) {
       const col = (first + d - 1) % 7, row = (first + d - 1) / 7 | 0;
@@ -346,8 +350,8 @@
     const dvx = (W * 5 / 8) | 0;
     line(x, dvx, 0, dvx, H, BK, 1);
     const cw = ((dvx - 6) / 7) | 0, rh = (((H - 22) / 6) | 0) + 1;  // +1px mỗi hàng
-    headerInv(x, 2, 2, dvx - 3, cw);
-    gridSun(x, now, 3, 19, cw, rh, true);
+    header(x, 2, 2, dvx - 3, cw);
+    gridMon(x, now, 3, 19, cw, rh, true);
     font(x, 8, 0); x.fillStyle = BK;                                // tháng-năm chữ nhỏ
     x.fillText(pad2(now.getMonth() + 1) + '-' + now.getFullYear(), dvx + 5, 12);
     battery(x, W - 18, 5, BK);
@@ -365,8 +369,8 @@
     const dvx = W - 90;
     line(x, dvx, 0, dvx, H, BK, 1);
     const cw = ((dvx - 4) / 7) | 0, rh = ((H - 38) / 6) | 0;
-    headerInv(x, 2, 2, dvx - 3, cw);
-    gridSun(x, now, 2, 19, cw, rh, false);
+    header(x, 2, 2, dvx - 3, cw);
+    gridMon(x, now, 2, 19, cw, rh, false);
     font(x, 11, 1);
     let l = 'Âm --/--';
     try { const lu = lunarToday(now); l = 'Âm ' + lu.day + '/' + pad2(lu.month & 0x7f); } catch (e) {}
@@ -398,7 +402,7 @@
     if (lu) right(x, lu.day + '/' + pad2(lu.month & 0x7f), rxg + gw - 8, 28, BK);
     x.font = '8px "Eboy REGAlpha","EboyREGAlpha",monospace';  // pixel font khớp fw
     for (let i = 0; i < 7; i++) {
-      const lb = WD_SUN[(i + 1) % 7];
+      const lb = WD_MON[i];
       center(x, lb, lx + i * cw + cw / 2, gy + 6, BK);
       center(x, lb, rxg + i * cw + cw / 2, gy + 6, BK);
     }
@@ -456,8 +460,8 @@
     const dvx = W - 92;
     line(x, dvx, 0, dvx, H, BK, 1);
     const cw = ((dvx - 4) / 7) | 0, rh = (((H - 38) / 6) | 0) + 1;  // +1px mỗi hàng
-    headerInv(x, 2, 2, dvx - 3, cw);
-    gridSun(x, now, 2, 19, cw, rh, false);
+    header(x, 2, 2, dvx - 3, cw);
+    gridMon(x, now, 2, 19, cw, rh, false);
     font(x, 11, 1);
     let l = ''; try { const lu = lunarToday(now); l = 'Âm ' + lu.day + '/' + pad2(lu.month & 0x7f); } catch (e) {}
     center(x, l, dvx / 2, H - 6, BK);
@@ -488,8 +492,8 @@
     let r = Math.min(H / 2 - 8, 44);
     font(x, 11, 1);
     for (let i = 0; i < 7; i++) {
-      const lb = WD_SUN[(i + 1) % 7];
-      const today = ((i + 1) % 7) === now.getDay();
+      const lb = WD_MON[i];
+      const today = i === (now.getDay() + 6) % 7;
       if (today) { x.fillStyle = BK; x.fillRect(2, i * rh + 1, 30, rh - 2); }
       x.fillStyle = today ? WH : BK;
       x.fillText(lb, 6, i * rh + rh / 2 + 4);
@@ -562,9 +566,9 @@
     center(x, l, W / 2, 114, BK);
     const cw = (W >= 120) ? 16 : 14, gx = ((W - cw * 7) / 2) | 0, gy = H - 78;
     font(x, 7, 1);
-    for (let i = 0; i < 7; i++) center(x, WD_SUN[i], gx + i * cw + cw / 2, gy - 6, BK);
+    for (let i = 0; i < 7; i++) center(x, WD_MON[i], gx + i * cw + cw / 2, gy - 6, BK);
     line(x, gx, gy - 3, gx + cw * 7 - 2, gy - 3, BK, 1);
-    const first = new Date(now.getFullYear(), now.getMonth(), 1).getDay();
+    const first = (new Date(now.getFullYear(), now.getMonth(), 1).getDay() + 6) % 7;
     const maxD = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
     font(x, 7, 1);
     for (let d = 1; d <= maxD; d++) {
@@ -651,7 +655,7 @@
       else line(x, 6, ry + rh - 1, W - 6, ry + rh - 1, BK, 0.5);
       font(x, 10, 1);
       x.fillStyle = today ? WH : BK;
-      x.fillText(WD_SUN[(i + 1) % 7], 6, ry + rh / 2 + 4);
+      x.fillText(WD_MON[i], 6, ry + rh / 2 + 4);
       font(x, 12, 1);                                      // số dương đậm/to hơn
       center(x, d.getDate(), W / 2 + 4, ry + rh / 2 + 4, today ? WH : BK);
       font(x, 7, 0);
