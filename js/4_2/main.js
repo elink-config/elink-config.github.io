@@ -829,6 +829,8 @@ function handleNotify(value, idx) {
       // bốn màu >= 3.7. Máy chưa hỗ trợ thì thanh kéo bám về ba nấc cũ (máy tự
       // kẹp về nấc lớn nhất, kéo tự do sẽ ra hình khác hẳn ô xem trước).
       window.__fwFreeSize = !is7_5 && FwCheck.atLeast(is4c ? '3.7' : '2.6');
+      // chế độ «HUD» (mode 25): mới có ở 4.2" BA MÀU v2.7
+      window.__fwHud = !is7_5 && !is4c && FwCheck.atLeast('2.7');
       if (window.ttFwUpdate) window.ttFwUpdate();
       // 5 khe ảnh + 2 khe nền riêng cho «Tự thiết kế» (BWR 2.7 / 4 màu 3.7)
       IMG_SLOTS = fwHasNewSlots() ? 5 : 3;

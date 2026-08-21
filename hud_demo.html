@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Demo giao diện HUD — màn 4.2" ba màu</title>
+<style>
+  body{margin:0;padding:22px;background:#f4f2ec;color:#1a1a1a;font:15px/1.5 "Segoe UI",Arial,sans-serif}
+  h1{font-size:19px;margin:0 0 4px}
+  p.sub{color:#666;margin:0 0 16px}
+  canvas{background:#f6f4ec;border:2px solid #999;border-radius:3px;box-shadow:0 3px 10px rgba(0,0,0,.15)}
+  fieldset{background:#fff;border:1px solid #d8d4c8;border-radius:10px;padding:12px 16px;margin:0 0 14px}
+  legend{font-weight:600;padding:0 8px}
+  .opts{display:flex;gap:18px;flex-wrap:wrap;align-items:center}
+  label{display:flex;align-items:center;gap:6px;cursor:pointer}
+  ul{margin:6px 0 0 18px;padding:0} li{margin-bottom:5px}
+</style>
+</head>
+<body>
+<h1>Giao diện HUD — 4.2" ba màu (400×300)</h1>
+<p class="sub">Vẽ lại từ đầu bằng code, không dùng font sẵn có: viền panel vát góc, nhãn gắn chìm vào viền, số nét khối.</p>
+
+<fieldset>
+  <legend>Thử nhanh</legend>
+  <div class="opts">
+    <label>Giờ <input type="text" id="tmH" value="10" size="2"> : <input type="text" id="tmM" value="35" size="2"></label>
+    <label>Tên máy <input type="text" id="devN" value="DIY-4_2-A1B2" size="14"></label>
+    <label>Hôm nay <select id="dow">
+      <option value="-1">theo máy</option><option value="1">T2</option><option value="2">T3</option>
+      <option value="3">T4</option><option value="4">T5</option><option value="5">T6</option>
+      <option value="6">T7</option><option value="0">CN</option></select></label>
+    <label><input type="checkbox" id="cbRed" checked> Khối ĐỎ sau giờ</label>
+    <label><input type="checkbox" id="cbTick" checked> Vạch đo mép trái</label>
+  </div>
+</fieldset>
+
+<canvas id="cv" width="800" height="600" style="width:800px;height:600px"></canvas>
+
+<fieldset style="margin-top:16px">
+  <legend>Những chi tiết tạo ra chất HUD (đã đưa vào bản này)</legend>
+  <ul>
+    <li><b>Hai tấm panel viền dày 4px, bốn góc vát chéo</b> — đây là thứ chi phối cả giao diện, bản trước tôi thiếu hẳn.</li>
+    <li><b>Nhãn nằm CHÌM trong đường viền</b>: <code>SYSTEM</code> khoét giữa cạnh trên, <code>BATT</code> / <code>TEMP</code> nằm trên cạnh dưới, <code>WEEK 21</code> cưỡi lên cạnh trên của panel dưới.</li>
+    <li><b>Số nét khối</b>: mỗi đoạn là một thanh chữ nhật dày, không phải 7 đoạn mảnh — đúng kiểu số của ảnh.</li>
+    <li><b>Điểm nhấn đỏ đặt đúng chỗ</b>: khối giờ, ngày âm, ngày hôm nay, chấm báo trên nhãn, vạch đo mép trái.</li>
+  </ul>
+</fieldset>
+
+<script>
+(function () {
+  const RED = '#C0261F', BK = '#151515', WH = '#f6f4ec';
+  const cv = document.getElementById('cv'), g = cv.getContext('2d');
+
+  /* ---------- bộ chữ khối 5x7 (dữ liệu này sẽ nhúng thẳng vào firmware) ---------- */
+  const F = {
+    'A':[0x7E,0x11,0x11,0x11,0x7E],'B':[0x7F,0x49,0x49,0x49,0x36],'C':[0x3E,0x41,0x41,0x41,0x22],
+    'D':[0x7F,0x41,0x41,0x22,0x1C],'E':[0x7F,0x49,0x49,0x49,0x41],'F':[0x7F,0x09,0x09,0x09,0x01],
+    'G':[0x3E,0x41,0x49,0x49,0x7A],'H':[0x7F,0x08,0x08,0x08,0x7F],'I':[0x00,0x41,0x7F,0x41,0x00],
+    'K':[0x7F,0x08,0x14,0x22,0x41],'L':[0x7F,0x40,0x40,0x40,0x40],'M':[0x7F,0x02,0x0C,0x02,0x7F],
+    'N':[0x7F,0x04,0x08,0x10,0x7F],'O':[0x3E,0x41,0x41,0x41,0x3E],'P':[0x7F,0x09,0x09,0x09,0x06],
+    'R':[0x7F,0x09,0x19,0x29,0x46],'S':[0x46,0x49,0x49,0x49,0x31],'T':[0x01,0x01,0x7F,0x01,0x01],
+    'U':[0x3F,0x40,0x40,0x40,0x3F],'V':[0x1F,0x20,0x40,0x20,0x1F],'W':[0x3F,0x40,0x38,0x40,0x3F],
+    'X':[0x63,0x14,0x08,0x14,0x63],'Y':[0x07,0x08,0x70,0x08,0x07],'Z':[0x61,0x51,0x49,0x45,0x43],
+    '0':[0x3E,0x51,0x49,0x45,0x3E],'1':[0x00,0x42,0x7F,0x40,0x00],'2':[0x42,0x61,0x51,0x49,0x46],
+    '3':[0x21,0x41,0x45,0x4B,0x31],'4':[0x18,0x14,0x12,0x7F,0x10],'5':[0x27,0x45,0x45,0x45,0x39],
+    '6':[0x3C,0x4A,0x49,0x49,0x30],'7':[0x01,0x71,0x09,0x05,0x03],'8':[0x36,0x49,0x49,0x49,0x36],
+    '9':[0x06,0x49,0x49,0x29,0x1E],'/':[0x20,0x10,0x08,0x04,0x02],'.':[0x00,0x60,0x60,0x00,0x00],
+    '-':[0x08,0x08,0x08,0x08,0x08],'_':[0x40,0x40,0x40,0x40,0x40],':':[0x00,0x36,0x36,0x00,0x00],
+    '°':[0x00,0x07,0x05,0x07,0x00],
+    ' ':[0,0,0,0,0]
+  };
+  const AC=1, HK=4, DOT=16, CIRC=32, BREVE=64, HORN=128;
+
+  function glyph(ch, mark, px, py, s, col) {
+    const d = F[ch] || F[' ']; g.fillStyle = col;
+    for (let c = 0; c < 5; c++) for (let r = 0; r < 7; r++)
+      if (d[c] & (1 << r)) g.fillRect(px + c*s, py + r*s, s, s);
+    if (mark) {
+      const top = py - 2*s;
+      if (mark & CIRC)  { g.fillRect(px+s,top,s,s); g.fillRect(px+3*s,top,s,s); g.fillRect(px+2*s,top-s,s,s); }
+      if (mark & BREVE) { g.fillRect(px+s,top-s,s,s); g.fillRect(px+3*s,top-s,s,s); g.fillRect(px+2*s,top,s,s); }
+      if (mark & HORN)  { g.fillRect(px+5*s,py-s,s,s); g.fillRect(px+5*s,py,s,s); }
+      const my = (mark & (CIRC|BREVE)) ? top - 2*s : top;
+      if (mark & AC)  { g.fillRect(px+3*s,my-s,s,s); g.fillRect(px+2*s,my,s,s); }
+      if (mark & HK)  { g.fillRect(px+2*s,my-s,s,s); g.fillRect(px+3*s,my-s,s,s); g.fillRect(px+3*s,my,s,s); }
+      if (mark & DOT) g.fillRect(px+2*s, py+8*s, s, s);
+    }
+    return 6*s;
+  }
+  const W_ = (w,s) => w.length*6*s - s;
+  function word(w, px, py, s, col) { let c = px; for (const [ch,mk] of w) c += glyph(ch, mk||0, c, py, s, col); }
+  function wordC(w, cx, py, s, col) { word(w, cx - W_(w,s)/2, py, s, col); }
+  const T = (str) => [...str].map(c => [c,0]);
+
+  const WD = [
+    [['C',0],['H',0],['U',HK],[' ',0],['N',0],['H',0],['A',CIRC|DOT],['T',0]],
+    [['T',0],['H',0],['U',HORN|AC],[' ',0],['H',0],['A',0],['I',0]],
+    [['T',0],['H',0],['U',HORN|AC],[' ',0],['B',0],['A',0]],
+    [['T',0],['H',0],['U',HORN|AC],[' ',0],['T',0],['U',HORN]],
+    [['T',0],['H',0],['U',HORN|AC],[' ',0],['N',0],['A',BREVE],['M',0]],
+    [['T',0],['H',0],['U',HORN|AC],[' ',0],['S',0],['A',AC],['U',0]],
+    [['T',0],['H',0],['U',HORN|AC],[' ',0],['B',0],['A',HK],['Y',0]]
+  ];
+
+  /* ---------- SỐ: bảy đoạn nét dày, CÁC ĐOẠN TÁCH RỜI ----------
+     Chi tiết nhận dạng của font trong ảnh gốc: giữa các đoạn có KHE HỞ, nên
+     bốn góc của số 0 / 8 lộ ra khấc vuông nhỏ. Bản trước tôi vẽ các đoạn dính
+     liền nên số nhìn "đặc" và khác hẳn. */
+  const SEG = {'0':0x3F,'1':0x06,'2':0x5B,'3':0x4F,'4':0x66,'5':0x6D,'6':0x7D,'7':0x07,'8':0x7F,'9':0x6F};
+  // một đoạn NGANG: lục giác, hai đầu vát 45° (đây là thứ tạo ra khấc ở góc)
+  function segH(x, y, w, t, col) {
+    g.fillStyle = col; g.beginPath();
+    g.moveTo(x, y + t/2); g.lineTo(x + t/2, y); g.lineTo(x + w - t/2, y);
+    g.lineTo(x + w, y + t/2); g.lineTo(x + w - t/2, y + t); g.lineTo(x + t/2, y + t);
+    g.closePath(); g.fill();
+  }
+  function segV(x, y, h, t, col) {
+    g.fillStyle = col; g.beginPath();
+    g.moveTo(x + t/2, y); g.lineTo(x + t, y + t/2); g.lineTo(x + t, y + h - t/2);
+    g.lineTo(x + t/2, y + h); g.lineTo(x, y + h - t/2); g.lineTo(x, y + t/2);
+    g.closePath(); g.fill();
+  }
+  function d7(px, py, w, h, t, ch, col) {
+    const m = SEG[ch] || 0;
+    const q = Math.max(1, t * 0.16);                  // khe giữa hai đoạn kề
+    const mid = py + (h - t)/2, hv = (h - t)/2 + t - 2*q;
+    if (m & 1)  segH(px + q, py, w - 2*q, t, col);
+    if (m & 64) segH(px + q, mid, w - 2*q, t, col);
+    if (m & 8)  segH(px + q, py + h - t, w - 2*q, t, col);
+    if (m & 32) segV(px, py + q, hv, t, col);
+    if (m & 2)  segV(px + w - t, py + q, hv, t, col);
+    if (m & 16) segV(px, mid + q, hv, t, col);
+    if (m & 4)  segV(px + w - t, mid + q, hv, t, col);
+  }
+  function d7s(px, py, w, h, t, gap, s, col) {
+    for (let i = 0; i < s.length; i++) d7(px + i*(w+gap), py, w, h, t, s[i], col);
+    return s.length*(w+gap) - gap;
+  }
+  const d7w = (n, w, gap) => n*(w+gap) - gap;
+
+  /* ---------- PANEL viền dày, bốn góc VÁT CHÉO ---------- */
+  function panelPath(x0, y0, x1, y1, k) {
+    g.beginPath();
+    g.moveTo(x0+k, y0); g.lineTo(x1-k, y0); g.lineTo(x1, y0+k);
+    g.lineTo(x1, y1-k); g.lineTo(x1-k, y1); g.lineTo(x0+k, y1);
+    g.lineTo(x0, y1-k); g.lineTo(x0, y0+k); g.closePath();
+  }
+  function panel(x0, y0, x1, y1, k, t, inner) {    // viền = hai đường vát lồng nhau
+    g.fillStyle = BK; panelPath(x0, y0, x1, y1, k); g.fill();
+    g.fillStyle = WH; panelPath(x0+t, y0+t, x1-t, y1-t, k-t); g.fill();
+    if (inner) {                                    // + đường mảnh 1px bên trong
+      g.strokeStyle = BK; g.lineWidth = 1;
+      panelPath(x0+t+inner+0.5, y0+t+inner+0.5, x1-t-inner-0.5, y1-t-inner-0.5, k-t-inner);
+      g.stroke();
+    }
+  }
+  /* Góc ĐỎ-ĐEN ở cạnh phải (như bản gốc): nẹp góc đen dày + một vệt đỏ nằm
+     trong lòng nó. sy = 1 góc trên, -1 góc dưới. */
+  function cornerAccent(cx, cy, len, sy) {
+    g.fillStyle = BK;
+    g.fillRect(cx - len, cy, len, 4 * sy > 0 ? 4 : 4);
+    g.fillRect(cx - 4, cy, 4, len * sy);
+    g.fillStyle = RED;
+    const oy = sy > 0 ? 7 : -10;
+    g.fillRect(cx - len + 5, cy + oy, len - 12, 3);
+    g.fillRect(cx - 10, cy + (sy > 0 ? 7 : -len + 5), 3, len - 12);
+  }
+  // nhãn CHÌM vào viền: nền đen vát hai đầu, chữ trắng, có chấm đỏ dẫn
+  function slot(px, py, w, h, wrd, s, dot) {
+    const k = h/2;
+    g.fillStyle = BK; g.beginPath();
+    g.moveTo(px+k, py); g.lineTo(px+w-k, py); g.lineTo(px+w, py+h);
+    g.lineTo(px, py+h); g.closePath(); g.fill();
+    let tx = px + k + 2;
+    if (dot) { g.fillStyle = RED; g.fillRect(tx, py + (h-3*s)/2, 3*s/2, 3*s/2); tx += 4*s; }
+    word(wrd, tx, py + (h - 7*s)/2, s, WH);
+  }
+  function bracket(cx, cy, w, h, len, col) {       // ngoặc góc bên trong
+    g.strokeStyle = col; g.lineWidth = 2;
+    for (const [ax,ay,sx,sy] of [[cx,cy,1,1],[cx+w,cy,-1,1],[cx,cy+h,1,-1],[cx+w,cy+h,-1,-1]]) {
+      g.beginPath(); g.moveTo(ax+sx*len, ay); g.lineTo(ax, ay); g.lineTo(ax, ay+sy*len); g.stroke();
+    }
+  }
+  function dashH(x0, x1, y, col, d, gp, th) {
+    g.fillStyle = col;
+    for (let i = x0; i < x1; i += d+gp) g.fillRect(i, y, Math.min(d, x1-i), th||1);
+  }
+  function dashV(y0, y1, xx, col, d, gp) {
+    g.fillStyle = col;
+    for (let i = y0; i < y1; i += d+gp) g.fillRect(xx, i, 1, Math.min(d, y1-i));
+  }
+
+  function draw() {
+    g.setTransform(2,0,0,2,0,0);
+    g.fillStyle = WH; g.fillRect(0,0,400,300);
+    const now = new Date();
+    const hh = (document.getElementById('tmH').value||'10').padStart(2,'0').slice(0,2);
+    const mm = (document.getElementById('tmM').value||'35').padStart(2,'0').slice(0,2);
+    const dev = (document.getElementById('devN').value || 'DIY-4_2').toUpperCase().slice(0, 16);
+    const pick = Number(document.getElementById('dow').value);
+    const dow = pick < 0 ? now.getDay() : pick;      // 0 = CN
+
+    /* ===== PANEL TRÊN: viền dày + ĐƯỜNG MẢNH 1px bên trong ===== */
+    panel(4, 4, 396, 208, 18, 4, 4);
+
+    // TÊN THIẾT BỊ khoét giữa cạnh trên (thay cho chữ SYSTEM)
+    {
+      const s = 1.2, tw = W_(T(dev), s) + 26, tx = 200 - tw/2;
+      g.fillStyle = WH; g.fillRect(tx, 2, tw, 12);
+      slot(tx, 2, tw, 11, T(dev), s, true);
+    }
+
+    // vạch đo mép trái
+    if (document.getElementById('cbTick').checked)
+      for (let i = 0; i < 5; i++) {
+        g.fillStyle = (i === 1) ? RED : BK;
+        g.fillRect(14, 52 + i*13, i === 1 ? 9 : 6, 3);
+      }
+    // góc ĐỎ-ĐEN cạnh phải
+    cornerAccent(386, 26, 30, 1);
+    cornerAccent(386, 122, 30, -1);
+
+    /* GIỜ + PHÚT: cả cụm canh giữa, hai bên đều nhau.
+       Giờ = chữ ĐỎ trên nền trắng (không còn khối đỏ). */
+    const dy = 38, dh = 80, dw = 44, dt = 15, gap = 11, mid = 26;
+    const grp = d7w(2, dw, gap)*2 + mid, gx = 200 - grp/2;
+    const redBg = document.getElementById('cbRed').checked;
+    if (redBg) {
+      g.fillStyle = RED; g.fillRect(gx-9, dy-7, d7w(2,dw,gap)+18, dh+14);
+      d7s(gx, dy, dw, dh, dt, gap, hh, WH);
+    } else {
+      d7s(gx, dy, dw, dh, dt, gap, hh, RED);
+    }
+    d7s(gx + d7w(2,dw,gap) + mid, dy, dw, dh, dt, gap, mm, BK);
+
+    // đường kẻ đứt
+    dashH(40, 360, 136, BK, 5, 5, 2);
+
+    // THỨ ? (nhỏ lại một nấc)
+    wordC(WD[dow], 200, 148, 3, BK);
+
+    // ngày dương + âm lịch
+    const ds = now.getDate() + '/' + ('0'+(now.getMonth()+1)).slice(-2) + '/' + now.getFullYear();
+    const al = '27/6 AL', s2 = 2.2;
+    const w1 = W_(T(ds), s2), w2 = W_(T(al), s2), gp = 12;
+    const x0 = 200 - (w1+gp+w2)/2;
+    word(T(ds), x0, 178, s2, BK);
+    word(T(al), x0+w1+gp, 178, s2, RED);
+
+    // BATT / TEMP gắn trên cạnh dưới của panel
+    g.fillStyle = WH; g.fillRect(20, 200, 86, 8); g.fillRect(294, 200, 86, 8);
+    slot(20, 198, 86, 12, T('BATT 3.2V'), 1.2, true);
+    slot(294, 198, 86, 12, T('TEMP 28°C'), 1.2, true);
+
+    /* ===== PANEL DƯỚI ===== */
+    const py = 226;
+    panel(4, py, 396, 296, 14, 4);
+    {                                                // thẻ tuần: dịch LÊN
+      const s = 1.2, tw = W_(T('WEEK 21'), s) + 26;
+      g.fillStyle = WH; g.fillRect(18, py-2, tw, 8);
+      slot(18, py-7, tw, 12, T('WEEK 21'), s, true);
+    }
+
+    const start = new Date(now); start.setDate(now.getDate() - ((dow+6)%7));
+    const cw = 53, wknd = dow === 0 || dow === 6;
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(start); d.setDate(start.getDate() + i);
+      const cx = 16 + i*cw, today = ((i + 1) % 7) === dow;
+      // CHỈ T7 + CN đỏ. Ngày hôm nay KHÔNG tô đỏ — đã có mũi tên chỉ rồi,
+      // tô thêm màu vừa thừa vừa làm loãng điểm nhấn.
+      const col = (i >= 5) ? RED : BK;
+      wordC(T(['T2','T3','T4','T5','T6','T7','CN'][i]), cx + 24, 236, 1.4, col);
+      // vẫn font 7 đoạn vát góc như cụm giờ, chỉ để nét MẢNH (t=4 / t=2):
+      // ở cỡ nhỏ nét dày làm các đoạn dính vào nhau, số nhìn bết
+      d7s(cx + 4, 246, 17, 30, 4, 6, ('0'+d.getDate()).slice(-2), col);
+      d7s(cx + 13, 279, 9, 12, 2, 4, ('0'+(((d.getDate()+27)%30)+1)).slice(-2), col);
+      if (i) dashV(234, 292, cx - 4, BK, 3, 4);
+      if (today) {
+        /* MŨI TÊN chỉ ngày hôm nay, KHOÉT hẳn vào đường viền.
+         * Phải có khe trắng bao quanh: hôm nay rơi vào T7/CN thì mũi tên vẽ
+         * mực ĐEN, mà viền panel cũng đen — không có khe thì nó chìm nghỉm
+         * vào viền, nhìn như không có mũi tên. */
+        const ax = cx + 24;
+        g.fillStyle = WH; g.beginPath();
+        g.moveTo(ax - 10, py - 1); g.lineTo(ax + 10, py - 1); g.lineTo(ax, py + 13);
+        g.closePath(); g.fill();
+        g.fillStyle = wknd ? BK : RED;                // T7/CN đã đỏ -> mũi tên ĐEN
+        g.beginPath();
+        g.moveTo(ax - 7, py); g.lineTo(ax + 7, py); g.lineTo(ax, py + 10);
+        g.closePath(); g.fill();
+      }
+    }
+  }
+
+  document.querySelectorAll('input, select').forEach(e => e.addEventListener('input', draw));
+  draw();
+  window.__png = () => cv.toDataURL('image/png').slice(22);
+})();
+</script>
+</body>
+</html>

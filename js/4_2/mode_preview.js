@@ -864,6 +864,167 @@
   window.__pv = { font, center, multi, seg7, segStr, battery, analogClock, monthGrid, pad2, lunarish,
                   RED, BK, WH, WD_SHORT, WD_FULL };
 
+
+  /* ---- mode 25: «HUD» (buồng lái) ---------------------------------------
+   * Vẽ lại ĐÚNG như DrawHud của firmware: bộ chữ khối 5x7 + dấu tiếng Việt vẽ
+   * chồng, số 7 đoạn hai đầu VÁT 45°, hai panel viền dày vát góc, nhãn cắm
+   * chìm vào viền. Không dùng font của trình duyệt chỗ nào cả — có thế hình
+   * xem trước mới khớp máy thật. */
+  const HF = {
+    'A':[0x7E,0x11,0x11,0x11,0x7E],'B':[0x7F,0x49,0x49,0x49,0x36],'C':[0x3E,0x41,0x41,0x41,0x22],
+    'D':[0x7F,0x41,0x41,0x22,0x1C],'E':[0x7F,0x49,0x49,0x49,0x41],'F':[0x7F,0x09,0x09,0x09,0x01],
+    'G':[0x3E,0x41,0x49,0x49,0x7A],'H':[0x7F,0x08,0x08,0x08,0x7F],'I':[0x00,0x41,0x7F,0x41,0x00],
+    'J':[0x20,0x40,0x41,0x3F,0x01],'K':[0x7F,0x08,0x14,0x22,0x41],'L':[0x7F,0x40,0x40,0x40,0x40],
+    'M':[0x7F,0x02,0x0C,0x02,0x7F],'N':[0x7F,0x04,0x08,0x10,0x7F],'O':[0x3E,0x41,0x41,0x41,0x3E],
+    'P':[0x7F,0x09,0x09,0x09,0x06],'Q':[0x3E,0x41,0x51,0x21,0x5E],'R':[0x7F,0x09,0x19,0x29,0x46],
+    'S':[0x46,0x49,0x49,0x49,0x31],'T':[0x01,0x01,0x7F,0x01,0x01],'U':[0x3F,0x40,0x40,0x40,0x3F],
+    'V':[0x1F,0x20,0x40,0x20,0x1F],'W':[0x3F,0x40,0x38,0x40,0x3F],'X':[0x63,0x14,0x08,0x14,0x63],
+    'Y':[0x07,0x08,0x70,0x08,0x07],'Z':[0x61,0x51,0x49,0x45,0x43],
+    '0':[0x3E,0x51,0x49,0x45,0x3E],'1':[0x00,0x42,0x7F,0x40,0x00],'2':[0x42,0x61,0x51,0x49,0x46],
+    '3':[0x21,0x41,0x45,0x4B,0x31],'4':[0x18,0x14,0x12,0x7F,0x10],'5':[0x27,0x45,0x45,0x45,0x39],
+    '6':[0x3C,0x4A,0x49,0x49,0x30],'7':[0x01,0x71,0x09,0x05,0x03],'8':[0x36,0x49,0x49,0x49,0x36],
+    '9':[0x06,0x49,0x49,0x29,0x1E],'/':[0x20,0x10,0x08,0x04,0x02],'-':[0x08,0x08,0x08,0x08,0x08],
+    '_':[0x40,0x40,0x40,0x40,0x40],':':[0x00,0x36,0x36,0x00,0x00],'~':[0x00,0x07,0x05,0x07,0x00],
+    '.':[0x00,0x60,0x60,0x00,0x00],
+    ' ':[0,0,0,0,0]
+  };
+  const H_AC = 1, H_HK = 4, H_DOT = 16, H_CIRC = 32, H_BREVE = 64, H_HORN = 128;
+  const HWD = ['CHU NHAT','THU HAI','THU BA','THU TU','THU NAM','THU SAU','THU BAY'];
+  const HWM = [
+    [0,0,H_HK,0,0,0,H_CIRC|H_DOT,0], [0,0,H_HORN|H_AC,0,0,0,0,0], [0,0,H_HORN|H_AC,0,0,0,0,0],
+    [0,0,H_HORN|H_AC,0,0,H_HORN,0,0], [0,0,H_HORN|H_AC,0,0,H_BREVE,0,0],
+    [0,0,H_HORN|H_AC,0,0,H_AC,0,0], [0,0,H_HORN|H_AC,0,0,H_HK,0,0]
+  ];
+  function hGlyph(x, ch, mk, px, py, s, col) {
+    const d = HF[(ch || ' ').toUpperCase()] || HF[' '];
+    x.fillStyle = col;
+    for (let c = 0; c < 5; c++) for (let r = 0; r < 7; r++)
+      if (d[c] & (1 << r)) x.fillRect(px + c*s, py + r*s, s, s);
+    if (!mk) return;
+    const top = py - 2*s;
+    if (mk & H_CIRC)  { x.fillRect(px+s,top,s,s); x.fillRect(px+3*s,top,s,s); x.fillRect(px+2*s,top-s,s,s); }
+    if (mk & H_BREVE) { x.fillRect(px+s,top-s,s,s); x.fillRect(px+3*s,top-s,s,s); x.fillRect(px+2*s,top,s,s); }
+    if (mk & H_HORN)  { x.fillRect(px+5*s,py-s,s,s); x.fillRect(px+5*s,py,s,s); }
+    const my = (mk & (H_CIRC|H_BREVE)) ? top - 2*s : top;
+    if (mk & H_AC)  { x.fillRect(px+3*s,my-s,s,s); x.fillRect(px+2*s,my,s,s); }
+    if (mk & H_HK)  { x.fillRect(px+2*s,my-s,s,s); x.fillRect(px+3*s,my-s,s,s); x.fillRect(px+3*s,my,s,s); }
+    if (mk & H_DOT) x.fillRect(px+2*s, py+8*s, s, s);
+  }
+  const hW = (n, s) => n*6*s - s;
+  function hText(x, t, mk, px, py, s, col) {
+    for (let i = 0; i < t.length; i++) hGlyph(x, t[i], mk ? mk[i] : 0, px + i*6*s, py, s, col);
+  }
+  function hTextC(x, t, mk, cx, py, s, col) { hText(x, t, mk, cx - hW(t.length, s)/2, py, s, col); }
+
+  const HSEG = {'0':0x3F,'1':0x06,'2':0x5B,'3':0x4F,'4':0x66,'5':0x6D,'6':0x7D,'7':0x07,'8':0x7F,'9':0x6F};
+  function hSegH(x, px, py, w, t, col) {
+    x.fillStyle = col; x.beginPath();
+    x.moveTo(px, py+t/2); x.lineTo(px+t/2, py); x.lineTo(px+w-t/2, py);
+    x.lineTo(px+w, py+t/2); x.lineTo(px+w-t/2, py+t); x.lineTo(px+t/2, py+t);
+    x.closePath(); x.fill();
+  }
+  function hSegV(x, px, py, h, t, col) {
+    x.fillStyle = col; x.beginPath();
+    x.moveTo(px+t/2, py); x.lineTo(px+t, py+t/2); x.lineTo(px+t, py+h-t/2);
+    x.lineTo(px+t/2, py+h); x.lineTo(px, py+h-t/2); x.lineTo(px, py+t/2);
+    x.closePath(); x.fill();
+  }
+  function hDigit(x, ch, px, py, w, h, t, col) {
+    const m = HSEG[ch] || 0, q = Math.max(1, t*0.16);
+    const mid = py + (h-t)/2, hv = (h-t)/2 + t - 2*q;
+    if (m & 1)  hSegH(x, px+q, py, w-2*q, t, col);
+    if (m & 64) hSegH(x, px+q, mid, w-2*q, t, col);
+    if (m & 8)  hSegH(x, px+q, py+h-t, w-2*q, t, col);
+    if (m & 32) hSegV(x, px, py+q, hv, t, col);
+    if (m & 2)  hSegV(x, px+w-t, py+q, hv, t, col);
+    if (m & 16) hSegV(x, px, mid+q, hv, t, col);
+    if (m & 4)  hSegV(x, px+w-t, mid+q, hv, t, col);
+  }
+  function hNum2(x, v, px, py, w, h, t, gap, col) {
+    const s = ('0' + v).slice(-2);
+    hDigit(x, s[0], px, py, w, h, t, col);
+    hDigit(x, s[1], px + w + gap, py, w, h, t, col);
+  }
+  function hOct(x, x0, y0, x1, y1, k, col) {
+    x.fillStyle = col; x.beginPath();
+    x.moveTo(x0+k, y0); x.lineTo(x1-k, y0); x.lineTo(x1, y0+k); x.lineTo(x1, y1-k);
+    x.lineTo(x1-k, y1); x.lineTo(x0+k, y1); x.lineTo(x0, y1-k); x.lineTo(x0, y0+k);
+    x.closePath(); x.fill();
+  }
+  function hPanel(x, x0, y0, x1, y1, k, t, inner) {
+    hOct(x, x0, y0, x1, y1, k, BK);
+    hOct(x, x0+t, y0+t, x1-t, y1-t, k-t, WH);
+    if (inner) {
+      const a = t + inner;
+      hOct(x, x0+a, y0+a, x1-a, y1-a, k-a, BK);
+      hOct(x, x0+a+1, y0+a+1, x1-a-1, y1-a-1, k-a-1, WH);
+    }
+  }
+  function hSlot(x, px, py, w, h, t) {
+    const k = h/2;
+    x.fillStyle = BK; x.beginPath();
+    x.moveTo(px+k, py); x.lineTo(px+w-k, py); x.lineTo(px+w, py+h); x.lineTo(px, py+h);
+    x.closePath(); x.fill();
+    x.fillStyle = RED; x.fillRect(px+k+2, py+(h-3)/2, 3, 3);
+    hText(x, t, null, px+k+8, py+(h-7)/2, 1, WH);
+  }
+  function hCorner(x, cx, cy, len, sy) {
+    x.fillStyle = BK;
+    x.fillRect(cx-len, cy, len, 4);
+    x.fillRect(cx-4, sy > 0 ? cy : cy-len, 4, len);
+    x.fillStyle = RED;
+    x.fillRect(cx-len+5, sy > 0 ? cy+7 : cy-10, len-12, 3);
+    x.fillRect(cx-10, sy > 0 ? cy+7 : cy-len+5, 3, len-12);
+  }
+  function hArrow(x, cx, y, half, h, col) {
+    x.fillStyle = col; x.beginPath();
+    x.moveTo(cx-half, y); x.lineTo(cx+half, y); x.lineTo(cx, y+h);
+    x.closePath(); x.fill();
+  }
+
+  function m25(x, now) {
+    const W = 400, dy = 38, dh = 80, dw = 44, dt = 15, dgap = 11, cmid = 26;
+    const grp = (2*dw + dgap)*2 + cmid, gx = (W - grp)/2, py = 226;
+    const dev = ((typeof bleDevice !== 'undefined' && bleDevice && bleDevice.name) || 'DIY-4_2').toUpperCase();
+    hPanel(x, 4, 4, W-4, 208, 18, 4, 4);
+    { const tw = hW(dev.length, 1) + 26, tx = (W - tw)/2;
+      x.fillStyle = WH; x.fillRect(tx, 2, tw, 12); hSlot(x, tx, 2, tw, 11, dev); }
+    for (let i = 0; i < 5; i++) {
+      x.fillStyle = (i === 1) ? RED : BK;
+      x.fillRect(14, 52 + i*13, i === 1 ? 9 : 6, 3);
+    }
+    hCorner(x, W-14, 26, 30, 1);
+    hCorner(x, W-14, 122, 30, -1);
+    hNum2(x, now.getHours(), gx, dy, dw, dh, dt, dgap, RED);
+    hNum2(x, now.getMinutes(), gx + 2*dw + dgap + cmid, dy, dw, dh, dt, dgap, BK);
+    x.fillStyle = BK;
+    for (let i = 40; i < W-40; i += 10) x.fillRect(i, 136, Math.min(5, W-40-i), 2);
+    hTextC(x, HWD[now.getDay()], HWM[now.getDay()], W/2, 148, 3, BK);
+    { const ds = now.getDate() + '/' + pad2(now.getMonth()+1) + '/' + now.getFullYear(), al = '27/6 AL';
+      const w1 = hW(ds.length, 2), w2 = hW(al.length, 2), x0 = (W - (w1 + 12 + w2))/2;
+      hText(x, ds, null, x0, 178, 2, BK);
+      hText(x, al, null, x0 + w1 + 12, 178, 2, RED); }
+    x.fillStyle = WH; x.fillRect(20, 200, 86, 8); x.fillRect(W-106, 200, 86, 8);
+    hSlot(x, 20, 198, 86, 12, 'BATT 3.2V');
+    hSlot(x, W-106, 198, 86, 12, 'TEMP 28~C');
+    hPanel(x, 4, py, W-4, 296, 14, 4, 0);
+    { const t = 'WEEK 21', tw = hW(t.length, 1) + 26;
+      x.fillStyle = WH; x.fillRect(18, py-2, tw, 8); hSlot(x, 18, py-7, tw, 12, t); }
+    const wd = (now.getDay() + 6) % 7;
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(now); d.setDate(now.getDate() + (i - wd));
+      const cx = 16 + i*53, cc = cx + 24, col = (i >= 5) ? RED : BK;
+      hTextC(x, ['T2','T3','T4','T5','T6','T7','CN'][i], null, cc, 234, 1, col);
+      hNum2(x, d.getDate(), cx + 4, 245, 17, 30, 4, 6, col);
+      hNum2(x, ((d.getDate() + 27) % 30) + 1, cx + 13, 278, 9, 12, 2, 4, col);
+      if (i) { x.fillStyle = BK; for (let j = 234; j < 292; j += 8) x.fillRect(cx-4, j, 1, Math.min(4, 292-j)); }
+      if (i === wd) {
+        hArrow(x, cc, py-1, 10, 11, WH);
+        hArrow(x, cc, py, 7, 7, (i >= 5) ? BK : RED);
+      }
+    }
+  }
+
   const MODE_LIST = [
     { mode: 1, name: 'Lịch tháng', tick: 'Cập nhật lúc 0h', id: 'calendarmodebutton', draw: m1 },
     { mode: 2, name: 'Đồng hồ + Lịch', tick: 'Làm mới mỗi phút', id: 'combomodebutton', draw: m3 },
@@ -892,6 +1053,7 @@
     // khớp bảng người dùng đang gõ (không có bảng thì nó vẽ màn hướng dẫn)
     { mode: 24, name: 'Thời khóa biểu', tick: 'Cập nhật lúc 0h', id: 'timetablemodebutton',
       draw: (x, n) => { if (window.ttRenderPreview) window.ttRenderPreview(x, n, is4c()); } },
+    { mode: 25, name: 'HUD buồng lái', tick: 'Làm mới mỗi phút', id: 'hudmodebutton', draw: m25 },
   ];
 
   // highlight the mode the device reports (config byte 11) or was just set to
@@ -943,6 +1105,8 @@
     if (mode === 23 && !(typeof fwHasNewSlots === 'function' && fwHasNewSlots())) return true;
     // «Thời khóa biểu» chỉ có từ BWR v2.5 / 4 màu v3.6
     if (mode === 24 && !window.__fwTKB) return true;
+    // «HUD» mới có ở BWR v2.7 (bản bốn màu chưa port)
+    if (mode === 25 && !window.__fwHud) return true;
     return false;
   }
 
