@@ -51,6 +51,7 @@ const EpdCmd = {
   CUSTOM_BG: 0x2B, // [0..3] ảnh nền «Tự thiết kế»: 0 tắt, 1-3 = khe ảnh (4.2 >= 2.3)
   ASSET: 0x2C, // nạp blob dữ liệu vào flash: [00 len_u16] mở / [01 data] / [02 crc32_u32] chốt
   TIME_FMT: 0x2A, // [0/1] định dạng giờ: 24h / 12h (BWR >= 2.1, 4 màu >= 3.0, 7.5" V1 >= 0.3)
+  TIMETABLE: 0x2D, // thời khóa biểu (mode 24), chia mảnh: [00 flags am pm data] rồi [01 data]
 
   WRITE_IMG: 0x30, // v1.6
 
@@ -742,6 +743,10 @@ function handleNotify(value, idx) {
       // vì OTA chỉ ghi bank firmware. Tự gửi luôn, khách không phải làm gì.
       if (assetResolve) { const f = assetResolve; assetResolve = null; f(msg); }
       else if (msg === 'asset=none') sendAsset();
+    } else if (msg.startsWith('tkb=')) {
+      // thời khóa biểu: 'tkb=rdy' (xóa sector xong, được bắn mảnh) / 'tkb=err'
+      // / 'tkb=done' — js/4_2/timetable.js đang đợi
+      if (window.ttOnMsg) window.ttOnMsg(msg);
     } else if (msg.startsWith('img=') && imgRdyResolve) {
       // trả lời lệnh mở khe ảnh: 'img=rdy' (xóa flash xong) / 'img=err'
       const f = imgRdyResolve; imgRdyResolve = null; f(msg === 'img=rdy');
@@ -776,6 +781,11 @@ function handleNotify(value, idx) {
       // gate theo TÊN BLE. Bản 7.5" chưa có.
       const is4c = devNm.indexOf('DIY-4_2C') === 0;
       window.__fwBg = !is7_5 && FwCheck.atLeast(is4c ? '3.4' : '2.3');
+      // «Thời khóa biểu» (mode 24): BWR >= 2.5, bốn màu >= 3.6. Bảng do người
+      // dùng gõ nên KHÔNG hiện mục này với máy chưa hiểu lệnh 0x2D (gõ xong
+      // mới biết không gửi được thì rất ức chế).
+      window.__fwTKB = !is7_5 && FwCheck.atLeast(is4c ? '3.6' : '2.5');
+      if (window.ttFwUpdate) window.ttFwUpdate();
       // 5 khe ảnh + 2 khe nền riêng cho «Tự thiết kế» (BWR 2.7 / 4 màu 3.7)
       IMG_SLOTS = fwHasNewSlots() ? 5 : 3;
       for (let i = 4; i <= 5; i++) {

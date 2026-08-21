@@ -43,6 +43,35 @@
 				</div>
 			</div>
 		</fieldset>
+		<fieldset id="tkbFieldset" style="display:none">
+			<legend>Thời khóa biểu</legend>
+			<p class="mode-gallery-hint">Gõ tên môn vào bảng bên dưới (tiếng Việt có dấu), để trống những tiết không có môn, rồi bấm «Gửi lên thiết bị» — máy tự chuyển sang màn hình «Thời khóa biểu» và vẽ đúng bảng này. Bảng được lưu lại theo từng thiết bị nên lần sau mở webtool không phải nhập lại.</p>
+			<div class="flex-container">
+				<div class="flex-group" style="flex:1 1 100%">
+					<label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+						<input type="checkbox" id="tkbSixDay" onchange="ttOptChanged()"> Chỉ từ Thứ 2 đến Thứ 7 (bỏ cột Chủ nhật)
+					</label>
+					<label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+						<input type="checkbox" id="tkbHeader" checked onchange="ttOptChanged()"> Hiện thanh tiêu đề (tên bảng + ngày + pin)
+					</label>
+				</div>
+			</div>
+			<div id="tkbGridMount"></div>
+			<div class="flex-container">
+				<div class="flex-group" style="flex:1 1 100%">
+					<button id="tkbSendbutton" type="button" class="primary" onclick="ttSend()">Gửi lên thiết bị</button>
+					<button type="button" class="secondary" onclick="ttSample()">Điền mẫu</button>
+					<button type="button" class="secondary" onclick="ttClear()">Xóa hết</button>
+				</div>
+				<div class="flex-group" style="flex:1 1 100%">
+					<span class="mode-gallery-hint" style="margin:0" id="tkbHint"></span>
+				</div>
+			</div>
+			<div class="tkb-preview">
+				<div class="mode-gallery-hint">Xem trước đúng như trên màn hình (400 × 300):</div>
+				<canvas id="tkbPreview" width="400" height="300"></canvas>
+			</div>
+		</fieldset>
 		<fieldset>
 			<legend>Cài đặt thiết bị</legend>
 			<div class="flex-container">
@@ -459,6 +488,14 @@
 								<td><b>CHỈ dành cho màn 4.2" BỐN MÀU (thiết bị DIY-4_2C)</b> — KHÔNG nạp cho máy 3 màu. <br><b>5 khe ảnh</b> (trước là 3) và <b>hai mục «Tự thiết kế» riêng biệt</b> — mỗi mục có bố cục, ảnh nền và icon riêng, ảnh nền không còn chiếm khe ảnh. Thêm 6 dòng chữ tự nhập và hai thành phần «Thứ», «Ngày dương». Có lại hai giao diện «Núi tuyết 8-bit» và «Hoàng hôn 8-bit».<br>LƯU Ý: nạp xong máy về như mới (kích hoạt vẫn giữ) — cần gửi lại ảnh và thiết kế</td>
 								<td>20/08/2026</td>
 								<td><a href="OTA firmware/4_2c/fw_4_2inch_4c_v3.5.bin" download>Tải về</a></td>
+								<td><button type="button" class="primary" onclick="fwInstallRow(this)">Cài ngay</button></td>
+							</tr>
+						<tr>
+								<td>8</td>
+								<td>3.6</td>
+								<td><b>CHỈ dành cho màn 4.2" BỐN MÀU (thiết bị DIY-4_2C)</b> — KHÔNG nạp cho máy 3 màu. <br>Thêm giao diện <b>«Thời khóa biểu»</b>: nhập bảng môn học cho cả tuần (sáng/chiều, mỗi buổi tối đa 5 tiết) ở mục «Thời khóa biểu» của webtool rồi gửi sang máy; cột của ngày hôm nay tô nền vàng. Bảng nằm ở vùng flash riêng nên cập nhật firmware sau này không mất</td>
+								<td>21/08/2026</td>
+								<td><a href="OTA firmware/4_2c/fw_4_2inch_4c_v3.6.bin" download>Tải về</a></td>
 								<td><button type="button" class="primary" onclick="fwInstallRow(this)">Cài ngay</button></td>
 							</tr>
 					</tbody>

@@ -888,6 +888,10 @@
     { mode: 21, name: 'Thành phố 8-bit', tick: 'Làm mới mỗi phút', id: 'retrocitymodebutton', draw: m24 },
     { mode: 22, name: 'Tự thiết kế 1', tick: 'Làm mới mỗi phút', id: 'custommodebutton', draw: (x, n) => m20(x, n, 0) },
     { mode: 23, name: 'Tự thiết kế 2', tick: 'Làm mới mỗi phút', id: 'custommodebutton2', draw: (x, n) => m20(x, n, 1) },
+    // thẻ 24 vẽ bằng CHÍNH hàm dựng bảng của js/4_2/timetable.js nên thẻ luôn
+    // khớp bảng người dùng đang gõ (không có bảng thì nó vẽ màn hướng dẫn)
+    { mode: 24, name: 'Thời khóa biểu', tick: 'Cập nhật lúc 0h', id: 'timetablemodebutton',
+      draw: (x, n) => { if (window.ttRenderPreview) window.ttRenderPreview(x, n, is4c()); } },
   ];
 
   // highlight the mode the device reports (config byte 11) or was just set to
@@ -937,6 +941,8 @@
     if (window.__fwNoRetro && (mode === 18 || mode === 19)) return true;
     // «Tự thiết kế 2» chỉ có từ BWR v2.7 / 4 màu v3.7
     if (mode === 23 && !(typeof fwHasNewSlots === 'function' && fwHasNewSlots())) return true;
+    // «Thời khóa biểu» chỉ có từ BWR v2.5 / 4 màu v3.6
+    if (mode === 24 && !window.__fwTKB) return true;
     return false;
   }
 

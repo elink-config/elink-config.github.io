@@ -1568,3 +1568,74 @@ button.local-image-btn:hover {
         color: var(--md-sys-color-on-surface-variant);
     }
 }
+
+
+/* ---- Thời khóa biểu (mode 24) ---- */
+.tkb-wrap {
+    overflow-x: auto;
+    margin-bottom: 12px;
+}
+
+.tkb-table {
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 520px;
+    table-layout: fixed;
+    font-size: 13px;
+}
+
+.tkb-table th,
+.tkb-table td {
+    border: 1px solid var(--md-sys-color-outline);
+    padding: 0;
+    text-align: center;
+}
+
+.tkb-table th {
+    padding: 6px 2px;
+    font-weight: 600;
+    background: var(--md-sys-color-surface-container-high);
+}
+
+.tkb-table th.today {
+    background: var(--md-sys-color-primary);
+    color: var(--md-sys-color-on-primary);
+}
+
+.tkb-table .tkb-buoi {
+    width: 84px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    background: var(--md-sys-color-surface-container-high);
+}
+
+.tkb-table input {
+    width: 100%;
+    box-sizing: border-box;
+    border: 0;
+    padding: 7px 2px;
+    text-align: center;
+    font: inherit;
+    color: inherit;
+    background: transparent;
+}
+
+.tkb-table input:focus {
+    outline: 2px solid var(--md-sys-color-primary);
+    border-radius: 4px;
+}
+
+.tkb-sep td {
+    height: 6px;
+    padding: 0;
+    background: var(--md-sys-color-outline);
+}
+
+.tkb-preview canvas {
+    width: 400px;
+    max-width: 100%;
+    height: auto;
+    border: 1px solid var(--md-sys-color-outline);
+    border-radius: 8px;
+    background: #f6f4ec;
+}
