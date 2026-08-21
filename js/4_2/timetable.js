@@ -169,6 +169,12 @@
       const ds = DAYS[(now.getDay() + 6) % 7] + ' ' +
         ('0' + now.getDate()).slice(-2) + '/' + ('0' + (now.getMonth() + 1)).slice(-2);
       vfont(x, false); vleft(x, ds, W - 36 - ds.length * ADV, 12, '#fff');
+      // giờ căn giữa: NỀN TRẮNG CHỮ ĐEN vì mỗi phút máy chỉ làm mới riêng ô này
+      // bằng partial update, mà partial chỉ đổi được điểm đen/trắng
+      const ts = ('0' + now.getHours()).slice(-2) + ':' + ('0' + now.getMinutes()).slice(-2);
+      const tw = ts.length * ADV, tbx = Math.round((W - tw - 14) / 2);
+      x.fillStyle = WH; x.fillRect(tbx, 2, tw + 14, 20);
+      vfont(x, true); vleft(x, ts, tbx + 7, 12, BK);
       x.strokeStyle = '#fff'; x.lineWidth = 1.2; x.strokeRect(W - 28, 7, 20, 10);
       x.fillStyle = '#fff'; x.fillRect(W - 30, 11, 2, 2); x.fillRect(W - 26, 9, 16, 6);
     }
