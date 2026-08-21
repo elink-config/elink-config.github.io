@@ -121,7 +121,7 @@
 		</fieldset>
 		<fieldset>
 			<legend>Thiết kế màn hình</legend>
-			<p class="mode-gallery-hint">Bấm nút để thêm thành phần, kéo-thả trên khung để sắp xếp, chọn thành phần rồi «Đổi cỡ»/«Xóa». Đồng hồ và nhiệt độ vẫn tự cập nhật mỗi phút không chớp màn hình như các chế độ khác.</p>
+			<p class="mode-gallery-hint">Bấm nút để thêm thành phần, <b>kéo-thả trên khung để di chuyển</b>, chọn một thành phần rồi <b>kéo thanh «Cỡ» (hoặc lăn chuột ngay trên khung) để phóng to / thu nhỏ</b>. Đồng hồ kim và lịch tháng co giãn từng pixel; chữ và icon chỉ nhân được 1/2/3 lần vì font của máy là ảnh điểm, nên thanh kéo tự bám nấc. Đồng hồ và nhiệt độ vẫn tự cập nhật mỗi phút không chớp màn hình như các chế độ khác.</p>
 			<div class="designer-palette">
 				<button type="button" class="secondary" onclick="dsAdd(1)">+ Đồng hồ số</button>
 				<button type="button" class="secondary" onclick="dsAdd(2)">+ Đồng hồ kim</button>
@@ -152,8 +152,13 @@
 				</div>
 				<canvas id="designerCanvas" width="400" height="300" class="designer-canvas"></canvas>
 			<div class="flex-container">
+				<div class="flex-group" style="flex:1 1 100%">
+					<label for="dsSize">Cỡ:</label>
+					<input type="range" id="dsSize" min="16" max="48" step="16" value="16" disabled
+					       style="flex:1;max-width:320px" oninput="dsSizeInput(this.value)">
+					<span class="mode-gallery-hint" style="margin:0" id="dsSizeLbl">Chọn một thành phần để đổi cỡ</span>
+				</div>
 				<div class="flex-group">
-					<button type="button" class="secondary" onclick="dsCycleSize()">Đổi cỡ</button>
 					<button type="button" class="secondary" onclick="dsDelete()">Xóa</button>
 					<button type="button" class="secondary" onclick="dsClear()">Xóa hết</button>
 					<label for="dsFrame">Khung:</label>

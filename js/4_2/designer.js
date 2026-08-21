@@ -20,24 +20,87 @@
 
   // widget metadata: display name and bounding box per size (mirrors the
   // firmware DrawCustom geometry; used for hit tests and bounds clamping)
+  /* ---- CỠ THÀNH PHẦN (khớp khối CW_FREE trong GUI.c của firmware) --------
+   * byte `size`: 0/1/2 = ba nấc cũ; >= 3 = CỠ THẬT theo đơn vị 1/16 lần so
+   * với nấc 0 (16 = 1.0x). Firmware đời trước nhận số lớn thì tự kẹp về nấc 2
+   * nên gửi xuống máy cũ không vỡ hình, chỉ là không đúng cỡ.
+   *
+   * Co giãn được tới đâu là do CÁCH VẼ của firmware:
+   *   đồng hồ kim + lịch tháng  -> mượt từng pixel
+   *   đồng hồ số 7 đoạn         -> nét dày nguyên pixel, nhảy từng nấc ~46px
+   *   MỌI THÀNH PHẦN CHỮ + icon -> font/ảnh bitmap, chỉ nhân nguyên lần 1/2/3
+   *   pin                       -> một cỡ duy nhất
+   * Hàm snapSize() dưới đây ép con số về đúng cái máy vẽ được, nên kéo góc
+   * bao giờ cũng ra hình y như trên màn hình. */
+  const FREE = s => s >= 3;
+  const pxOf = (s, base, lo, hi) => Math.max(lo, Math.min(hi, Math.round(base * s / 16)));
+  const mulOf = (s, lo, hi) => Math.max(lo, Math.min(hi, Math.round(s / 16)));
+  // tham số vẽ THẬT của một widget theo byte size
+  function parOf(type, s) {
+    switch (type) {
+      case 1: return { cS: FREE(s) ? Math.max(1, Math.min(8, Math.round((s + 4) / 8))) : [2, 3, 4][s] };
+      case 2: return { r: FREE(s) ? pxOf(s, 40, 12, 150) : [40, 60, 85][s] };
+      case 7: return { gw: FREE(s) ? pxOf(s, 180, 112, 400) : [180, 240, 300][s],
+                       rh: FREE(s) ? pxOf(s, 26, 12, 60) : [26, 32, 38][s] };
+      case 10: return { k: FREE(s) ? mulOf(s, 1, 3) : s + 1 };
+      default: return { k: FREE(s) ? mulOf(s, 1, 3) : (s ? 2 : 1) };   // chữ
+    }
+  }
+  // size tương đương của ba nấc cũ, để lần đầu kéo góc không bị nhảy cỡ
+  const LEGACY16 = { 1: [16, 24, 32], 2: [16, 24, 34], 7: [16, 21, 27], 10: [16, 32, 48] };
+  function toFree(type, s) {
+    if (FREE(s)) return s;
+    const t = LEGACY16[type] || [16, 32, 32];
+    return t[Math.min(s, t.length - 1)];
+  }
+  // Ba nấc cũ của một loại, quy ra đơn vị 1/16 lần — dùng cho máy chưa hỗ trợ
+  // cỡ tự do: thanh kéo vẫn kéo được, chỉ là bám về đúng nấc máy dựng lại được.
+  function legacyList(type) {
+    if (LEGACY16[type]) return LEGACY16[type];
+    return (TYPES[type] && TYPES[type].sizes === 3) ? [16, 32, 48] : [16, 32];
+  }
+
+  // ép size về đúng nấc mà firmware vẽ ra được, và về khoảng cho phép
+  function snapSize(type, s) {
+    s = Math.round(s);
+    switch (type) {
+      case 1: return Math.max(8, Math.min(64, Math.round(s / 8) * 8));   // cS nguyên 1..8
+      case 2: return Math.max(5, Math.min(60, s));                        // r 12..150
+      case 7: return Math.max(10, Math.min(36, s));                       // rộng 112..400
+      case 3: return 16;                                                  // pin: một cỡ
+      case 10: return Math.max(16, Math.min(48, Math.round(s / 16) * 16));  // 1x/2x/3x
+      default: return Math.max(16, Math.min(48, Math.round(s / 16) * 16));  // chữ 1x/2x/3x
+    }
+  }
+
+  /* Nắn byte size đọc từ bố cục đã lưu: 0..2 = nấc cũ giữ nguyên; >= 3 là cỡ
+   * tự do, chỉ ép về nấc máy vẽ được. TUYỆT ĐỐI KHÔNG kẹp về TYPES[].sizes-1
+   * như bản trước — làm vậy là xoá sạch cỡ tự do mỗi lần nạp lại bố cục. */
+  function fixSize(type, v) {
+    v = v | 0;
+    if (v < 0) v = 0;
+    if (v > 255) v = 255;
+    return (v >= 3) ? snapSize(type, v) : v;
+  }
+
   const TYPES = {
-    1: { name: 'Đồng hồ số', sizes: 3, dim: s => [[100, 44], [146, 64], [192, 84]][s] },
-    2: { name: 'Đồng hồ kim', sizes: 3, dim: s => { const r = [40, 60, 85][s]; return [2 * r, 2 * r]; } },
+    1: { name: 'Đồng hồ số', sizes: 3, dim: s => { const c = parOf(1, s).cS; return [46 * c + 8, 20 * c + 4]; } },
+    2: { name: 'Đồng hồ kim', sizes: 3, dim: s => { const r = parOf(2, s).r; return [2 * r, 2 * r]; } },
     3: { name: 'Pin', sizes: 1, dim: () => [88, 14] },
-    4: { name: 'Nhiệt độ', sizes: 2, dim: s => s ? [100, 30] : [50, 16] },
-    5: { name: 'Ngày tháng', sizes: 2, dim: s => s ? [390, 30] : [195, 16] },
-    6: { name: 'Âm lịch', sizes: 2, dim: s => s ? [390, 30] : [195, 16] },
-    7: { name: 'Lịch tháng', sizes: 3, dim: s => [[180, 170], [240, 206], [300, 242]][s] },
+    4: { name: 'Nhiệt độ', sizes: 2, dim: s => { const k = parOf(4, s).k; return [50 * k, 16 * k]; } },
+    5: { name: 'Ngày tháng', sizes: 2, dim: s => { const k = parOf(5, s).k; return [Math.min(396, 195 * k), 16 * k]; } },
+    6: { name: 'Âm lịch', sizes: 2, dim: s => { const k = parOf(6, s).k; return [Math.min(396, 195 * k), 16 * k]; } },
+    7: { name: 'Lịch tháng', sizes: 3, dim: s => { const p = parOf(7, s); return [p.gw, 6 * p.rh + 14]; } },
     8: { name: 'Chữ 1', sizes: 2, dim: null }, // measured from the text
     9: { name: 'Chữ 2', sizes: 2, dim: null },
-    10: { name: 'Icon', sizes: 3, dim: s => { const k = s + 1; return st.icon ? [st.icon.w * k, st.icon.h * k] : [48 * k, 48 * k]; } },
+    10: { name: 'Icon', sizes: 3, dim: s => { const k = parOf(10, s).k; return st.icon ? [st.icon.w * k, st.icon.h * k] : [48 * k, 48 * k]; } },
     // «Chữ 3..6» dùng số 11..14 vì 10 đã là Icon từ lâu, không đổi được
     11: { name: 'Chữ 3', sizes: 2, dim: null },
     12: { name: 'Chữ 4', sizes: 2, dim: null },
     13: { name: 'Chữ 5', sizes: 2, dim: null },
     14: { name: 'Chữ 6', sizes: 2, dim: null },
-    15: { name: 'Thứ', sizes: 2, dim: s => s ? [200, 30] : [100, 16] },
-    16: { name: 'Ngày dương', sizes: 2, dim: s => s ? [220, 30] : [110, 16] },
+    15: { name: 'Thứ', sizes: 2, dim: s => { const k = parOf(15, s).k; return [100 * k, 16 * k]; } },
+    16: { name: 'Ngày dương', sizes: 2, dim: s => { const k = parOf(16, s).k; return [110 * k, 16 * k]; } },
   };
 
   // 8, 9 rồi 11..14 -> ô chữ 0..5 (giấu chỗ hụt vì 10 là Icon)
@@ -59,8 +122,7 @@
     if (s && s.widgets) {
       st = s;
       st.widgets = st.widgets.filter(w => TYPES[w.type]).map(w => {
-        const max = TYPES[w.type].sizes - 1;
-        w.size = Math.max(0, Math.min(max, w.size | 0));
+        w.size = fixSize(w.type, w.size);
         return w;
       });
     }
@@ -90,8 +152,9 @@
     const t = TYPES[w.type];
     if (t.dim) return t.dim(w.size);
     // text widgets: measure with the canvas font the preview uses
-    pv.font(ctx, w.size ? 30 : 15, 1);
-    return [Math.min(396, ctx.measureText(textOf(w)).width + 4), w.size ? 30 : 16];
+    const k = parOf(w.type, w.size).k;
+    pv.font(ctx, 15 * k, 1);
+    return [Math.min(396, ctx.measureText(textOf(w)).width + 4), 16 * k];
   }
 
   /* ---- rendering (approximates the device output; the geometry anchors
@@ -101,39 +164,44 @@
     const BK = pv.BK, RED = pv.RED;
     switch (w.type) {
       case 1: { // 7-seg HH:MM; unit chosen so the width matches the firmware box
-        const u = [3.6, 5.3, 7.0][w.size];
+        const u = parOf(1, w.size).cS * 1.77;
         pv.segStr(x, w.x + 2, w.y + 2, u, pv.pad2(now.getHours()) + ':' + pv.pad2(now.getMinutes()), BK, BK);
       } break;
       case 2: {
-        const r = [40, 60, 85][w.size];
+        const r = parOf(2, w.size).r;
         pv.analogClock(x, w.x + r, w.y + r, r, now, true); // numerals at every size (small font under r=60)
       } break;
       case 3:
         pv.battery(x, w.x + 63, w.y, BK, '3.2V');
         break;
       case 4:
-        pv.font(x, w.size ? 30 : 15, 0); x.fillStyle = BK;
-        x.fillText('28°C', w.x, w.y + (w.size ? 26 : 13));
+        pv.font(x, 15 * parOf(w.type, w.size).k, 0); x.fillStyle = BK;
+        x.fillText('28°C', w.x, w.y + 13 * parOf(w.type, w.size).k);
         break;
       case 5:
-        pv.font(x, w.size ? 30 : 15, 0); x.fillStyle = BK;
+        pv.font(x, 15 * parOf(w.type, w.size).k, 0); x.fillStyle = BK;
         x.fillText(pv.WD_FULL[now.getDay()] + ', ' + pv.pad2(now.getDate()) + '/' + pv.pad2(now.getMonth() + 1) + '/' + now.getFullYear(),
-                   w.x, w.y + (w.size ? 26 : 13));
+                   w.x, w.y + 13 * parOf(w.type, w.size).k);
         break;
       case 6:
-        pv.font(x, w.size ? 30 : 15, 0); x.fillStyle = BK;
-        x.fillText('Âm Lịch 21/5 - Đinh Sửu', w.x, w.y + (w.size ? 26 : 13));
+        pv.font(x, 15 * parOf(w.type, w.size).k, 0); x.fillStyle = BK;
+        x.fillText('Âm Lịch 21/5 - Đinh Sửu', w.x, w.y + 13 * parOf(w.type, w.size).k);
         break;
       case 7: {
         const [gw, gh] = TYPES[7].dim(w.size);
+        const kcal = parOf(7, w.size).rh;
         pv.font(x, 11, 1);
+        // hàng THỨ phải xê dịch y như lưới bên dưới: firmware từ v1.7 luôn bắt
+        // đầu tuần bằng THỨ HAI (monthGrid đã theo cờ __fw17, trước đây hàng
+        // thứ vẫn cứng CN nên header lệch một cột so với lưới)
         for (let i = 0; i < 7; i++) {
-          x.fillStyle = (i === 0 || i === 6) ? RED : BK;
+          const wd = (i + (window.__fw17 ? 1 : 0)) % 7;
+          x.fillStyle = (wd === 0 || wd === 6) ? RED : BK;
           x.textAlign = 'center';
-          x.fillText(pv.WD_SHORT[i], w.x + i * (gw / 7) + gw / 14, w.y + 12);
+          x.fillText(pv.WD_SHORT[wd], w.x + i * (gw / 7) + gw / 14, w.y + 12);
           x.textAlign = 'left';
         }
-        pv.monthGrid(x, w.x, w.y + 18, gw, gh - 22, now, { dayPx: w.size ? 13 : 11 });
+        pv.monthGrid(x, w.x, w.y + 18, gw, gh - 22, now, { dayPx: kcal >= 30 ? 13 : 11 });
       } break;
       case 8:
       case 9:
@@ -141,20 +209,20 @@
       case 12:
       case 13:
       case 14:
-        pv.font(x, w.size ? 30 : 15, 1); x.fillStyle = BK;
-        x.fillText(textOf(w), w.x, w.y + (w.size ? 26 : 13));
+        pv.font(x, 15 * parOf(w.type, w.size).k, 1); x.fillStyle = BK;
+        x.fillText(textOf(w), w.x, w.y + 13 * parOf(w.type, w.size).k);
         break;
       case 15:   // chỉ THỨ
-        pv.font(x, w.size ? 30 : 15, 0); x.fillStyle = BK;
-        x.fillText(pv.WD_FULL[now.getDay()], w.x, w.y + (w.size ? 26 : 13));
+        pv.font(x, 15 * parOf(w.type, w.size).k, 0); x.fillStyle = BK;
+        x.fillText(pv.WD_FULL[now.getDay()], w.x, w.y + 13 * parOf(w.type, w.size).k);
         break;
       case 16:   // chỉ NGÀY DƯƠNG
-        pv.font(x, w.size ? 30 : 15, 0); x.fillStyle = BK;
+        pv.font(x, 15 * parOf(w.type, w.size).k, 0); x.fillStyle = BK;
         x.fillText(pv.pad2(now.getDate()) + '/' + pv.pad2(now.getMonth() + 1) + '/' + now.getFullYear(),
-                   w.x, w.y + (w.size ? 26 : 13));
+                   w.x, w.y + 13 * parOf(w.type, w.size).k);
         break;
       case 10: {
-        const k = (w.size || 0) + 1; // size 0/1/2 -> vẽ 1x/2x/3x (khớp firmware)
+        const k = parOf(10, w.size).k;  // 1x/2x/3x — ảnh bitmap nên chỉ nguyên lần
         const ic = iconImage();
         if (ic) {
           const smooth = x.imageSmoothingEnabled;
@@ -292,8 +360,7 @@
       try { s2 = JSON.parse(raw); } catch (e) {}
       otherCache.st = (s2 && s2.widgets) ? s2 : { widgets: [], frame: 0, t1: '', t2: '' };
       otherCache.st.widgets = (otherCache.st.widgets || []).filter(w => TYPES[w.type]).map(w => {
-        const max = TYPES[w.type].sizes - 1;
-        w.size = Math.max(0, Math.min(max, w.size | 0));
+        w.size = fixSize(w.type, w.size);
         return w;
       });
       otherCache.icon = null; otherCache.bg = null;
@@ -320,9 +387,69 @@
     });
   };
 
-  function redraw() { if (ctx) renderLayout(ctx, new Date(), true); }
+  function redraw() { if (ctx) renderLayout(ctx, new Date(), true); syncSizeUI(); }
 
   /* ---- interactions ---- */
+
+  /* ---- đổi cỡ: THANH KÉO + lăn chuột -------------------------------------
+   * Kéo-thả trên khung để DI CHUYỂN, thanh kéo dưới khung (hoặc lăn chuột khi
+   * đang chọn) để ĐỔI CỠ. Nút «Đổi cỡ» ba nấc đã bỏ.
+   *
+   * Khoảng của thanh kéo phụ thuộc firmware:
+   *   fw 4.2" ba màu >= 2.6 -> cỡ tự do, đơn vị 1/16 lần (byte size >= 3)
+   *   máy cũ hơn / bản bốn màu -> chỉ ba nấc 0/1/2 mà firmware đó dựng được
+   * Pin không có đường co giãn nào nên thanh kéo tắt. */
+  function freeSizeOk() { return window.__fwFreeSize !== false; }
+  function canResize(w) { return !!w && w.type !== 3; }
+  function sizeRange(type) {
+    if (!freeSizeOk()) return { min: 0, max: (TYPES[type].sizes - 1), step: 1, legacy: true };
+    switch (type) {
+      case 1: return { min: 8, max: 64, step: 8 };     // đồng hồ số: cS 1..8
+      case 2: return { min: 5, max: 60, step: 1 };     // đồng hồ kim: bán kính 12..150
+      case 7: return { min: 10, max: 36, step: 1 };    // lịch tháng: rộng 112..400
+      default: return { min: 16, max: 48, step: 16 };  // chữ + icon: 1x/2x/3x
+    }
+  }
+  // giá trị hiện tại quy về thang của thanh kéo
+  function sizeValue(w) {
+    const R = sizeRange(w.type);
+    if (R.legacy) return FREE(w.size) ? 0 : w.size;
+    return Math.max(R.min, Math.min(R.max, toFree(w.type, w.size)));
+  }
+  function sizeLabel(w) {
+    if (!canResize(w)) return 'Pin chỉ có một cỡ';
+    const R = sizeRange(w.type);
+    if (R.legacy) return 'Nấc ' + (sizeValue(w) + 1) + '/' + (R.max + 1) + ' (máy chưa hỗ trợ cỡ tự do)';
+    const [bw, bh] = dimOf(w);
+    return Math.round(sizeValue(w) * 100 / 16) + '%  (' + Math.round(bw) + '×' + Math.round(bh) + ' px)';
+  }
+  // đặt cỡ từ thanh kéo / lăn chuột
+  function applySize(v) {
+    const w = st.widgets[sel];
+    if (!canResize(w)) return;
+    const R = sizeRange(w.type);
+    v = Math.max(R.min, Math.min(R.max, Math.round(v)));
+    w.size = R.legacy ? v : snapSize(w.type, v);
+    clampW(w); save(); redraw();
+  }
+  // đồng bộ thanh kéo với thành phần đang chọn (gọi ở cuối mỗi lần vẽ lại)
+  function syncSizeUI() {
+    const sl = document.getElementById('dsSize');
+    const lb = document.getElementById('dsSizeLbl');
+    if (!sl) return;
+    const w = (sel >= 0) ? st.widgets[sel] : null;
+    if (!w || !canResize(w)) {
+      sl.disabled = true;
+      if (lb) lb.textContent = w ? 'Pin chỉ có một cỡ' : 'Chọn một thành phần để đổi cỡ';
+      return;
+    }
+    const R = sizeRange(w.type);
+    sl.disabled = false;
+    sl.min = R.min; sl.max = R.max; sl.step = R.step;
+    sl.value = sizeValue(w);
+    if (lb) lb.textContent = sizeLabel(w);
+  }
+  window.dsSizeInput = function (v) { if (sel >= 0) applySize(Number(v)); };
 
   function hit(px, py) {
     for (let i = st.widgets.length - 1; i >= 0; i--) {
@@ -354,13 +481,6 @@
     st.widgets.push(w);
     sel = st.widgets.length - 1;
     save(); redraw();
-  };
-
-  window.dsCycleSize = function () {
-    if (sel < 0 || !st.widgets[sel]) return;
-    const w = st.widgets[sel];
-    w.size = (w.size + 1) % TYPES[w.type].sizes;
-    clampW(w); save(); redraw();
   };
 
   window.dsDelete = function () {
@@ -399,8 +519,7 @@
     st = s;
     st.frame = Number(st.frame) || 0;
     st.widgets = st.widgets.filter(w => TYPES[w.type]).map(w => {
-      const max = TYPES[w.type].sizes - 1;
-      w.size = Math.max(0, Math.min(max, w.size | 0));
+      w.size = fixSize(w.type, w.size);
       return w;
     });
     iconImg = null;
@@ -734,15 +853,23 @@
       redraw();
     };
     const move = ev => {
-      if (sel < 0 || !dragOff) return;
+      if (sel < 0) return;
       const [px, py] = evPos(ev);
       const w = st.widgets[sel];
+      if (!dragOff) return;
       w.x = px - dragOff[0]; w.y = py - dragOff[1];
       clampW(w);
       ev.preventDefault();
       redraw();
     };
     const up = () => { if (dragOff) { dragOff = null; save(); } };
+    // lăn chuột trên thành phần đang chọn = đổi cỡ (cùng thang với thanh kéo)
+    const wheel = ev => {
+      if (sel < 0 || !canResize(st.widgets[sel])) return;
+      const R = sizeRange(st.widgets[sel].type);
+      applySize(sizeValue(st.widgets[sel]) + (ev.deltaY < 0 ? R.step : -R.step));
+      ev.preventDefault();
+    };
 
     canvas.addEventListener('mousedown', down);
     canvas.addEventListener('mousemove', move);
@@ -750,6 +877,7 @@
     canvas.addEventListener('touchstart', down, { passive: false });
     canvas.addEventListener('touchmove', move, { passive: false });
     canvas.addEventListener('touchend', up);
+    canvas.addEventListener('wheel', wheel, { passive: false });
 
     redraw();
     setInterval(redraw, 30000); // keep the clock widgets current
@@ -762,8 +890,7 @@
     try { s2 = JSON.parse(localStorage.getItem(lsKey())); } catch (e) {}
     st = (s2 && s2.widgets) ? s2 : { widgets: [], frame: 0, t1: '', t2: '' };
     st.widgets = (st.widgets || []).filter(w => TYPES[w.type]).map(w => {
-      const max = TYPES[w.type].sizes - 1;
-      w.size = Math.max(0, Math.min(max, w.size | 0));
+      w.size = fixSize(w.type, w.size);
       return w;
     });
     bgImg = null;

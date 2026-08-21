@@ -52,6 +52,7 @@ const EpdCmd = {
   ASSET: 0x2C, // nạp blob dữ liệu vào flash: [00 len_u16] mở / [01 data] / [02 crc32_u32] chốt
   TIME_FMT: 0x2A, // [0/1] định dạng giờ: 24h / 12h (BWR >= 2.1, 4 màu >= 3.0, 7.5" V1 >= 0.3)
   TIMETABLE: 0x2D, // thời khóa biểu (mode 24), chia mảnh: [00 flags am pm data] rồi [01 data]
+  INFO: 0x2E, // xin máy gửi LẠI loạt thông tin mở màn (fw/mac/act/config) — fw >= 2.6
 
   WRITE_IMG: 0x30, // v1.6
 
@@ -656,9 +657,32 @@ async function preConnect() {
 }
 
 
+// Gói notify của máy là CHỮ hay là CONFIG nhị phân?
+//
+// TRƯỚC ĐÂY nhận diện bằng THỨ TỰ (gói số 0 = config) — sai ngay khi máy không
+// gửi được config: gói config dài ~220B, mà lúc webtool bật notify thì MTU
+// thường vẫn là 23 nên máy không đẩy nổi gói đó. 'fw=' liền tụt lên làm gói số
+// 0, bị đọc thành config và MẤT — webtool tưởng máy không khai phiên bản, mọi
+// tính năng mở theo firmware đều nằm im (user báo «hầu như không bao giờ thiết
+// bị báo fw»). Nay xét NỘI DUNG: mọi gói chữ của máy đều dạng "khoá=giá trị"
+// ASCII ngắn, còn config mở đầu bằng byte chân cắm nên không bao giờ lọt.
+function notifyIsText(d) {
+  if (d.length < 3 || d.length > 64) return false;
+  let eq = -1;
+  for (let i = 0; i < d.length && i < 8; i++) {
+    const c = d[i];
+    if (c === 0x3D) { eq = i; break; }                       // '='
+    if (!(c >= 0x61 && c <= 0x7A) && !(c >= 0x41 && c <= 0x5A)) return false;
+  }
+  if (eq < 1) return false;
+  for (let i = eq + 1; i < d.length; i++) if (d[i] < 0x20 || d[i] > 0x7E) return false;
+  return true;
+}
+
 function handleNotify(value, idx) {
   const data = new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
-  if (idx == 0) {
+  // config nhị phân dài 200+ byte; mọi gói chữ đều là "khoá=giá trị"
+  if (!notifyIsText(data) && data.length >= 12) {
     addLog(`Nhận cấu hình: ${bytes2hex(data)}`);
     const epdpins = document.getElementById("epdpins");
     const epddriver = document.getElementById("epddriver");
@@ -785,6 +809,10 @@ function handleNotify(value, idx) {
       // dùng gõ nên KHÔNG hiện mục này với máy chưa hiểu lệnh 0x2D (gõ xong
       // mới biết không gửi được thì rất ức chế).
       window.__fwTKB = !is7_5 && FwCheck.atLeast(is4c ? '3.6' : '2.5');
+      // «Tự thiết kế» đổi cỡ TỰ DO (byte size >= 3): mới có ở 4.2" BA MÀU v2.6.
+      // Máy chưa hỗ trợ thì designer giấu núm kéo, chỉ còn ba nấc cũ — nếu cho
+      // kéo thì máy tự kẹp về nấc lớn nhất, hình ra khác hẳn ô xem trước.
+      window.__fwFreeSize = !is7_5 && !is4c && FwCheck.atLeast('2.6');
       if (window.ttFwUpdate) window.ttFwUpdate();
       // 5 khe ảnh + 2 khe nền riêng cho «Tự thiết kế» (BWR 2.7 / 4 màu 3.7)
       IMG_SLOTS = fwHasNewSlots() ? 5 : 3;
@@ -923,6 +951,12 @@ async function connect() {
       if (window.__imgSending) return;     // đang gửi ảnh: cấm ghi lại CCCD
       if (!epdCharacteristic || !gattServer || !gattServer.connected) return;
       addLog('(Chưa nhận phiên bản firmware — yêu cầu thiết bị gửi lại...)');
+      // Lệnh 0x2E (fw >= 2.6): xin gửi lại thẳng, lúc này MTU đã thoả thuận
+      // xong nên cả gói config dài cũng đi lọt. Firmware cũ bỏ qua lệnh lạ nên
+      // vô hại — với máy đó vẫn còn đường ghi lại CCCD bên dưới.
+      await write(EpdCmd.INFO);
+      await sleep(300);
+      if (FwCheck.atLeast('0.0')) return;
       try {
         await epdCharacteristic.stopNotifications();
         msgIndex = 0;  // loạt gửi lại bắt đầu bằng config (idx 0)

@@ -492,9 +492,32 @@ async function preConnect() {
 }
 
 
+// Gói notify của máy là CHỮ hay là CONFIG nhị phân?
+//
+// TRƯỚC ĐÂY nhận diện bằng THỨ TỰ (gói số 0 = config) — sai ngay khi máy không
+// gửi được config: gói config dài ~220B, mà lúc webtool bật notify thì MTU
+// thường vẫn là 23 nên máy không đẩy nổi gói đó. 'fw=' liền tụt lên làm gói số
+// 0, bị đọc thành config và MẤT — webtool tưởng máy không khai phiên bản, mọi
+// tính năng mở theo firmware đều nằm im (user báo «hầu như không bao giờ thiết
+// bị báo fw»). Nay xét NỘI DUNG: mọi gói chữ của máy đều dạng "khoá=giá trị"
+// ASCII ngắn, còn config mở đầu bằng byte chân cắm nên không bao giờ lọt.
+function notifyIsText(d) {
+  if (d.length < 3 || d.length > 64) return false;
+  let eq = -1;
+  for (let i = 0; i < d.length && i < 8; i++) {
+    const c = d[i];
+    if (c === 0x3D) { eq = i; break; }                       // '='
+    if (!(c >= 0x61 && c <= 0x7A) && !(c >= 0x41 && c <= 0x5A)) return false;
+  }
+  if (eq < 1) return false;
+  for (let i = eq + 1; i < d.length; i++) if (d[i] < 0x20 || d[i] > 0x7E) return false;
+  return true;
+}
+
 function handleNotify(value, idx) {
   const data = new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
-  if (idx == 0) {
+  // config nhị phân dài 200+ byte; mọi gói chữ đều là "khoá=giá trị"
+  if (!notifyIsText(data) && data.length >= 12) {
     addLog(`Nhận cấu hình: ${bytes2hex(data)}`);
     const epdpins = document.getElementById("epdpins");
     const epddriver = document.getElementById("epddriver");
