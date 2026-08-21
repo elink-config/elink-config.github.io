@@ -3,7 +3,16 @@ let epdService, epdCharacteristic;
 let startTime, msgIndex, appVersion;
 let canvas, ctx, textDecoder;
 let paintManager, cropManager;
-let deviceMode = null;      // display mode reported by the device config
+let deviceMode = null;      // số THẺ tương ứng mode máy đang chạy (đã quy đổi)
+/* Số mode THÔ máy báo trong config, GIỮ NGUYÊN chưa quy đổi.
+ *
+ * Bảng quy đổi cũ<->mới chọn theo phiên bản firmware, mà gói config có thể tới
+ * TRƯỚC gói «fw=» — lúc đó modeNumberingIsNew() còn false nên deviceMode bị
+ * tính bằng bảng CŨ. Đến khi bấm «Sync time» thì firmware đã biết, lệnh gửi đi
+ * lại quy đổi bằng bảng MỚI: hai đầu lệch nhau nên máy nhảy sang mode khác
+ * (user báo 2026-08-21: đang ở chế độ mới, sync xong nhảy về mode cuối bảng).
+ * Nay giữ số thô và quy đổi LẠI mỗi khi biết thêm về firmware. */
+let deviceModeWire = null;
 // Nhắc cập nhật firmware: logic DÙNG CHUNG nằm ở js/fw_check.js (FwCheck) —
 // thiết bị gửi 'fw=v1.x.y' khi bật notify (từ bản sau 1.3.1), so với bảng
 // «Danh sách firmware»; đời cũ không gửi thì coi như 1.3.1
@@ -702,7 +711,8 @@ function handleNotify(value, idx) {
     // config byte 11 = current display mode: highlight it in the gallery
     if (data.length > 11) {
       // config trả SỐ CỦA MÁY; quy về số thẻ để tô đúng ô đang chọn
-      deviceMode = modeFromWire(data[11]);
+      deviceModeWire = data[11];
+      deviceMode = modeFromWire(deviceModeWire);
       if (typeof highlightMode === 'function') highlightMode(deviceMode);
     }
     // clock cleanup cadence (1 = full refresh hourly; 0xFF -> enabled):
@@ -777,6 +787,12 @@ function handleNotify(value, idx) {
     } else if (msg.startsWith('fw=') && msg.length > 3) {
       FwCheck.report(msg.substring(3));
       window.__fwStr = msg.substring(3);   // để báo lỗi cho rõ ở nơi khác
+      // Biết firmware rồi thì QUY ĐỔI LẠI số mode: config thường tới trước
+      // «fw=» nên lần quy đổi đầu có thể dùng nhầm bảng số đời cũ.
+      if (deviceModeWire !== null) {
+        deviceMode = modeFromWire(deviceModeWire);
+        if (typeof highlightMode === 'function') highlightMode(deviceMode);
+      }
       window.__devNm = (bleDevice && bleDevice.name) || '';
       // khu «Tự động đổi ảnh» chỉ hiện khi firmware hỗ trợ 3 khe (>= 1.5)
       if (FwCheck.atLeast('1.5')) {
