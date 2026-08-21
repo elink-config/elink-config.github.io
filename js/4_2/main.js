@@ -825,10 +825,10 @@ function handleNotify(value, idx) {
       // dùng gõ nên KHÔNG hiện mục này với máy chưa hiểu lệnh 0x2D (gõ xong
       // mới biết không gửi được thì rất ức chế).
       window.__fwTKB = !is7_5 && FwCheck.atLeast(is4c ? '3.6' : '2.5');
-      // «Tự thiết kế» đổi cỡ TỰ DO (byte size >= 3): mới có ở 4.2" BA MÀU v2.6.
-      // Máy chưa hỗ trợ thì designer giấu núm kéo, chỉ còn ba nấc cũ — nếu cho
-      // kéo thì máy tự kẹp về nấc lớn nhất, hình ra khác hẳn ô xem trước.
-      window.__fwFreeSize = !is7_5 && !is4c && FwCheck.atLeast('2.6');
+      // «Tự thiết kế» đổi cỡ TỰ DO (byte size >= 3): 4.2" ba màu >= 2.6,
+      // bốn màu >= 3.7. Máy chưa hỗ trợ thì thanh kéo bám về ba nấc cũ (máy tự
+      // kẹp về nấc lớn nhất, kéo tự do sẽ ra hình khác hẳn ô xem trước).
+      window.__fwFreeSize = !is7_5 && FwCheck.atLeast(is4c ? '3.7' : '2.6');
       if (window.ttFwUpdate) window.ttFwUpdate();
       // 5 khe ảnh + 2 khe nền riêng cho «Tự thiết kế» (BWR 2.7 / 4 màu 3.7)
       IMG_SLOTS = fwHasNewSlots() ? 5 : 3;
