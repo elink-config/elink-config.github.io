@@ -409,8 +409,15 @@
 					<button id="otabutton" type="button" class="secondary" onclick="otaUpdate()">Cập nhật firmware</button>
 					<span id="otaProgress" class="system-time"></span>
 				</div>
+				<div class="flex-group">
+					<!-- Bộ chữ + bảng âm lịch nằm ở vùng riêng của bộ nhớ, KHÔNG đi kèm
+					     firmware, nên máy vừa cập nhật sẽ thiếu chữ cho tới khi được gửi
+					     xuống. Bình thường webtool tự gửi lúc kết nối; nút này để gửi tay
+					     khi máy vẫn thiếu chữ. -->
+					<button id="assetbutton" type="button" class="secondary" onclick="sendAsset()">Gửi lại bộ chữ</button>
+				</div>
 			</div>
-			<p class="mode-gallery-hint">Nạp file <b>.bin</b> tải về từ mục «Danh sách firmware» bên dưới. Không tắt nguồn thiết bị khi đang cập nhật — nếu lỗi giữa chừng, thiết bị vẫn chạy firmware cũ.</p>
+			<p class="mode-gallery-hint">Nạp file <b>.bin</b> tải về từ mục «Danh sách firmware» bên dưới. Cập nhật xong hãy <b>kết nối lại</b> — máy tự nhận bộ chữ; nếu màn vẫn thiếu chữ thì bấm «Gửi lại bộ chữ». Không tắt nguồn thiết bị khi đang cập nhật — nếu lỗi giữa chừng, thiết bị vẫn chạy firmware cũ.</p>
 		</fieldset>
 		<fieldset>
 			<legend>Danh sách firmware</legend>
@@ -440,7 +447,7 @@
 						<tr>
 							<td>2</td>
 							<td>2.0</td>
-							<td>Đánh lại số giao diện cho gọn (bỏ 2 mã trống), thêm «Lịch dương + âm», «Thời khóa biểu» và «Tự thiết kế 2»; 5 khe ảnh giữ được qua cập nhật firmware; thêm kiểu hiển thị pin và giờ 12h. <b>Bản này xoá cấu hình cũ một lần</b> nên sau khi nạp cần chọn lại giao diện. <b>Phải nạp kèm gói dữ liệu</b> ở khung «Cập nhật firmware (OTA)» thì mới có chữ và âm lịch.</td>
+							<td>Đánh lại số giao diện, thêm «Lịch dương + âm», «Thời khóa biểu», «Tự thiết kế 2», 5 khe ảnh, kiểu hiển thị pin và giờ 12h. <b>Nạp xong hãy kết nối lại</b>: máy tự nhận bộ chữ, rồi chọn lại giao diện.</td>
 							<td>22/08/2026</td>
 							<td><a href="OTA firmware/7_3/fw_7_3inch_v2.0.bin" download>Tải về</a></td>
 							<td><button type="button" class="primary" onclick="fwInstallRow(this)">Cài ngay</button></td>

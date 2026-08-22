@@ -221,7 +221,12 @@ function crc32(buf) {
 async function sendAsset() {
   if (assetBusy) return;
   { const nm = (bleDevice && bleDevice.name) || '';  // 4.2" và 7.3" dùng CHUNG blob này (font + bảng âm lịch trùng từng byte)
-    if (nm.indexOf('DIY-7_3-') !== 0) return; }
+    if (nm.indexOf('DIY-7_3-') !== 0) {
+      // gọi tay từ nút «Gửi lại bộ chữ» mà chưa kết nối: phải nói, không thì
+      // bấm xong không thấy gì (luồng tự động không bao giờ rơi vào đây)
+      if (!epdCharacteristic) addLog('Chưa kết nối thiết bị — bấm «Kết nối» trước rồi thử lại.');
+      return;
+    } }
   assetBusy = true;
   // phủ kín màn hình: luồng này gần 500 gói, bấm nút khác trong lúc đó là lệnh
   // chen vào giữa và máy nhận nhầm (xem syncOverlayShow ở app_common.js)
@@ -1127,9 +1132,15 @@ async function otaUpdate(preBuf) {
     buf.fill(0x00); buf[0] = 0xa4;
     await write(buf[0], buf.subarray(1, 4), true);
     syncOverlayStep('Đang chốt bản mới…',
-      'Thiết bị ghi trang đầu rồi tự khởi động lại. Chờ máy hiện lại rồi hãy kết nối.');
-    show('Hoàn tất — thiết bị đang khởi động lại.');
+      'Thiết bị ghi trang đầu rồi tự khởi động lại. Chờ máy hiện lại rồi HÃY KẾT NỐI LẠI — '
+      + 'lần kết nối đó webtool mới gửi được bộ chữ + bảng âm lịch xuống máy.');
+    show('Hoàn tất — thiết bị đang khởi động lại. Hãy KẾT NỐI LẠI để máy nhận bộ chữ.');
     addLog('Cập nhật xong! Thiết bị khởi động lại với firmware mới.');
+    // Bộ chữ + bảng âm lịch nằm ở VÙNG ASSET của flash, ngoài bank firmware,
+    // nên OTA không mang nó theo: máy vừa lên đời hiện đúng hình mà MẤT CHỮ.
+    // Kết nối lại là máy báo 'asset=none' và sendAsset() tự gửi, xong máy vẽ lại.
+    addLog('LƯU Ý: hãy kết nối lại ngay — máy vừa cập nhật chưa có bộ chữ nên màn sẽ thiếu chữ '
+      + 'cho tới khi webtool gửi xuống (tự động, mất khoảng một phút).');
   } catch (e) {
     console.error(e);
     show('Lỗi: ' + (e.message || e));
