@@ -6,6 +6,7 @@
  */
 (function () {
   const RED = '#C0261F', BK = '#151515', WH = '#f6f4ec', YE = '#E8B90C';
+  const BLUE = '#1F4E9C';   // Spectra 6: xanh dương (thẻ 13 dùng cho tiêu đề DƯƠNG LỊCH)
   // màn 4 màu BWRY (driver 05 IST7158 / 06 JD79668): preview vẽ thêm các điểm
   // nhấn VÀNG đúng như firmware epd_4_2inch_4c; gallery vẽ lại khi đổi driver
   function is4c() {
@@ -537,11 +538,11 @@
     font(x, 12, v17() ? 1 : 0); multi(x, [['Âm Lịch 21/5 - Ngày Canh Thìn  -  ', BK], ['Lễ Vu Lan còn 52 ngày', RED]], 200, 266);
   }
 
-  function m20(x, now) { // Tự thiết kế (chế độ 20)
-    if (window.renderCustomLayout) { window.renderCustomLayout(x, now); return; }
-    font(x, 15, 0);
-    center(x, 'Chưa có giao diện tự thiết kế', 200, 140, BK);
-    center(x, 'Tạo trong mục «Thiết kế màn hình»', 200, 168, BK);
+  function m20(x, now, design) { // Tự thiết kế 1 (thẻ 22) / 2 (thẻ 23)
+    if (window.renderCustomLayout) { window.renderCustomLayout(x, now, design || 0); return; }
+    font(x, 20, 0);
+    center(x, 'Chưa có giao diện tự thiết kế', 400, 224, BK);
+    center(x, 'Tạo trong mục «Thiết kế màn hình»', 400, 268, BK);
   }
   // ---- chế độ 21-24: chủ đề game 8-bit (mô phỏng theo firmware) ----
   function pxDigit(x, X, Y, d, s, col) {
@@ -744,31 +745,147 @@
   window.__pv = { font, center, multi, seg7, segStr, battery, analogClock, monthGrid, pad2, lunarish,
                   RED, BK, WH, WD_SHORT, WD_FULL };
 
+  function lunarVN(now) {
+    const TZ = 7, PI = Math.PI, INT = Math.floor;
+    function jd(dd, mm, yy) {
+      const a = INT((14 - mm) / 12), y = yy + 4800 - a, m = mm + 12 * a - 3;
+      return dd + INT((153 * m + 2) / 5) + 365 * y + INT(y / 4) - INT(y / 100) + INT(y / 400) - 32045;
+    }
+    function newMoon(k) {
+      const T = k / 1236.85, T2 = T * T, T3 = T2 * T, dr = PI / 180;
+      let Jd1 = 2415020.75933 + 29.53058868 * k + 0.0001178 * T2 - 0.000000155 * T3;
+      Jd1 += 0.00033 * Math.sin((166.56 + 132.87 * T - 0.009173 * T2) * dr);
+      const M = 359.2242 + 29.10535608 * k - 0.0000333 * T2 - 0.00000347 * T3;
+      const Mpr = 306.0253 + 385.81691806 * k + 0.0107306 * T2 + 0.00001236 * T3;
+      const F = 21.2964 + 390.67050646 * k - 0.0016528 * T2 - 0.00000239 * T3;
+      let C1 = (0.1734 - 0.000393 * T) * Math.sin(M * dr) + 0.0021 * Math.sin(2 * dr * M);
+      C1 = C1 - 0.4068 * Math.sin(Mpr * dr) + 0.0161 * Math.sin(dr * 2 * Mpr);
+      C1 = C1 - 0.0004 * Math.sin(dr * 3 * Mpr);
+      C1 = C1 + 0.0104 * Math.sin(dr * 2 * F) - 0.0051 * Math.sin(dr * (M + Mpr));
+      C1 = C1 - 0.0074 * Math.sin(dr * (M - Mpr)) + 0.0004 * Math.sin(dr * (2 * F + M));
+      C1 = C1 - 0.0004 * Math.sin(dr * (2 * F - M)) - 0.0006 * Math.sin(dr * (2 * F + Mpr));
+      C1 = C1 + 0.0010 * Math.sin(dr * (2 * F - Mpr)) + 0.0005 * Math.sin(dr * (2 * Mpr + M));
+      const dt = (T < -11)
+        ? 0.001 + 0.000839 * T + 0.0002261 * T2 - 0.00000845 * T3 - 0.000000081 * T * T3
+        : -0.000278 + 0.000265 * T + 0.000262 * T2;
+      return Jd1 + C1 - dt;
+    }
+    function nmDay(k) { return INT(newMoon(k) + 0.5 + TZ / 24); }
+    function sunLong(jdn) {
+      const T = (jdn - 2451545.0) / 36525, T2 = T * T, dr = PI / 180;
+      const M = 357.52910 + 35999.05030 * T - 0.0001559 * T2 - 0.00000048 * T * T2;
+      const L0 = 280.46645 + 36000.76983 * T + 0.0003032 * T2;
+      let DL = (1.914600 - 0.004817 * T - 0.000014 * T2) * Math.sin(dr * M);
+      DL += (0.019993 - 0.000101 * T) * Math.sin(dr * 2 * M) + 0.000290 * Math.sin(dr * 3 * M);
+      const L = (L0 + DL) * dr;
+      return L - PI * 2 * INT(L / (PI * 2));
+    }
+    function sunSector(d) { return INT(sunLong(d - 0.5 - TZ / 24) / PI * 6); }
+    function month11(yy) {
+      const k = INT((jd(31, 12, yy) - 2415021) / 29.530588853);
+      let nm = nmDay(k);
+      if (sunSector(nm) >= 9) nm = nmDay(k - 1);
+      return nm;
+    }
+    function leapOffset(a11) {
+      const k = INT((a11 - 2415021.076998695) / 29.530588853 + 0.5);
+      let last, i = 1, arc = sunSector(nmDay(k + i));
+      do { last = arc; i++; arc = sunSector(nmDay(k + i)); } while (arc !== last && i < 14);
+      return i - 1;
+    }
+    const yy = now.getFullYear();
+    const dayNumber = jd(now.getDate(), now.getMonth() + 1, yy);
+    const k = INT((dayNumber - 2415021.076998695) / 29.530588853);
+    let monthStart = nmDay(k + 1);
+    if (monthStart > dayNumber) monthStart = nmDay(k);
+    let a11 = month11(yy), b11 = a11, lunarYear;
+    if (a11 >= monthStart) { lunarYear = yy; a11 = month11(yy - 1); }
+    else { lunarYear = yy + 1; b11 = month11(yy + 1); }
+    const diff = INT((monthStart - a11) / 29);
+    let leap = 0, lunarMonth = diff + 11;
+    if (b11 - a11 > 365) {
+      const lo = leapOffset(a11);
+      if (diff >= lo) { lunarMonth = diff + 10; if (diff === lo) leap = 1; }
+    }
+    if (lunarMonth > 12) lunarMonth -= 12;
+    if (lunarMonth >= 11 && diff < 4) lunarYear -= 1;
+    return { day: dayNumber - monthStart + 1, month: lunarMonth, leap: leap, year: lunarYear };
+  }
+  const CAN = ['Giáp', 'Ất', 'Bính', 'Đinh', 'Mậu', 'Kỷ', 'Canh', 'Tân', 'Nhâm', 'Quý'];
+  const CHI = ['Tý', 'Sửu', 'Dần', 'Mão', 'Thìn', 'Tỵ', 'Ngọ', 'Mùi', 'Thân', 'Dậu', 'Tuất', 'Hợi'];
+
+  /* Thẻ 13 «Lịch dương + âm» — chia đôi dọc, khớp DrawDualCalendar trong
+   * GUI.c của epd_7_3inch (băng đen 70px, vạch chia 92..422, chân trang 452).
+   * Chỉ hiện với firmware >= 2.0 (cờ __fwCal); máy cũ hơn không có mode này. */
+  function mDual(x, now) {
+    let lu = { day: 27, month: 6, leap: 0, year: now.getFullYear() };
+    try { lu = lunarVN(now); } catch (e) { console.error('lunarVN', e); }
+    const yName = CAN[(lu.year + 6) % 10] + ' ' + CHI[(lu.year + 8) % 12];
+
+    // băng đen trên cùng: giờ (trái) + thứ (giữa) + pin (phải)
+    x.fillStyle = BK; x.fillRect(0, 0, 800, 70);
+    font(x, 32, 1); center(x, WD_FULL[now.getDay()], 400, 46, WH);
+    x.fillStyle = WH; x.textAlign = 'left';
+    x.fillText(pad2(now.getHours()) + ':00', 16, 46);
+    battery(x, 758, 30, WH);
+
+    line(x, 400, 92, 400, 422, BK, 2);
+
+    // cột TRÁI — DƯƠNG LỊCH (tiêu đề XANH DƯƠNG, số đen)
+    font(x, 32, 1); center(x, 'DƯƠNG LỊCH', 200, 134, BLUE);
+    font(x, 104, 1); center(x, String(now.getDate()), 200, 268, BK);
+    font(x, 32, 1); center(x, 'Tháng ' + (now.getMonth() + 1), 200, 340, BK);
+    font(x, 17, 1); center(x, 'Năm ' + now.getFullYear(), 200, 392, BK);
+
+    // cột PHẢI — ÂM LỊCH (tiêu đề + số ĐỎ)
+    font(x, 32, 1); center(x, 'ÂM LỊCH', 600, 134, RED);
+    font(x, 104, 1); center(x, String(lu.day), 600, 268, RED);
+    font(x, lu.leap ? 17 : 32, 1);
+    center(x, 'Tháng ' + lu.month + (lu.leap ? ' nhuận' : ''), 600, 340, BK);
+    font(x, 17, 1); center(x, 'Năm ' + yName, 600, 392, BK);
+
+    // chân trang: đếm ngược sự kiện kế tiếp
+    font(x, 17, 1);
+    const nf = nextSolarFest(now);
+    if (nf.days === 0) {
+      multi(x, [['Hôm nay: ', BK], [nf.name, RED]], 400, 452);
+    } else {
+      multi(x, [['Còn ' + nf.days + ' ngày nữa đến ', BK],
+                [nf.name + ' (' + pad2(nf.dt.getDate()) + '/' + pad2(nf.dt.getMonth() + 1) + ')', RED]], 400, 452);
+    }
+  }
+
+  /* SỐ THẺ = SỐ MODE của firmware v2.0 (GUI.h). Bảng này PHẢI khớp enum
+   * display_mode_t — đổi một bên mà quên bên kia là máy vẽ nhầm giao diện.
+   * Máy còn chạy v1.0 hiểu bảng số CŨ; main.js tự quy đổi (MODE_NEW2OLD). */
   const MODE_LIST = [
     { mode: 1, name: 'Lịch tháng', tick: 'Cập nhật lúc 0h', id: 'calendarmodebutton', draw: m1 },
-    { mode: 2, name: 'Đồng hồ', tick: 'Làm mới mỗi giờ', id: 'clockmodebutton', draw: m2 },
-    { mode: 3, name: 'Đồng hồ + Lịch', tick: 'Làm mới mỗi giờ', id: 'combomodebutton', draw: m3 },
-    { mode: 4, name: 'Lịch để bàn (đỏ)', tick: 'Làm mới mỗi giờ', id: 'redcombomodebutton', draw: m4 },
-    { mode: 5, name: 'Lịch VN (Can Chi)', tick: 'Cập nhật lúc 0h', id: 'vncalendarmodebutton', draw: m5 },
-    { mode: 6, name: 'Đồng hồ số', tick: 'Làm mới mỗi giờ', id: 'digitalmodebutton', draw: m6 },
-    { mode: 7, name: 'Đồng hồ kim', tick: 'Làm mới mỗi giờ', id: 'analogmodebutton', draw: m7 },
-    { mode: 8, name: 'Lịch bloc', tick: 'Cập nhật lúc 0h', id: 'dayblocmodebutton', draw: m8 },
-    { mode: 9, name: 'Lịch tuần', tick: 'Làm mới mỗi giờ', id: 'weekmodebutton', draw: m9 },
-    { mode: 10, name: 'Giờ + lịch tháng', tick: 'Làm mới mỗi giờ', id: 'digitalcalmodebutton', draw: m10 },
-    { mode: 11, name: 'Kim + thẻ ngày', tick: 'Làm mới mỗi giờ', id: 'analogdaymodebutton', draw: m11 },
-    { mode: 12, name: 'Tối giản', tick: 'Cập nhật lúc 0h', id: 'minimalmodebutton', draw: m12 },
-    { mode: 13, name: 'Lịch vạn niên', tick: 'Cập nhật lúc 0h', id: 'vanniemodebutton', draw: m13 },
-    { mode: 14, name: 'Đếm ngược sự kiện', tick: 'Cập nhật lúc 0h', id: 'countdownmodebutton', draw: m14 },
-    { mode: 15, name: 'Hai tháng', tick: 'Cập nhật lúc 0h', id: 'twomonthmodebutton', draw: m15 },
-    { mode: 16, name: 'Lịch cả năm', tick: 'Cập nhật lúc 0h', id: 'yearmodebutton', draw: m16 },
-    { mode: 17, name: 'Nhiệt kế', tick: 'Làm mới mỗi giờ', id: 'thermomodebutton', draw: m17 },
-    { mode: 18, name: 'Trăng', tick: 'Cập nhật lúc 0h', id: 'moonmodebutton', draw: m18 },
-    { mode: 19, name: 'Ghi chú', tick: 'Làm mới mỗi giờ', id: 'notemodebutton', draw: m19 },
-    { mode: 20, name: 'Tự thiết kế', tick: 'Làm mới mỗi giờ', id: 'custommodebutton', draw: m20 },
-    { mode: 21, name: 'Núi tuyết 8-bit', tick: 'Cập nhật lúc 0h', id: 'retromtnmodebutton', draw: m21 },
-    { mode: 22, name: 'Hoàng hôn 8-bit', tick: 'Làm mới mỗi giờ', id: 'retrosunsetmodebutton', draw: m22 },
-    { mode: 23, name: 'Khủng long 8-bit', tick: 'Cập nhật lúc 0h', id: 'retrowinmodebutton', draw: m23 },
-    { mode: 24, name: 'Thành phố pixel', tick: 'Làm mới mỗi giờ', id: 'retrocitymodebutton', draw: m24 },
+    { mode: 2, name: 'Đồng hồ + Lịch', tick: 'Làm mới mỗi giờ', id: 'combomodebutton', draw: m3 },
+    { mode: 3, name: 'Lịch để bàn (đỏ)', tick: 'Làm mới mỗi giờ', id: 'redcombomodebutton', draw: m4 },
+    { mode: 4, name: 'Lịch VN (Can Chi)', tick: 'Cập nhật lúc 0h', id: 'vncalendarmodebutton', draw: m5 },
+    { mode: 5, name: 'Đồng hồ số', tick: 'Làm mới mỗi giờ', id: 'digitalmodebutton', draw: m6 },
+    { mode: 6, name: 'Đồng hồ kim', tick: 'Làm mới mỗi giờ', id: 'analogmodebutton', draw: m7 },
+    { mode: 7, name: 'Lịch bloc', tick: 'Cập nhật lúc 0h', id: 'dayblocmodebutton', draw: m8 },
+    { mode: 8, name: 'Lịch tuần', tick: 'Làm mới mỗi giờ', id: 'weekmodebutton', draw: m9 },
+    { mode: 9, name: 'Giờ + lịch tháng', tick: 'Làm mới mỗi giờ', id: 'digitalcalmodebutton', draw: m10 },
+    { mode: 10, name: 'Kim + thẻ ngày', tick: 'Làm mới mỗi giờ', id: 'analogdaymodebutton', draw: m11 },
+    { mode: 11, name: 'Tối giản', tick: 'Cập nhật lúc 0h', id: 'minimalmodebutton', draw: m12 },
+    { mode: 12, name: 'Lịch vạn niên', tick: 'Cập nhật lúc 0h', id: 'vanniemodebutton', draw: m13 },
+    { mode: 13, name: 'Lịch dương + âm', tick: 'Làm mới mỗi giờ', id: 'countdownmodebutton', draw: mDual },
+    { mode: 14, name: 'Hai tháng', tick: 'Cập nhật lúc 0h', id: 'twomonthmodebutton', draw: m15 },
+    { mode: 15, name: 'Lịch cả năm', tick: 'Cập nhật lúc 0h', id: 'yearmodebutton', draw: m16 },
+    { mode: 16, name: 'Nhiệt kế', tick: 'Làm mới mỗi giờ', id: 'thermomodebutton', draw: m17 },
+    { mode: 17, name: 'Ghi chú', tick: 'Làm mới mỗi giờ', id: 'notemodebutton', draw: m19 },
+    { mode: 18, name: 'Núi tuyết 8-bit', tick: 'Cập nhật lúc 0h', id: 'retromtnmodebutton', draw: m21 },
+    { mode: 19, name: 'Hoàng hôn 8-bit', tick: 'Làm mới mỗi giờ', id: 'retrosunsetmodebutton', draw: m22 },
+    { mode: 20, name: 'Khủng long 8-bit', tick: 'Cập nhật lúc 0h', id: 'retrowinmodebutton', draw: m23 },
+    { mode: 21, name: 'Thành phố 8-bit', tick: 'Làm mới mỗi giờ', id: 'retrocitymodebutton', draw: m24 },
+    { mode: 22, name: 'Tự thiết kế 1', tick: 'Làm mới mỗi giờ', id: 'custommodebutton', draw: (x, n) => m20(x, n, 0) },
+    { mode: 23, name: 'Tự thiết kế 2', tick: 'Làm mới mỗi giờ', id: 'custommodebutton2', draw: (x, n) => m20(x, n, 1) },
+    // thẻ 24 vẽ bằng CHÍNH hàm dựng bảng của js/7_3/timetable.js nên thẻ luôn
+    // khớp bảng người dùng đang gõ (không có bảng thì nó vẽ màn hướng dẫn)
+    { mode: 24, name: 'Thời khóa biểu', tick: 'Cập nhật lúc 0h', id: 'timetablemodebutton',
+      draw: (x, n) => { if (window.ttRenderPreview) window.ttRenderPreview(x, n, false); } },
   ];
 
   // highlight the mode the device reports (config byte 11) or was just set to
@@ -778,29 +895,53 @@
     });
   };
 
+  /* Hai chế độ THÊM Ở v2.0 chưa có ảnh render sẵn trong img/modes (simulator
+   * dựng bộ ảnh đó từ firmware v1.0). Thẻ của chúng vẽ bằng canvas — hơi khác
+   * màn thật một chút nhưng còn hơn ô ảnh vỡ. Render lại bộ ảnh thì xoá số
+   * khỏi tập này. */
+  const NO_THUMB = new Set([13, 24]);
+
+  function drawThumb(cv, m) {
+    const x = cv.getContext('2d');
+    x.save();
+    x.scale(cv.width / 800, cv.height / 480);   // vẽ theo toạ độ THẬT của màn
+    x.fillStyle = WH; x.fillRect(0, 0, 800, 480);
+    try { m.draw(x, new Date()); } catch (e) { console.error('thumb mode ' + m.mode, e); }
+    x.restore();
+  }
+
   function build() {
     const gallery = document.getElementById('modeGallery');
     if (!gallery) return;
     for (const m of MODE_LIST) {
-      // firmware 7.3 chưa bao giờ có mode 2 (Đồng hồ) + 18 (Trăng)
-      if (m.mode === 2 || m.mode === 18) continue;
       const card = document.createElement('div');
       card.className = 'mode-card';
       card.dataset.mode = m.mode;
+      const thumb = NO_THUMB.has(m.mode)
+        ? '<canvas class="mode-thumb" data-mode="' + m.mode +
+          '" width="400" height="240" style="width:100%;display:block;border-radius:4px"></canvas>'
+        : '<img src="img/modes/m' + String(m.mode).padStart(2, '0') + '.png" alt="' + m.name +
+          '" style="width:100%;display:block;border-radius:4px">';
       card.innerHTML =
-        '<img src="img/modes/m' + String(m.mode).padStart(2, '0') + '.png" alt="' + m.name +
-        '" style="width:100%;display:block;border-radius:4px">' +
+        thumb +
         '<div class="mode-name">' + m.name + '</div>' +
         '<div class="mode-tick">' + m.tick + '</div>' +
         '<button id="' + m.id + '" type="button" class="primary" onclick="syncTime(' + m.mode + ')">Áp dụng</button>';
       gallery.appendChild(card);
+      if (NO_THUMB.has(m.mode)) drawThumb(card.querySelector('canvas'), m);
     }
   }
 
-  // Thumbnail là ẢNH THẬT render từ simulator firmware 800×480 sáu màu
-  // (scratchpad sim/shoot.py -> img/modes/mNN.png) — không vẽ canvas xấp xỉ
-  // nữa nên không cần vẽ lại theo phút; giữ hàm cho main.js gọi.
-  window.refreshModeGallery = function () {};
+  /* Phần lớn thumbnail là ẢNH THẬT render từ simulator firmware 800×480 sáu màu
+   * (img/modes/mNN.png) nên không cần vẽ lại. Riêng mấy thẻ trong NO_THUMB vẽ
+   * bằng canvas — vẽ lại khi main.js gọi (đổi bảng thời khóa biểu, đổi bố cục
+   * «Tự thiết kế», hay vừa đọc xong fw= của máy). */
+  window.refreshModeGallery = function () {
+    document.querySelectorAll('canvas.mode-thumb').forEach(cv => {
+      const m = MODE_LIST.find(e => e.mode === Number(cv.dataset.mode));
+      if (m) drawThumb(cv, m);
+    });
+  };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', build);
   else build();

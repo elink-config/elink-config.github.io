@@ -79,7 +79,8 @@
       fragment: 'apps/7_3.html',
       prefixes: ['DIY-7_3-'],
       scripts: ['js/app_common.js', 'js/family_epd.js', 'js/dithering.js', 'js/paint.js', 'js/crop.js',
-        'js/7_3/mode_preview.js', 'js/7_3/designer.js', 'js/diy_store.js', 'js/7_3/main.js'],
+        'js/7_3/mode_preview.js', 'js/7_3/designer.js', 'js/diy_store.js', 'js/7_3/timetable.js',
+        'js/7_3/main.js'],
     },
     '7_5': {
       label: '7.5"',
