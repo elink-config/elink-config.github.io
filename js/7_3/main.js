@@ -775,10 +775,30 @@ function handleNotify(value, idx) {
       // vì OTA chỉ ghi bank firmware. Tự gửi luôn, khách không phải làm gì.
       if (assetResolve) { const f = assetResolve; assetResolve = null; f(msg); }
       else if (msg === 'asset=none') sendAsset();
+    } else if (msg.startsWith('slots=')) {
+      // SỐ KHE ẢNH CÓ THẬT (firmware 7.3" >= 2.1 báo lúc kết nối). Ảnh của máy
+      // này 192000B, nén xong vẫn cần khe 64KB nên số khe tuỳ dung lượng chip:
+      // 512KB -> 4 khe, 256KB -> 1 khe (không đủ 2 thì không bật tự đổi ảnh).
+      const n = parseInt(msg.substring(6));
+      if (n >= 0 && n <= 5) {
+        IMG_SLOTS = n;
+        window.__slotsFromDev = true;
+        for (let i = 1; i <= 5; i++) {
+          const b = document.getElementById(i === 1 ? 'sendimgbutton' : 'sendimgbutton' + i);
+          if (b) b.style.display = (i <= n) ? '' : 'none';
+        }
+        if (n < 2) addLog(`Bộ nhớ của máy chỉ đủ ${n} khe ảnh — cần ít nhất 2 khe mới bật được tự đổi ảnh.`);
+        if (typeof updateImgAutoUI === 'function') updateImgAutoUI();
+      }
     } else if (msg.startsWith('tkb=')) {
       // thời khóa biểu: 'tkb=rdy' (xóa sector xong, được bắn mảnh) / 'tkb=err'
       // / 'tkb=done' — js/4_2/timetable.js đang đợi
       if (window.ttOnMsg) window.ttOnMsg(msg);
+    } else if (msg === 'img=full') {
+      // ảnh nén xong vẫn không vừa khe 64KB (ảnh chụp nhiều chi tiết nén rất kém)
+      addLog('Ảnh này quá nhiều chi tiết nên không vừa khe — hãy chọn ảnh khác, '
+        + 'hoặc giảm chi tiết (ảnh nhiều mảng màu phẳng thì nén tốt hơn nhiều).');
+      if (imgRdyResolve) { const f = imgRdyResolve; imgRdyResolve = null; f(false); }
     } else if (msg.startsWith('img=') && imgRdyResolve) {
       // trả lời lệnh mở khe ảnh: 'img=rdy' (xóa flash xong) / 'img=err'
       const f = imgRdyResolve; imgRdyResolve = null; f(msg === 'img=rdy');
@@ -809,7 +829,9 @@ function handleNotify(value, idx) {
       window.__fwCal = fw20;      // mode 13 «Lịch dương + âm»
       window.__fwTimeOk = fw20;   // 12h/24h (lệnh 0x2A)
       // icon «Tự thiết kế» 2 mặt + ẢNH NỀN toàn màn (dùng lại khe ảnh 32KB)
-      window.__fwBg = fw20;       // ảnh nền «Tự thiết kế» (lệnh 0x2B)
+      // Ảnh nền «Tự thiết kế»: máy này KHÔNG có khe nền riêng — ảnh nền cũng
+      // là ảnh 192000B mà vùng mở rộng chỉ đủ 4 khe, dành hết cho ảnh người dùng.
+      window.__fwBg = false;
       // «Thời khóa biểu» (mode 24): BWR >= 2.5, bốn màu >= 3.6. Bảng do người
       // dùng gõ nên KHÔNG hiện mục này với máy chưa hiểu lệnh 0x2D (gõ xong
       // mới biết không gửi được thì rất ức chế).
@@ -820,7 +842,10 @@ function handleNotify(value, idx) {
       window.__fwFreeSize = fw20; // «Tự thiết kế» đổi cỡ tự do
       if (window.ttFwUpdate) window.ttFwUpdate();
       // 5 khe ảnh + 2 khe nền riêng cho «Tự thiết kế» (BWR 2.7 / 4 màu 3.7)
-      IMG_SLOTS = fwHasNewSlots() ? 5 : 3;
+      // Máy 7.3" tự báo 'slots=N' (số khe THẬT theo dung lượng chip) ngay sau
+      // gói này; con số đó luôn thắng. Đoán 5 khe ở đây chỉ để UI có gì đó hiện
+      // trong lúc chờ, và cho máy đời cũ chưa biết báo.
+      if (!window.__slotsFromDev) IMG_SLOTS = fwHasNewSlots() ? 5 : 3;
       for (let i = 4; i <= 5; i++) {
         const b = document.getElementById('sendimgbutton' + i);
         if (b) b.style.display = IMG_SLOTS >= i ? '' : 'none';

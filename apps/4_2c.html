@@ -325,6 +325,12 @@
 					<label><input type="radio" name="imgInterval" value="1" onchange="setImgAuto()"> 1 giờ</label>
 					<label><input type="radio" name="imgInterval" value="12" onchange="setImgAuto()"> 12 giờ</label>
 					<label><input type="radio" name="imgInterval" value="24" checked onchange="setImgAuto()"> 24 giờ</label>
+					<!-- Chu kỳ tính bằng PHÚT: cùng một byte img_interval, firmware hiểu
+					     15/30/40 là phút vì không có chu kỳ 15/30/40 giờ. Đổi ảnh dày thì
+					     mỗi lần đều là một lượt làm mới toàn màn, hao pin hơn hẳn. -->
+					<label><input type="radio" name="imgInterval" value="15" onchange="setImgAuto()"> 15 phút</label>
+					<label><input type="radio" name="imgInterval" value="30" onchange="setImgAuto()"> 30 phút</label>
+					<label><input type="radio" name="imgInterval" value="40" onchange="setImgAuto()"> 40 phút</label>
 					<span class="mode-gallery-hint" style="margin:0" id="imgAutoHint">Cần gửi ảnh vào ít nhất 2 khe để bật tự đổi ảnh (khe 1 → 2 → 3 → 1).</span>
 				</div>
 			</div>
@@ -519,6 +525,14 @@
 								<td><a href="OTA firmware/4_2c/fw_4_2inch_4c_v3.8.bin" download>Tải về</a></td>
 								<td><button type="button" class="primary" onclick="fwInstallRow(this)">Cài ngay</button></td>
 							</tr>
+								<tr>
+									<td>11</td>
+									<td>3.9</td>
+									<td><b>CHỈ dành cho màn 4.2" BỐN MÀU (thiết bị DIY-4_2C)</b> — KHÔNG nạp cho máy 3 màu. <br>«Tự động đổi ảnh» có thêm chu kỳ <b>15 / 30 / 40 phút</b>, cạnh 1 / 12 / 24 giờ như cũ.</td>
+									<td>23/08/2026</td>
+									<td><a href="OTA firmware/4_2c/fw_4_2inch_4c_v3.9.bin" download>Tải về</a></td>
+									<td><button type="button" class="primary" onclick="fwInstallRow(this)">Cài ngay</button></td>
+								</tr>
 					</tbody>
 				</table>
 			</div>

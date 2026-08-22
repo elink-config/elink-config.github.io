@@ -313,6 +313,12 @@
 					<label><input type="radio" name="imgInterval" value="1" onchange="setImgAuto()"> 1 giờ</label>
 					<label><input type="radio" name="imgInterval" value="12" onchange="setImgAuto()"> 12 giờ</label>
 					<label><input type="radio" name="imgInterval" value="24" checked onchange="setImgAuto()"> 24 giờ</label>
+					<!-- Chu kỳ tính bằng PHÚT: cùng một byte img_interval, firmware hiểu
+					     15/30/40 là phút vì không có chu kỳ 15/30/40 giờ. Đổi ảnh dày thì
+					     mỗi lần đều là một lượt làm mới toàn màn, hao pin hơn hẳn. -->
+					<label><input type="radio" name="imgInterval" value="15" onchange="setImgAuto()"> 15 phút</label>
+					<label><input type="radio" name="imgInterval" value="30" onchange="setImgAuto()"> 30 phút</label>
+					<label><input type="radio" name="imgInterval" value="40" onchange="setImgAuto()"> 40 phút</label>
 					<span class="mode-gallery-hint" style="margin:0" id="imgAutoHint">Cần gửi ảnh vào ít nhất 2 khe để bật tự đổi ảnh (khe 1 → 2 → 3 → 1).</span>
 				</div>
 			</div>
@@ -452,6 +458,14 @@
 							<td><a href="OTA firmware/7_3/fw_7_3inch_v2.0.bin" download>Tải về</a></td>
 							<td><button type="button" class="primary" onclick="fwInstallRow(this)">Cài ngay</button></td>
 						</tr>
+							<tr>
+								<td>3</td>
+								<td>2.1</td>
+								<td><b>Khe ảnh dùng được</b>: ảnh gửi lên máy nhớ được và sống sót qua cập nhật firmware, kèm «Tự động đổi ảnh» chu kỳ 15 / 30 / 40 phút hoặc 1 / 12 / 24 giờ. Ảnh nhiều mảng màu phẳng thì lưu được nhiều khe hơn ảnh chụp chi tiết.</td>
+								<td>23/08/2026</td>
+								<td><a href="OTA firmware/7_3/fw_7_3inch_v2.1.bin" download>Tải về</a></td>
+								<td><button type="button" class="primary" onclick="fwInstallRow(this)">Cài ngay</button></td>
+							</tr>
 					</tbody>
 				</table>
 			</div>

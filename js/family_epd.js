@@ -192,27 +192,35 @@ function updateImgAutoUI() {
     : `Cần gửi ảnh vào ít nhất 2 khe để bật tự đổi ảnh (lần lượt khe 1 → ${(typeof IMG_SLOTS === 'number') ? IMG_SLOTS : 3} → quay lại 1).`;
 }
 
+// Chu kỳ đổi ảnh: một byte mã CẢ HAI đơn vị — 1/12/24 là GIỜ, 15/30/40 là PHÚT
+// (không có chu kỳ 15/30/40 giờ nên không nhập nhằng). Firmware đời cũ nhận giá
+// trị phút sẽ nắn về 24h, nên máy chưa cập nhật chỉ mất tính năng chứ không loạn.
+function imgIntervalIsMinutes(v) { return v === 15 || v === 30 || v === 40; }
+function imgIntervalSecs(v) { return imgIntervalIsMinutes(v) ? v * 60 : v * 3600; }
+function imgIntervalLabel(v) { return imgIntervalIsMinutes(v) ? (v + ' phút') : (v + ' giờ'); }
+
 async function setImgAuto() {
   const auto = document.getElementById('imgAutoCHK').checked ? 1 : 0;
   const sel = document.querySelector('input[name="imgInterval"]:checked');
-  const hours = sel ? parseInt(sel.value) : 24;
+  const itv = sel ? parseInt(sel.value) : 24;
   updateImgAutoUI();
-  if (await write(EpdCmd.IMG_SLOT, [0x03, auto, hours])) {
+  if (await write(EpdCmd.IMG_SLOT, [0x03, auto, itv])) {
     if (!auto) { addLog('Đã tắt tự động đổi ảnh.'); return; }
     // vòng đổi THẬT: chỉ gồm khe đang có ảnh (trước đây ghi cứng «1 → 2 → 3»
     // nên máy 5 khe đọc log ra sai)
     const total = (typeof IMG_SLOTS === 'number') ? IMG_SLOTS : 3;
     const order = [];
     for (let i = 0; i < total; i++) if (imgSlotMask & (1 << i)) order.push(i + 1);
-    // Mốc đổi ảnh của máy là timestamp / (chu kỳ x 3600) — 1/12/24 giờ đều
-    // chia hết 86400 nên mốc luôn rơi đúng đầu giờ, canh theo 00:00. Tính ra
-    // giờ đồng hồ cho người dùng biết lần đổi kế tiếp rơi vào lúc nào.
+    // Mốc đổi ảnh của máy là timestamp / chu-kỳ-giây. Cả sáu giá trị (1/12/24
+    // giờ và 15/30/40 phút) đều chia hết 86400 nên mốc luôn canh theo 00:00.
+    // Tính ra giờ đồng hồ cho người dùng biết lần đổi kế tiếp rơi vào lúc nào.
+    const per = imgIntervalSecs(itv);
     const now = new Date();
     const tzs = now.getTimezoneOffset() * 60;
     const devNow = Math.floor(now.getTime() / 1000) - tzs;   // đúng giá trị máy đang giữ
-    const nextDev = (Math.floor(devNow / (hours * 3600)) + 1) * hours * 3600;
+    const nextDev = (Math.floor(devNow / per) + 1) * per;
     const nextLocal = new Date((nextDev + tzs) * 1000);
-    addLog(`Đã bật tự động đổi ảnh mỗi ${hours} giờ (lần lượt khe ${order.join(' → ')} → ${order[0]}). ` +
+    addLog(`Đã bật tự động đổi ảnh mỗi ${imgIntervalLabel(itv)} (lần lượt khe ${order.join(' → ')} → ${order[0]}). ` +
            `Bộ đếm bắt đầu lại từ bây giờ — lần đổi kế tiếp vào ${nextLocal.toLocaleString('vi-VN')}.`);
   }
 }
