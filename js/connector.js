@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  const VER = '20260825b'; // cache-buster, keep in sync with index.html
+  const VER = '20260825c'; // cache-buster, keep in sync with index.html
 
   const EPD42_SERVICE = '62750001-d828-918d-fb46-b6c11c675aec';
   const HM213_SERVICE = '0000ff00-0000-1000-8000-00805f9b34fb';
@@ -57,11 +57,12 @@
       sub: 'Màn 2.13" đen trắng, firmware v2.0 trở lên (DIY-2_13, DA14585): kết nối, cấu hình và truyền hình ảnh',
       fragment: 'apps/2_13n.html',
       prefixes: ['DIY-2_13-'],
-      // js/2_13/common.js dùng CHUNG với app đời cũ: nó chỉ chứa hằng số và
-      // helper vẽ (BK/WH, tên thứ, chuỗi âm lịch...), không dính giao thức.
-      // Hai app dùng chung một bản để sửa một chỗ là cả hai theo.
+      // ⚠ common.js phải có BẢN RIÊNG, không dùng chung với app đời cũ: nó
+      // chứa IMG_MODE — số hiệu chế độ ẢNH — mà hai đời đánh số khác nhau
+      // (v1.10 để 28, v2.x để 0). Nhìn như hằng số vẽ nhưng thật ra là một
+      // giao ước SỐ với firmware.
       scripts: ['js/app_common.js', 'js/family_epd.js', 'js/dithering.js', 'js/paint.js', 'js/crop.js',
-        'js/2_13/common.js', 'js/2_13n/mode_preview.js', 'js/2_13n/main.js'],
+        'js/2_13n/common.js', 'js/2_13n/mode_preview.js', 'js/2_13n/main.js'],
     },
     '2_9': {
       label: '2.9"',

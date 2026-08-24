@@ -2,10 +2,14 @@
  * Mode gallery: canvas previews of every display mode with an apply button.
  * Previews are drawn at the panel's landscape size (212x104 / 250x122,
  * supersampled 2x) and mirror the firmware layouts in user_custs1_impl.c.
- * SỐ MODE FIRMWARE = VỊ TRÍ THẺ (thẻ 1 = mode 1 ... Ảnh đã lưu = 28,
- * đặt bằng 0x94 01; 29 = Đồng hồ tối giản không có thẻ).
- * 4 thẻ CUỐI cố định: Đếm ngược (5), Bảng tên (6), Tự thiết kế (15), Ảnh đã lưu
- * — chế độ mới thêm TRƯỚC nhóm này. Thẻ «Đồng hồ tối giản» (2) đã bỏ theo yêu cầu.
+ * BẢN CHO FIRMWARE v2.x — đánh số LIỀN MẠCH theo quy ước của cả họ máy:
+ *     0      = Ảnh đã lưu
+ *     1..29  = các chế độ, liền mạch, đúng thứ tự thẻ ở đây
+ * Bản cho firmware v1.10 nằm ở js/2_13 và giữ cách đánh số cũ (Ảnh = 28) —
+ * ĐỪNG chép qua lại giữa hai bản.
+ *
+ * Số ở đây là MỘT GIAO ƯỚC với enum display_mode_t trong firmware
+ * (epd_2_13inch_new/src/gui/GUI.h). Đổi một bên là phải đổi bên kia.
  */
 (function () {
   // BK/WH/GY, WD_FULL, WD_HDR, pad2, dateLine, voltValue, panelTempVal,
@@ -103,8 +107,16 @@
     right(x, panelTempVal() + '°C', W - 4, H - 3, BK);
   }
 
-  // (thẻ «Đồng hồ tối giản» đã bỏ theo yêu cầu — hàm vẽ m2 xóa kèm; firmware
-  //  vẫn còn mode 29 nhận lệnh 0x98 29 để tương thích ngược)
+  // --- mode 29: Đồng hồ tối giản — chỉ giờ thật lớn + một dòng ngày mảnh.
+  // v1.10 đã bỏ thẻ này nên hàm vẽ bị xoá kèm; v2.0 đưa thẻ trở lại (đánh số
+  // liền mạch thì mọi chế độ đều phải có thẻ) nên dựng lại hàm vẽ.
+  function m2(x, now, W, H) {
+    x.font = Math.round(H * 0.55) + 'px "Hobo Std","HoboStd",cursive';
+    center(x, pad2(now.getHours()) + ':' + pad2(now.getMinutes()), W / 2, H * 0.64, BK);
+    font(x, 9, 0);
+    center(x, WD_SUN[now.getDay()] + '  ' + pad2(now.getDate()) + '/' +
+              pad2(now.getMonth() + 1) + '  ' + lunarText(now), W / 2, H - 5, BK);
+  }
 
   // --- mode 3: Lịch tháng ---
   function m3(x, now, W, H) {
@@ -856,7 +868,12 @@
     { mode: 25, name: 'Đếm ngược sự kiện', tick: 'Làm mới mỗi phút — đặt ở ô bên dưới', draw: m5 },
     { mode: 26, name: 'Bảng tên / ghi chú', tick: 'Tĩnh — soạn ở ô bên dưới', draw: m6 },
     { mode: 27, name: 'Tự thiết kế', tick: 'Làm mới mỗi phút — soạn ở «Thiết kế màn hình»', draw: m15 },
-    { mode: 'img', name: 'Ảnh đã lưu', tick: 'Ảnh tĩnh từ flash', draw: mImg },
+    // v2.0: đánh số LIỀN MẠCH theo quy ước họ máy — ẢNH về 0, nên chỗ 28
+    // trả ra cho «Tự thiết kế 2», và «Đồng hồ tối giản» (29) được đưa lại
+    // vào gallery thay vì chỉ chọn được bằng lệnh.
+    { mode: 28, name: 'Tự thiết kế 2', tick: 'Làm mới mỗi phút — soạn ở «Thiết kế màn hình»', draw: m15 },
+    { mode: 29, name: 'Đồng hồ tối giản', tick: 'Làm mới mỗi phút', draw: m2 },
+    { mode: 0, name: 'Ảnh đã lưu', tick: 'Ảnh tĩnh từ flash', draw: mImg },
   ];
 
   // highlight the mode the device reports or was just set to
