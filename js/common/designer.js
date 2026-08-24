@@ -8,6 +8,12 @@
  *   [62..109] text1 (UTF-8, NUL-padded, 48B)  [110..157] text2 (48B)
  */
 (function () {
+  /* KHO MAN lay tu HO SO MAY (js/<may>/profile.gen.js). Bo cuc nguoi dung xep
+     duoc luu theo toa do THAT tren man, nen moi phep quy doi chuot va chan bien
+     deu dung hai so nay — day la thu DUY NHAT khien file nay phu thuoc may. */
+  const DS_W = (window.EPD_PROFILE && window.EPD_PROFILE.rong) || 400;
+  const DS_H = (window.EPD_PROFILE && window.EPD_PROFILE.cao) || 300;
+
   const pv = window.__pv; // helpers exposed by mode_preview.js
   // Tu BWR v2.7 / 4 mau v3.7 co HAI «Tu thiet ke», moi cai bo cuc + anh nen +
   // icon rieng. Bo cuc luu rieng trong trinh duyet theo tung thiet ke; khoa cu
@@ -319,7 +325,7 @@
   };
 
   function renderLayout(x, now, withSelection) {
-    x.fillStyle = '#f6f4ec'; x.fillRect(0, 0, 400, 300);
+    x.fillStyle = '#f6f4ec'; x.fillRect(0, 0, DS_W, DS_H);
     // ảnh nền toàn màn (nếu đã đặt) — vẽ trước, widget nằm đè lên
     if (st.bgPrev) {
       // ảnh tải xong thì vẽ lại CẢ trình sửa lẫn thẻ xem trước — thẻ của
@@ -329,7 +335,7 @@
         bgImg.onload = () => { redraw(); if (window.refreshModeGallery) window.refreshModeGallery(); };
         bgImg.src = st.bgPrev;
       }
-      if (bgImg.complete && bgImg.naturalWidth) x.drawImage(bgImg, 0, 0, 400, 300);
+      if (bgImg.complete && bgImg.naturalWidth) x.drawImage(bgImg, 0, 0, DS_W, DS_H);
     }
     if (st.frame >= 1) { x.strokeStyle = pv.BK; x.lineWidth = 2; x.strokeRect(3, 3, 394, 294); }
     if (st.frame >= 2) x.strokeRect(7, 7, 386, 286);
@@ -462,13 +468,13 @@
   function evPos(ev) {
     const r = canvas.getBoundingClientRect();
     const t = ev.touches ? ev.touches[0] : ev;
-    return [(t.clientX - r.left) * 400 / r.width, (t.clientY - r.top) * 300 / r.height];
+    return [(t.clientX - r.left) * DS_W / r.width, (t.clientY - r.top) * DS_H / r.height];
   }
 
   function clampW(w) {
     const [bw, bh] = dimOf(w);
-    w.x = Math.round(Math.max(0, Math.min(400 - bw, w.x)));
-    w.y = Math.round(Math.max(0, Math.min(300 - bh, w.y)));
+    w.x = Math.round(Math.max(0, Math.min(DS_W - bw, w.x)));
+    w.y = Math.round(Math.max(0, Math.min(DS_H - bh, w.y)));
   }
 
   window.dsAdd = function (type) {
