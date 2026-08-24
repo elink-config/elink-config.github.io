@@ -864,35 +864,30 @@
   window.__pv = { font, center, multi, seg7, segStr, battery, analogClock, monthGrid, pad2, lunarish,
                   RED, BK, WH, WD_SHORT, WD_FULL };
 
-  const MODE_LIST = [
-    { mode: 1, name: 'Lịch tháng', tick: 'Cập nhật lúc 0h', id: 'calendarmodebutton', draw: m1 },
-    { mode: 2, name: 'Đồng hồ + Lịch', tick: 'Làm mới mỗi phút', id: 'combomodebutton', draw: m3 },
-    { mode: 3, name: 'Lịch để bàn (đỏ)', tick: 'Làm mới mỗi phút', id: 'redcombomodebutton', draw: m4 },
-    { mode: 4, name: 'Lịch VN (Can Chi)', tick: 'Cập nhật lúc 0h', id: 'vncalendarmodebutton', draw: m5 },
-    { mode: 5, name: 'Đồng hồ số', tick: 'Làm mới mỗi phút', id: 'digitalmodebutton', draw: m6 },
-    { mode: 6, name: 'Đồng hồ kim', tick: 'Làm mới mỗi phút', id: 'analogmodebutton', draw: m7 },
-    { mode: 7, name: 'Lịch bloc', tick: 'Cập nhật lúc 0h', id: 'dayblocmodebutton', draw: m8 },
-    { mode: 8, name: 'Lịch tuần', tick: 'Làm mới mỗi phút', id: 'weekmodebutton', draw: m9 },
-    { mode: 9, name: 'Giờ + lịch tháng', tick: 'Làm mới mỗi phút', id: 'digitalcalmodebutton', draw: m10 },
-    { mode: 10, name: 'Kim + thẻ ngày', tick: 'Làm mới mỗi phút', id: 'analogdaymodebutton', draw: m11 },
-    { mode: 11, name: 'Tối giản', tick: 'Cập nhật lúc 0h', id: 'minimalmodebutton', draw: m12 },
-    { mode: 12, name: 'Lịch vạn niên', tick: 'Cập nhật lúc 0h', id: 'vanniemodebutton', draw: m13 },
-    { mode: 13, name: 'Lịch dương + âm', nameNew: 'Lịch dương + âm', tick: 'Cập nhật lúc 0h', tickNew: 'Làm mới mỗi phút', id: 'countdownmodebutton', draw: m14 },
-    { mode: 14, name: 'Hai tháng', tick: 'Cập nhật lúc 0h', id: 'twomonthmodebutton', draw: m15 },
-    { mode: 15, name: 'Lịch cả năm', tick: 'Cập nhật lúc 0h', id: 'yearmodebutton', draw: m16 },
-    { mode: 16, name: 'Nhiệt kế', tick: 'Làm mới mỗi phút', id: 'thermomodebutton', draw: m17 },
-    { mode: 17, name: 'Ghi chú', tick: 'Làm mới mỗi phút', id: 'notemodebutton', draw: m19 },
-    { mode: 18, name: 'Núi tuyết 8-bit', tick: 'Cập nhật lúc 0h', id: 'retromtnmodebutton', draw: m21 },
-    { mode: 19, name: 'Hoàng hôn 8-bit', tick: 'Làm mới mỗi phút', id: 'retrosunsetmodebutton', draw: m22 },
-    { mode: 20, name: 'Khủng long 8-bit', tick: 'Cập nhật lúc 0h', id: 'retrowinmodebutton', draw: m23 },
-    { mode: 21, name: 'Thành phố 8-bit', tick: 'Làm mới mỗi phút', id: 'retrocitymodebutton', draw: m24 },
-    { mode: 22, name: 'Tự thiết kế 1', tick: 'Làm mới mỗi phút', id: 'custommodebutton', draw: (x, n) => m20(x, n, 0) },
-    { mode: 23, name: 'Tự thiết kế 2', tick: 'Làm mới mỗi phút', id: 'custommodebutton2', draw: (x, n) => m20(x, n, 1) },
-    // thẻ 24 vẽ bằng CHÍNH hàm dựng bảng của js/4_2/timetable.js nên thẻ luôn
-    // khớp bảng người dùng đang gõ (không có bảng thì nó vẽ màn hướng dẫn)
-    { mode: 24, name: 'Thời khóa biểu', tick: 'Cập nhật lúc 0h', id: 'timetablemodebutton',
-      draw: (x, n) => { if (window.ttRenderPreview) window.ttRenderPreview(x, n, is4c()); } },
-  ];
+  /* BANG THE NAY DUOC SINH RA — xem js/4_2/modes.gen.js (window.EPD_MODES),
+   * nguon la tools/profile/4_2.json trong repo firmware.
+   *
+   * VI SAO: truoc day danh sach che do phai giu KHOP BANG TAY giua enum
+   * display_mode_t cua firmware va bang nay. Lech mot so la bam the nay ra che
+   * do khac — da xay ra mot lan. Nay ca hai deu sinh tu mot ho so.
+   *
+   * Ham ve VAN NAM O DAY: chung dung cac helper cuc bo cua IIFE (font, seg7,
+   * monthGrid...) nen khong dua ra file sinh duoc. Ho so chi mang KHOA, bang
+   * DRAW duoi day noi khoa vao ham. */
+  const DRAW = {
+    m1, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15, m16, m17,
+    m19, m21, m22, m23, m24,
+    custom:  (x, n) => m20(x, n, 0),
+    custom2: (x, n) => m20(x, n, 1),
+    // the 24 ve bang CHINH ham dung bang cua js/4_2/timetable.js nen the luon
+    // khop bang nguoi dung dang go (khong co bang thi no ve man huong dan)
+    timetable: (x, n) => { if (window.ttRenderPreview) window.ttRenderPreview(x, n, is4c()); },
+  };
+  const MODE_LIST = (window.EPD_MODES || []).map(e => {
+    const d = DRAW[e.draw];
+    if (!d) console.error('mode ' + e.mode + ': khong co ham ve cho khoa "' + e.draw + '"');
+    return Object.assign({}, e, { draw: d || (() => {}) });
+  });
 
   // highlight the mode the device reports (config byte 11) or was just set to
   window.highlightMode = function (mode) {
