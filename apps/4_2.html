@@ -6,10 +6,12 @@
 				<div class="flex-group right debug only-4_2">
 					<label for="epddriver">Driver</label>
 					<select id="epddriver" onchange="updateDitcherOptions()">
-					<option value="01" data-color="blackWhiteColor" data-size="4.2_400_300">4.2" (Đen trắng, UC8176)</option>
-					<option value="03" data-color="threeColor" data-size="4.2_400_300">4.2" (Ba màu, UC8176)</option>
-					<option value="04" data-color="blackWhiteColor" data-size="4.2_400_300">4.2" (Đen trắng, SSD1619)</option>
+					<!-- Chỉ còn SSD1619. Hai option UC8176 (01 = đen trắng, 03 = ba màu)
+					     đã bỏ: project epd_4_2inch CHƯA BAO GIỜ có driver UC8176 (đã tra
+					     lịch sử git), nên chọn phải chúng là firmware âm thầm rơi về
+					     SSD1619 còn webtool thì vẫn dither theo số mặt sai -> ảnh gửi ra hỏng. -->
 					<option value="02" data-color="threeColor" data-size="4.2_400_300" selected>4.2" (Ba màu, SSD1619)</option>
+					<option value="04" data-color="blackWhiteColor" data-size="4.2_400_300">4.2" (Đen trắng, SSD1619)</option>
 					</select>
 				</div>
 				<div class="flex-group debug only-4_2">
@@ -296,6 +298,20 @@
 					<button id="sendimgbutton5" type="button" class="primary" onclick="sendimg(4)" style="display:none">Gửi ảnh khe 5</button>
 				</div>
 			</div>
+			<!-- HIỆN LẠI ảnh đã lưu (fw >= 2.9). Trước đây lỡ chuyển sang một giao
+			     diện lịch là không còn đường nào quay về ảnh: vòng tự đổi ảnh chỉ
+			     chạy khi máy đang ở chế độ ẢNH, và không có lệnh «hiện khe N».
+			     Cách duy nhất là gửi lại cả tấm ảnh dù nó đã nằm sẵn trong máy. -->
+			<div class="flex-container" id="imgShowRow" style="display:none">
+				<div class="flex-group btn-row">
+					<span class="mode-gallery-hint" style="margin:0 8px 0 0">Hiện lại ảnh đã lưu trong máy:</span>
+					<button id="showimgbutton1" type="button" class="secondary" onclick="showImgSlot(0)">Khe 1</button>
+					<button id="showimgbutton2" type="button" class="secondary" onclick="showImgSlot(1)">Khe 2</button>
+					<button id="showimgbutton3" type="button" class="secondary" onclick="showImgSlot(2)">Khe 3</button>
+					<button id="showimgbutton4" type="button" class="secondary" onclick="showImgSlot(3)">Khe 4</button>
+					<button id="showimgbutton5" type="button" class="secondary" onclick="showImgSlot(4)">Khe 5</button>
+				</div>
+			</div>
 			<!-- Anh nen cua «Tu thiet ke» - hang rieng cho khoi lan voi khe anh -->
 			<div class="flex-container">
 				<div class="flex-group btn-row">
@@ -310,15 +326,18 @@
 						<input type="checkbox" id="imgAutoCHK" onchange="setImgAuto()">
 						Tự động đổi ảnh đã tải
 					</label>
+					<!-- THỨ TỰ TĂNG DẦN: 15p → 30p → 45p → 1h → 12h → 24h.
+					     Chu kỳ tính bằng PHÚT dùng CHUNG một byte img_interval với chu kỳ
+					     giờ — firmware hiểu 15/30/45 là phút vì không có chu kỳ 15/30/45
+					     giờ. Cả ba đều chia hết 86400 nên mốc đổi ảnh vẫn canh theo 00:00.
+					     Ba nấc PHÚT chỉ hiện với firmware >= 2.9 (xem imgIntervalMin):
+					     máy cũ nhận byte đó rồi âm thầm rơi về 24 giờ. -->
+					<span class="imgIntervalMin" style="display:none"><label><input type="radio" name="imgInterval" value="15" onchange="setImgAuto()"> 15 phút</label></span>
+					<span class="imgIntervalMin" style="display:none"><label><input type="radio" name="imgInterval" value="30" onchange="setImgAuto()"> 30 phút</label></span>
+					<span class="imgIntervalMin" style="display:none"><label><input type="radio" name="imgInterval" value="45" onchange="setImgAuto()"> 45 phút</label></span>
 					<label><input type="radio" name="imgInterval" value="1" onchange="setImgAuto()"> 1 giờ</label>
 					<label><input type="radio" name="imgInterval" value="12" onchange="setImgAuto()"> 12 giờ</label>
 					<label><input type="radio" name="imgInterval" value="24" checked onchange="setImgAuto()"> 24 giờ</label>
-					<!-- Chu kỳ tính bằng PHÚT: cùng một byte img_interval, firmware hiểu
-					     15/30/40 là phút vì không có chu kỳ 15/30/40 giờ. Đổi ảnh dày thì
-					     mỗi lần đều là một lượt làm mới toàn màn, hao pin hơn hẳn. -->
-					<label><input type="radio" name="imgInterval" value="15" onchange="setImgAuto()"> 15 phút</label>
-					<label><input type="radio" name="imgInterval" value="30" onchange="setImgAuto()"> 30 phút</label>
-					<label><input type="radio" name="imgInterval" value="40" onchange="setImgAuto()"> 40 phút</label>
 					<span class="mode-gallery-hint" style="margin:0" id="imgAutoHint">Cần gửi ảnh vào ít nhất 2 khe để bật tự đổi ảnh (khe 1 → 2 → 3 → 1).</span>
 				</div>
 			</div>
@@ -416,6 +435,14 @@
 					<span id="otaProgress" class="system-time"></span>
 				</div>
 			</div>
+			<!-- Khôi phục cài đặt gốc (fw >= 2.9): đường cứu khi máy dùng không
+			     được vì cấu hình/giao diện hỏng. Ẩn với firmware chưa hiểu lệnh 0x2F. -->
+			<div class="flex-container" id="factoryResetRow" style="display:none">
+				<div class="flex-group">
+					<button id="factoryResetBtn" type="button" class="secondary" onclick="factoryReset()">Khôi phục cài đặt gốc</button>
+					<span class="mode-gallery-hint" style="margin:0">Đưa máy về như lúc mới: xoá cấu hình, hai giao diện «Tự thiết kế», icon, thời khoá biểu và <b>tất cả ảnh trong khe</b>. Dùng khi máy hiển thị sai hoặc không dùng được.</span>
+				</div>
+			</div>
 			<p class="mode-gallery-hint">Nạp file <b>.bin</b> tải về từ mục «Danh sách firmware» bên dưới. Không tắt nguồn thiết bị khi đang cập nhật — nếu lỗi giữa chừng, thiết bị vẫn chạy firmware cũ.</p>
 		</fieldset>
 		<fieldset>
@@ -433,8 +460,6 @@
 						</tr>
 					</thead>
 					<tbody>
-						<!-- Thêm firmware mới: chép dòng mẫu dưới, sửa nội dung; file .bin
-						     đặt trong thư mục "OTA firmware/" của repo, ví dụ:
 						<tr>
 							<td>1</td>
 							<td>1.0</td>
@@ -443,7 +468,6 @@
 							<td><a href="OTA firmware/4_2/fw_4_2inch_v1.0.bin" download>Tải về</a></td>
 							<td><button type="button" class="primary" onclick="fwInstallRow(this)">Cài ngay</button></td>
 						</tr>
-						-->
                         <tr>
 							<td>1</td>
 							<td>1.0</td>
@@ -588,14 +612,6 @@
 								<td><a href="OTA firmware/4_2/fw_4_2inch_v2.7.bin" download>Tải về</a></td>
 								<td><button type="button" class="primary" onclick="fwInstallRow(this)">Cài ngay</button></td>
 							</tr>
-							<tr class="fw-alt">
-							<td>—</td>
-							<td>r1.0</td>
-							<td><b>ĐỔI MÁY 4.2" THÀNH MÁY ĐỌC SÁCH</b> — không phải firmware lịch! Nạp bản này thì máy 4.2" (400×300) thành máy đọc sách: gửi sách tiếng Việt vào máy, 3 cỡ chữ, lật trang bằng nút bấm. Sau khi nạp, tên Bluetooth đổi thành <b>DIY-4_2R-xxxx</b> — kết nối lại sẽ thấy giao diện đọc sách. Muốn quay về lịch/đồng hồ thì nạp lại firmware 4.2" mới nhất ở các hàng trên.<br><b>PHẢI hàn thêm 3 nút bấm</b> thì mới lật trang được:<details style="margin-top:6px"><summary style="cursor:pointer">Hướng dẫn hàn nút &amp; cách dùng (kèm ảnh vị trí)</summary><p style="margin:6px 0 0">Hàn 3 nút từ các điểm test xuống <b>GND</b> (nhấn = nối đất, nên nối tiếp điện trở ~1kΩ). Mặc định: trang sau = <b>SWCLK (P1_4)</b>, trang trước = <b>TX (P0_4)</b>, trang chủ = <b>SWDIO (P1_5)</b>. Đừng hàn vào pad <b>RX/URX</b> hay <b>VBAT</b>. Không có nút nguồn: bật/tắt Bluetooth nằm trong menu Trang chủ trên máy. Ở màn Trang chủ, hai nút trang sau/trước <b>di chuyển menu</b>, nút trang chủ <b>chọn</b>.</p><div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:6px"><figure style="flex:1 1 300px;max-width:520px;margin:0"><img src="img/board_6tp_v1.jpg" style="width:100%;display:block;border-radius:6px" alt="[Thiếu ảnh img/board_6tp_v1.jpg]"><figcaption style="font-size:12px;margin-top:4px">Board «Alibaba Group 20181101»: GND = pad thứ 2, Trang trước = pad <b>UTX</b> (thứ 4) trong hàng 5 chân; hàng 2 chân cạnh MCU: <b>SWDIO bên trái = Trang chủ</b>, <b>SWCLK bên phải = Trang sau</b>.</figcaption></figure><figure style="flex:1 1 300px;max-width:520px;margin:0"><img src="img/board_6tp_v2.jpg" style="width:100%;display:block;border-radius:6px" alt="[Thiếu ảnh img/board_6tp_v2.jpg]"><figcaption style="font-size:12px;margin-top:4px">Board «BZT06629»: GND = <b>TP2</b> (thứ 2), Trang trước = <b>TP7</b> (thứ 4) trong hàng 6 chân; dưới thạch anh: <b>TP5 = Trang sau</b>, <b>TP6 ngay dưới = Trang chủ</b>.</figcaption></figure></div></details></td>
-							<td>16/08/2026</td>
-							<td><a href="OTA firmware/reader_4_2/fw_reader_4_2inch_r1.0.bin" download>Tải về</a></td>
-							<td><button type="button" class="primary" onclick="fwInstallRow(this)">Cài ngay</button></td>
-						</tr>
 								<tr>
 									<td>19</td>
 									<td>2.8</td>
@@ -604,6 +620,22 @@
 									<td><a href="OTA firmware/4_2/fw_4_2inch_v2.8.bin" download>Tải về</a></td>
 									<td><button type="button" class="primary" onclick="fwInstallRow(this)">Cài ngay</button></td>
 								</tr>
+								<tr>
+									<td>20</td>
+									<td>3.0</td>
+									<td>Chạy ổn định hơn: máy không còn bị đứng màn, và luôn kết nối được kể cả khi lỗi. Thêm nút <b>«Khôi phục cài đặt gốc»</b> và nút <b>hiện lại ảnh đã lưu</b>. Vẽ màn nhanh hơn. «Tự đổi ảnh» đổi nấc 40 phút thành <b>45 phút</b>.</td>
+									<td>24/08/2026</td>
+									<td><a href="OTA firmware/4_2/fw_4_2inch_v3.0.bin" download>Tải về</a></td>
+									<td><button type="button" class="primary" onclick="fwInstallRow(this)">Cài ngay</button></td>
+								</tr>
+							<tr class="fw-alt">
+							<td>—</td>
+							<td>r1.0</td>
+							<td><b>ĐỔI MÁY 4.2" THÀNH MÁY ĐỌC SÁCH</b> — không phải firmware lịch! Nạp bản này thì máy 4.2" (400×300) thành máy đọc sách: gửi sách tiếng Việt vào máy, 3 cỡ chữ, lật trang bằng nút bấm. Sau khi nạp, tên Bluetooth đổi thành <b>DIY-4_2R-xxxx</b> — kết nối lại sẽ thấy giao diện đọc sách. Muốn quay về lịch/đồng hồ thì nạp lại firmware 4.2" mới nhất ở các hàng trên.<br><b>PHẢI hàn thêm 3 nút bấm</b> thì mới lật trang được:<details style="margin-top:6px"><summary style="cursor:pointer">Hướng dẫn hàn nút &amp; cách dùng (kèm ảnh vị trí)</summary><p style="margin:6px 0 0">Hàn 3 nút từ các điểm test xuống <b>GND</b> (nhấn = nối đất, nên nối tiếp điện trở ~1kΩ). Mặc định: trang sau = <b>SWCLK (P1_4)</b>, trang trước = <b>TX (P0_4)</b>, trang chủ = <b>SWDIO (P1_5)</b>. Đừng hàn vào pad <b>RX/URX</b> hay <b>VBAT</b>. Không có nút nguồn: bật/tắt Bluetooth nằm trong menu Trang chủ trên máy. Ở màn Trang chủ, hai nút trang sau/trước <b>di chuyển menu</b>, nút trang chủ <b>chọn</b>.</p><div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:6px"><figure style="flex:1 1 300px;max-width:520px;margin:0"><img src="img/board_6tp_v1.jpg" style="width:100%;display:block;border-radius:6px" alt="[Thiếu ảnh img/board_6tp_v1.jpg]"><figcaption style="font-size:12px;margin-top:4px">Board «Alibaba Group 20181101»: GND = pad thứ 2, Trang trước = pad <b>UTX</b> (thứ 4) trong hàng 5 chân; hàng 2 chân cạnh MCU: <b>SWDIO bên trái = Trang chủ</b>, <b>SWCLK bên phải = Trang sau</b>.</figcaption></figure><figure style="flex:1 1 300px;max-width:520px;margin:0"><img src="img/board_6tp_v2.jpg" style="width:100%;display:block;border-radius:6px" alt="[Thiếu ảnh img/board_6tp_v2.jpg]"><figcaption style="font-size:12px;margin-top:4px">Board «BZT06629»: GND = <b>TP2</b> (thứ 2), Trang trước = <b>TP7</b> (thứ 4) trong hàng 6 chân; dưới thạch anh: <b>TP5 = Trang sau</b>, <b>TP6 ngay dưới = Trang chủ</b>.</figcaption></figure></div></details></td>
+							<td>16/08/2026</td>
+							<td><a href="OTA firmware/reader_4_2/fw_reader_4_2inch_r1.0.bin" download>Tải về</a></td>
+							<td><button type="button" class="primary" onclick="fwInstallRow(this)">Cài ngay</button></td>
+						</tr>
 					</tbody>
 				</table>
 			</div>
