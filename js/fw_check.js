@@ -29,7 +29,15 @@ window.FwCheck = (function () {
   // bản lớn nhất trong bảng «Danh sách firmware» (cột 2 = Version)
   function latest() {
     let best = null;
-    document.querySelectorAll('.fw-table tbody tr').forEach(tr => {
+    /* CHỈ quét bảng «Danh sách firmware» của app, KHÔNG quét bảng «Thiết bị
+     * được hỗ trợ» ở trang chủ (nó cũng mang class .fw-table nhưng là bảng
+     * LIỆT KÊ CÁC DÒNG MÁY, có cột phiên bản của máy KHÁC).
+     *
+     * Hiện tại chưa nổ chỉ vì cột 1 của bảng đó là tên Bluetooth nên parse ra
+     * 0 và bị loại — tức là đang dựa vào một sự trùng hợp về thứ tự cột. Đổi
+     * thứ tự cột bảng kia một cái là webtool bắt đầu so phiên bản của máy này
+     * với firmware của máy khác rồi nhắc cập nhật sai. */
+    document.querySelectorAll('.fw-table:not(.dev-table) tbody tr').forEach(tr => {
       if (tr.cells && tr.cells.length > 1) {
         const v = parse(tr.cells[1].textContent);
         if (v.some(x => x > 0) && (!best || cmp(v, best.ver) > 0)) {
