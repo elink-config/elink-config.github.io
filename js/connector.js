@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  const VER = '20260824i'; // cache-buster, keep in sync with index.html
+  const VER = '20260825b'; // cache-buster, keep in sync with index.html
 
   const EPD42_SERVICE = '62750001-d828-918d-fb46-b6c11c675aec';
   const HM213_SERVICE = '0000ff00-0000-1000-8000-00805f9b34fb';
@@ -39,6 +39,29 @@
       scripts: ['js/app_common.js', 'js/family_hm.js', 'js/dithering.js', 'js/paint.js', 'js/crop.js',
         'js/2_13/common.js',
         'js/2_13/designer.js', 'js/diy_store.js', 'js/2_13/mode_preview.js', 'js/2_13/main.js'],
+    },
+    // ĐỜI MỚI của chính máy 2.13" — firmware v2.x dựng lại trên nền dùng chung.
+    //
+    // Vì sao PHẢI có hai mục cùng tiền tố tên: hai đời máy quảng bá cùng tên
+    // DIY-2_13-xxxx nhưng nói HAI dịch vụ BLE khác hẳn — v1.10 dùng UUID 16
+    // bit 0xFF00 (họ family_hm), v2.x dùng UUID 128 bit của dòng EPD (họ
+    // family_epd). Không thể đoán từ tên, và KHÔNG được đổi mục cũ sang họ
+    // mới: máy khách còn chạy v1.10 sẽ mất kết nối ngay, mà đường lên đời lại
+    // đi qua chính app cũ (OTA bằng app cũ rồi mới chuyển sang app này).
+    //
+    // Người dùng chọn bằng nút ở hàng «Hoặc kết nối tới một thiết bị cụ thể».
+    // Không bấm gì thì detectType vẫn trả về mục CŨ như trước — máy ngoài thị
+    // trường không bị ảnh hưởng.
+    '2_13n': {
+      label: '2.13" (firmware v2.x)',
+      sub: 'Màn 2.13" đen trắng, firmware v2.0 trở lên (DIY-2_13, DA14585): kết nối, cấu hình và truyền hình ảnh',
+      fragment: 'apps/2_13n.html',
+      prefixes: ['DIY-2_13-'],
+      // js/2_13/common.js dùng CHUNG với app đời cũ: nó chỉ chứa hằng số và
+      // helper vẽ (BK/WH, tên thứ, chuỗi âm lịch...), không dính giao thức.
+      // Hai app dùng chung một bản để sửa một chỗ là cả hai theo.
+      scripts: ['js/app_common.js', 'js/family_epd.js', 'js/dithering.js', 'js/paint.js', 'js/crop.js',
+        'js/2_13/common.js', 'js/2_13n/mode_preview.js', 'js/2_13n/main.js'],
     },
     '2_9': {
       label: '2.9"',
@@ -137,8 +160,19 @@
   //   DIY-10_2-xxxx  → 10.2"
   // DIY-7_5V-xxxx = TÊN CŨ của 7.5" (firmware trước v1.0) — vẫn nhận.
   // DIY-xxxx trơ = board 4.2" đời cũ chưa có phần tên kích thước.
+  // Loại người dùng vừa bấm ở hàng «kết nối tới một thiết bị cụ thể». Cần vì
+  // hai đời máy 2.13" quảng bá CÙNG MỘT TÊN mà nói hai dịch vụ BLE khác nhau —
+  // tên không phân biệt được, chỉ người dùng biết máy mình đã lên đời chưa.
+  let explicitPick = null;
+
   function detectType(name) {
     name = name || '';
+    // Bấm đúng nút thì theo nút, miễn là tên máy vẫn khớp tiền tố của loại đó
+    // (bấm nhầm loại khác hẳn thì vẫn rơi về nhận diện theo tên bên dưới).
+    if (explicitPick && APPS[explicitPick] &&
+        APPS[explicitPick].prefixes.some(p => name.startsWith(p))) {
+      return explicitPick;
+    }
     if (name.startsWith('DLG-CLOCK-')) return 'dlg';
     if (name.startsWith('DIY-2_13-')) return '2_13';
     if (name.startsWith('DIY-2_9-')) return '2_9';
@@ -561,7 +595,7 @@
       hint.textContent = cfg.prefixes.join(' / ') + 'xxxx';
       b.appendChild(name);
       b.appendChild(hint);
-      b.onclick = () => hubPreConnect(type);
+      b.onclick = () => { explicitPick = type; hubPreConnect(type); };
       box.appendChild(b);
     }
   }
