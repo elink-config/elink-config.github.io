@@ -43,26 +43,10 @@
     x.textAlign = 'right'; if (col) x.fillStyle = col; x.fillText(s, rx, y); x.textAlign = 'left';
   }
 
-  // chữ số 7 đoạn (giả lập font DSEG của firmware); u = 1/9 chiều cao
-  const SEG = { '0': 0x3F, '1': 0x06, '2': 0x5B, '3': 0x4F, '4': 0x66, '5': 0x6D, '6': 0x7D, '7': 0x07, '8': 0x7F, '9': 0x6F };
-  function seg7(x, px, py, u, ch, col) {
-    x.fillStyle = col || BK;
-    if (ch === ':') { x.fillRect(px + u * 0.6, py + 2.6 * u, u, u); x.fillRect(px + u * 0.6, py + 5.4 * u, u, u); return 2.5 * u; }
-    const m = SEG[ch] || 0, r = (a, b, c, d) => x.fillRect(px + a * u, py + b * u, c * u, d * u);
-    if (m & 1) r(1, 0, 3, 1); if (m & 2) r(4, 1, 1, 3); if (m & 4) r(4, 5, 1, 3); if (m & 8) r(1, 8, 3, 1);
-    if (m & 16) r(0, 5, 1, 3); if (m & 32) r(0, 1, 1, 3); if (m & 64) r(1, 4, 3, 1);
-    return 6 * u;
-  }
-  function segStr(x, px, py, u, s, col) {
-    let w = 0;
-    for (const ch of s) w += seg7(x, px + w, py, u, ch, col);
-    return w;
-  }
-  function segWidth(u, s) {
-    let w = 0;
-    for (const ch of s) w += (ch === ':') ? 2.5 * u : 6 * u;
-    return w;
-  }
+  // Cac ham ve so 7 doan (SEG/seg7/segStr/segWidth) DA GO 25/08/2026.
+  // Chung mo phong font DSEG7-50, ma DSEG7 da bi go khoi firmware tu v1.10 vi
+  // het RAM (thay bang arial52 — xem epd_gui.c). Giu lai chi lam the gallery
+  // hua mot kieu chu may khong ve duoc. Dung them lai neu khong nap font moi.
 
   // pin của firmware: khung 15×9, đầu (nub) bên TRÁI, điện áp "X.Xv" chữ NHỎ
   // (6x10) bên trái icon, CĂN GIỮA theo icon. Mức pin theo điện áp tuyến tính:
@@ -111,8 +95,13 @@
   // v1.10 đã bỏ thẻ này nên hàm vẽ bị xoá kèm; v2.0 đưa thẻ trở lại (đánh số
   // liền mạch thì mọi chế độ đều phải có thẻ) nên dựng lại hàm vẽ.
   function m2(x, now, W, H) {
-    x.font = Math.round(H * 0.55) + 'px "Hobo Std","HoboStd",cursive';
-    center(x, pad2(now.getHours()) + ':' + pad2(now.getMinutes()), W / 2, H * 0.64, BK);
+    // Firmware dung ARIAL (font_dseg cua v1.10), KHONG phai Hobo — Hobo danh
+    // rieng cho the 1. Va co ca nhiet do goc trai + pin goc phai.
+    tempCorner(x);
+    statusBatt(x, W);
+    const ty = 14 + (H - 14 - 18 - 50) / 2;   // khop DrawMinimal
+    x.font = ARIAL_BIG;
+    center(x, pad2(now.getHours()) + ':' + pad2(now.getMinutes()), W / 2, ty + 48, BK);
     font(x, 9, 0);
     center(x, WD_SUN[now.getDay()] + '  ' + pad2(now.getDate()) + '/' +
               pad2(now.getMonth() + 1) + '  ' + lunarText(now), W / 2, H - 5, BK);
@@ -120,31 +109,33 @@
 
   // --- mode 3: Lịch tháng ---
   function m3(x, now, W, H) {
-    font(x, 11, 1); x.fillStyle = BK;
-    x.fillText('Tháng ' + (now.getMonth() + 1), 6, 14);
-    serif(x, 44, 1);
-    center(x, now.getDate(), 39, H / 2 + 16, BK);
-    font(x, 11, 1);
-    center(x, WD_FULL[now.getDay()], 39, H - 9, BK);
-    line(x, 78, 4, 78, H - 4);
+    // Vach chia va luoi SUY TU W (firmware: vline = W*78/212). Ghim cung
+    // 78/82 chi dung o kho 212x104, lech han o 250x122.
+    const vline = (W * 78 / 212) | 0, gx = vline + 4, gw = W - gx - 2;
+    const cw = (gw / 7) | 0, lcx = (vline / 2) | 0;
+    font(x, 14, 0); x.fillStyle = BK;                    // firmware: unifont 16px
+    x.fillText('Tháng ' + (now.getMonth() + 1), 6, 16);
+    serif(x, TIMES_BIG, 1);
+    center(x, now.getDate(), lcx, H / 2 + 25, BK);       // fw: (H/2-40) + BL_TIMES
+    font(x, 14, 0);
+    center(x, WD_FULL[now.getDay()], lcx, H - 6, BK);
+    line(x, vline, 4, vline, H - 4);
 
-    const gx = 82, cw = (W - 84) / 7;
     const first = new Date(now.getFullYear(), now.getMonth(), 1).getDay();
     const firstCol = (first + 6) % 7;                    // cột 0 = thứ Hai
     const maxD = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
     const rows = Math.ceil((firstCol + maxD) / 7);
-    const rh = (H - 18) / rows;
-    font(x, 8, 1);
-    for (let i = 0; i < 7; i++) center(x, WD_HDR[i], gx + i * cw + cw / 2, 10, BK);
-    font(x, 9, 0);
+    const rh = ((H - 18) / rows) | 0;
+    font(x, 14, 0);
+    for (let i = 0; i < 7; i++) center(x, WD_HDR[i], gx + i * cw + cw / 2, 16, BK);
     for (let d = 1; d <= maxD; d++) {
       const idx = firstCol + d - 1, col = idx % 7, row = (idx - col) / 7;
       const cx = gx + col * cw + cw / 2, cy = 16 + row * rh;
       if (d === now.getDate()) {
-        x.fillStyle = BK; x.fillRect(cx - cw / 2 + 1, cy - 1, cw - 2, rh - 1);
-        center(x, d, cx, cy + rh / 2 + 2, WH);
+        x.fillStyle = BK; x.fillRect(cx - cw / 2 + 1, cy - 1, cw - 1, rh);
+        center(x, d, cx, cy + 14, WH);
       } else {
-        center(x, d, cx, cy + rh / 2 + 2, BK);
+        center(x, d, cx, cy + 14, BK);
       }
     }
   }
@@ -186,15 +177,18 @@
     if (dv) target = new Date(dv + 'T00:00:00');
     if (!target || isNaN(target)) { target = new Date(now); target.setDate(target.getDate() + 45); }
     const days = Math.max(0, Math.round((target - new Date(now.getFullYear(), now.getMonth(), now.getDate())) / 86400000));
-    serif(x, 13, 0, 1);
-    center(x, name, W / 2, 14, BK);
-    const u = 50 / 9;
+    font(x, 12, 1);                       // fw: unifont DAM, khong phai serif
+    center(x, name, W / 2, 15, BK);
     const ds = String(days);
-    const nw = segWidth(u, ds);
-    font(x, 12, 1);
+    x.font = ARIAL_BIG;                   // fw: arial52 — may KHONG co font 7 doan
+    const nw = x.measureText(ds).width;
+    font(x, 12, 0);
     const tww = x.measureText('ngày').width;
-    segStr(x, (W - nw - tww - 8) / 2, 24, u, ds, BK);
-    x.fillStyle = BK; x.fillText('ngày', (W - nw - tww - 8) / 2 + nw + 8, 72);
+    const nx = (W - nw - tww - 8) / 2;
+    x.font = ARIAL_BIG; x.fillStyle = BK;
+    x.fillText(ds, nx, 72);               // fw: y = 24 + BL_ARIAL
+    font(x, 12, 0); x.fillStyle = BK;
+    x.fillText('ngày', nx + nw + 8, 72);
     x.strokeStyle = BK; x.lineWidth = 1;
     x.strokeRect(24.5, H - 25.5, W - 48, 8);
     x.fillStyle = BK; x.fillRect(26, H - 24, (W - 52) * 0.4, 5);
@@ -262,12 +256,12 @@
     font(x, 9, 0); x.fillStyle = WH; x.fillText(panelTempVal() + '°C', 4, 13);
     battery(x, W - 16, 5, WH, voltLabel());   // pin canh giữa thanh đen (tâm y≈9)
     // số ngày nâng lên trên, chừa chỗ cho dòng thứ hiển thị rõ bên dưới
-    serif(x, H * 0.5, 1);
-    center(x, now.getDate(), W / 2, H * 0.615, BK);
+    serif(x, TIMES_BIG, 1);
+    center(x, now.getDate(), W / 2, (20 + (((H - 102) / 2) | 0) - 16) + 65, BK);
     font(x, 13, 1);
-    center(x, WD_FULL[now.getDay()], W / 2, H - 18, BK);   // thứ hạ 3px
+    center(x, WD_FULL[now.getDay()], W / 2, H - 17, BK);
     font(x, 9, 0);
-    center(x, lunarStr(now) + ' - Tiết Tiểu thử', W / 2, H - 6, BK);
+    center(x, lunarStr(now) + ' - Tiết Tiểu thử', W / 2, H - 1, BK);
   }
 
   // --- mode 9: Lịch tuần ---
@@ -569,13 +563,13 @@
     font(x, 8, 0); x.fillStyle = WH;                       // tháng-năm nhỏ bên trái
     x.fillText(pad2(now.getMonth() + 1) + '-' + now.getFullYear(), 6, 13);
     battery(x, W - 16, 5, WH, voltLabel());                // pin + điện áp căn giữa thanh
-    serif(x, 46, 1);
-    center(x, now.getDate(), W / 2, 70, BK);
+    serif(x, TIMES_BIG, 1);
+    center(x, now.getDate(), W / 2, 83, BK);          // fw: 18 + BL_TIMES
     font(x, 12, 1);
-    center(x, WD_FULL[now.getDay()], W / 2, 96, BK);
+    center(x, WD_FULL[now.getDay()], W / 2, 98, BK);
     font(x, 9, 0);
     let l = 'Âm 24/05'; try { const lu = lunarToday(now); l = 'Âm ' + lu.day + '/' + pad2(lu.month & 0x7f); } catch (e) {}
-    center(x, l, W / 2, 114, BK);
+    center(x, l, W / 2, 116, BK);
     const cw = (W >= 120) ? 16 : 14, gx = ((W - cw * 7) / 2) | 0, gy = H - 78;
     font(x, 7, 1);
     for (let i = 0; i < 7; i++) center(x, WD_MON[i], gx + i * cw + cw / 2, gy - 6, BK);
@@ -596,10 +590,10 @@
     battery(x, W - 16, 3, BK, voltLabel());
     font(x, 12, 1);
     center(x, WD_FULL[now.getDay()], W / 2, 28, BK);
-    serif(x, 46, 1);
-    center(x, now.getDate(), W / 2, 88, BK);
+    serif(x, TIMES_BIG, 1);
+    center(x, now.getDate(), W / 2, 101, BK);         // fw: 36 + BL_TIMES
     font(x, 11, 1);
-    center(x, pad2(now.getMonth() + 1) + '-' + now.getFullYear(), W / 2, 118, BK);
+    center(x, pad2(now.getMonth() + 1) + '-' + now.getFullYear(), W / 2, 120, BK);
     line(x, 8, 126, W - 8, 126, BK, 1);
     font(x, 18, 1);
     // HH:MM cân giữa dải giữa 2 vạch 126..H-46 (khớp firmware)
@@ -607,8 +601,8 @@
     line(x, 8, H - 46, W - 8, H - 46, BK, 1);
     font(x, 9, 0);
     let l = 'Âm 24/05'; try { const lu = lunarToday(now); l = 'Âm ' + lu.day + '/' + pad2(lu.month & 0x7f); } catch (e) {}
-    center(x, l, W / 2, H - 30, BK);
-    center(x, 'Tiểu thử', W / 2, H - 12, BK);
+    center(x, l, W / 2, H - 24, BK);
+    center(x, 'Tiểu thử', W / 2, H - 6, BK);
   }
 
   // --- 5 giao diện DỌC bổ sung (20-24) ---
@@ -689,27 +683,31 @@
     if (!target || isNaN(target)) { target = new Date(now); target.setDate(target.getDate() + 45); }
     const days = Math.max(0, Math.round((target - new Date(now.getFullYear(), now.getMonth(), now.getDate())) / 86400000));
     font(x, 11, 1);
-    center(x, name, W / 2, 30, BK);
-    serif(x, 46, 1);
-    center(x, days, W / 2, 92, BK);
+    center(x, name, W / 2, 32, BK);
+    serif(x, TIMES_BIG, 1);
+    center(x, days, W / 2, 109, BK);                  // fw: 44 + BL_TIMES
     font(x, 12, 1);
-    center(x, 'ngày', W / 2, 124, BK);
+    center(x, 'ngày', W / 2, 126, BK);
+    // ba hang duoi NEO THEO DAY man, de kho 250x122 khong bi hong mot khoang
     x.strokeStyle = BK; x.lineWidth = 1;
-    x.strokeRect(10.5, 138.5, W - 21, 8);
-    x.fillStyle = BK; x.fillRect(12, 140, (W - 24) * 0.4, 5);
+    x.strokeRect(10.5, H - 74.5, W - 21, 9);
+    x.fillStyle = BK; x.fillRect(12, H - 72, (W - 24) * 0.4, 5);
     font(x, 9, 0);
-    center(x, pad2(target.getDate()) + '/' + pad2(target.getMonth() + 1) + '/' + target.getFullYear(), W / 2, 162, BK);
-    if (days >= 14) center(x, 'còn ' + Math.floor(days / 7) + ' tuần', W / 2, 180, BK);
+    center(x, pad2(target.getDate()) + '/' + pad2(target.getMonth() + 1) + '/' + target.getFullYear(), W / 2, H - 44, BK);
+    if (days >= 14) center(x, 'còn ' + Math.floor(days / 7) + ' tuần', W / 2, H - 26, BK);
   }
   function m23(x, now, W, H) {
     battery(x, W - 16, 3, BK, voltLabel());
-    const u = 50 / 9, t = panelTempVal();
+    const t = panelTempVal();
     const ds = String(Math.abs(t));
-    const tw = segWidth(u, ds);
-    const tx = Math.max(1, (W - tw - 20) / 2);
-    segStr(x, tx, 16, u, ds, BK);
+    x.font = ARIAL_BIG; x.fillStyle = BK;             // fw: arial52, khong phai 7 doan
+    const tw = x.measureText(ds).width;
+    const mx = (t < 0) ? 16 : 0;
+    const tx = Math.max(1 + mx, (W - tw - 20 - mx) / 2 + mx);
+    if (t < 0) x.fillRect(tx - 14, 40, 11, 4);        // dau tru ve tay, nhu fw
+    x.fillText(ds, tx, 64);                           // fw: 16 + BL_ARIAL
     font(x, 12, 1); x.fillStyle = BK;
-    x.fillText('°C', tx + tw + 4, 30);
+    x.fillText('°C', tx + tw + 4, 32);
     font(x, 9, 0);
     center(x, 'Nhiệt độ', W / 2, 80, BK);
     line(x, 8, 92, W - 8, 92, BK, 1);
