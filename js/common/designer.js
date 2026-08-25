@@ -110,7 +110,8 @@
     }
   }
   // size tương đương của ba nấc cũ, để lần đầu kéo góc không bị nhảy cỡ
-  const LEGACY16 = { 1: [16, 24, 32], 2: [16, 24, 34], 7: [16, 21, 27], 10: [16, 32, 48] };
+  const LEGACY16 = (DEV && DEV.legacy16) ||
+    { 1: [16, 24, 32], 2: [16, 24, 34], 7: [16, 21, 27], 10: [16, 32, 48] };
   function toFree(type, s) {
     if (FREE(s)) return s;
     const t = LEGACY16[type] || [16, 32, 32];
@@ -131,6 +132,8 @@
       const nac = (TYPES[type] && TYPES[type].sizes) || 1;
       return Math.max(0, Math.min(nac - 1, s));
     }
+    // máy có cỡ tự do NHƯNG khổ khác 4.2" -> khoảng chặn riêng của nó
+    if (DEV && DEV.snapSize) return DEV.snapSize(type, s);
     switch (type) {
       case 1: return Math.max(8, Math.min(64, Math.round(s / 8) * 8));   // cS nguyên 1..8
       case 2: return Math.max(5, Math.min(60, s));                        // r 12..150
@@ -486,6 +489,7 @@
   function canResize(w) { return !!w && w.type !== 3; }
   function sizeRange(type) {
     if (!freeSizeOk()) return { min: 0, max: (TYPES[type].sizes - 1), step: 1, legacy: true };
+    if (DEV && DEV.sizeRange) { const r = DEV.sizeRange(type); if (r) return r; }
     switch (type) {
       case 1: return { min: 8, max: 64, step: 8 };     // đồng hồ số: cS 1..8
       case 2: return { min: 5, max: 60, step: 1 };     // đồng hồ kim: bán kính 12..150

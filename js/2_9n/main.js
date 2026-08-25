@@ -913,8 +913,8 @@ function handleNotify(value, idx) {
       window.__fw17 = true;         // tuần bắt đầu THỨ HAI
       window.__fwTimeOk = true;     // 12h/24h
       window.__fwBg = true;         // ảnh nền «Tự thiết kế»
-      window.__fwFreeSize = false;  // KHÔNG có cỡ tự do: firmware kẹp size > 2 về 2
-      window.__fwIconRed = false;   // màn ĐEN TRẮNG, icon không có mặt màu
+      window.__fwFreeSize = true;   // «Tự thiết kế» kéo cỡ tự do (cw_px/cw_mul)
+      window.__fwIconRed = true;    // tấm BWR: icon có mặt ĐỎ riêng
       window.__fwNoRetro = false;
       document.getElementById('imgAutoRow').style.display = '';
       { const fr = document.getElementById('factoryResetRow'); if (fr) fr.style.display = ''; }
