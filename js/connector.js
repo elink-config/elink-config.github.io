@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  const VER = '20260825f'; // cache-buster, keep in sync with index.html
+  const VER = '20260825g'; // cache-buster, keep in sync with index.html
 
   const EPD42_SERVICE = '62750001-d828-918d-fb46-b6c11c675aec';
   const HM213_SERVICE = '0000ff00-0000-1000-8000-00805f9b34fb';
@@ -42,21 +42,21 @@
     },
     // ĐỜI MỚI của chính máy 2.13" — firmware v2.x dựng lại trên nền dùng chung.
     //
-    // Vì sao PHẢI có hai mục cùng tiền tố tên: hai đời máy quảng bá cùng tên
-    // DIY-2_13-xxxx nhưng nói HAI dịch vụ BLE khác hẳn — v1.10 dùng UUID 16
-    // bit 0xFF00 (họ family_hm), v2.x dùng UUID 128 bit của dòng EPD (họ
-    // family_epd). Không thể đoán từ tên, và KHÔNG được đổi mục cũ sang họ
-    // mới: máy khách còn chạy v1.10 sẽ mất kết nối ngay, mà đường lên đời lại
-    // đi qua chính app cũ (OTA bằng app cũ rồi mới chuyển sang app này).
+    // Vì sao PHẢI giữ HAI mục cho cùng một khổ màn: hai đời nói HAI dịch vụ BLE
+    // khác hẳn — v1.10 dùng UUID 16 bit 0xFF00 (họ family_hm), v2.x dùng UUID
+    // 128 bit của dòng EPD (họ family_epd). KHÔNG được đổi mục cũ sang họ mới:
+    // máy khách còn chạy v1.10 sẽ mất kết nối ngay, mà đường lên đời lại đi qua
+    // chính app cũ (OTA bằng app cũ rồi mới chuyển sang app này).
     //
-    // Người dùng chọn bằng nút ở hàng «Hoặc kết nối tới một thiết bị cụ thể».
+    // Từ 25/08/2026 đời mới quảng bá «DIY-2_13N-xxxx» (thêm chữ N) nên hub TỰ
+    // nhận dạng được, không còn bắt người dùng bấm đúng thẻ máy nữa.
     // Không bấm gì thì detectType vẫn trả về mục CŨ như trước — máy ngoài thị
     // trường không bị ảnh hưởng.
     '2_13n': {
       label: '2.13" (firmware v2.x)',
-      sub: 'Màn 2.13" đen trắng, firmware v2.0 trở lên (DIY-2_13, DA14585): kết nối, cấu hình và truyền hình ảnh',
+      sub: 'Màn 2.13" đen trắng, firmware v2.0 trở lên (DIY-2_13N, DA14585): kết nối, cấu hình và truyền hình ảnh',
       fragment: 'apps/2_13n.html',
-      prefixes: ['DIY-2_13-'],
+      prefixes: ['DIY-2_13N-'],
       // ⚠ common.js phải có BẢN RIÊNG, không dùng chung với app đời cũ: nó
       // chứa IMG_MODE — số hiệu chế độ ẢNH — mà hai đời đánh số khác nhau
       // (v1.10 để 28, v2.x để 0). Nhìn như hằng số vẽ nhưng thật ra là một
@@ -166,9 +166,12 @@
   //   DIY-10_2-xxxx  → 10.2"
   // DIY-7_5V-xxxx = TÊN CŨ của 7.5" (firmware trước v1.0) — vẫn nhận.
   // DIY-xxxx trơ = board 4.2" đời cũ chưa có phần tên kích thước.
-  // Loại người dùng vừa bấm ở hàng «kết nối tới một thiết bị cụ thể». Cần vì
-  // hai đời máy 2.13" quảng bá CÙNG MỘT TÊN mà nói hai dịch vụ BLE khác nhau —
-  // tên không phân biệt được, chỉ người dùng biết máy mình đã lên đời chưa.
+  // Loại người dùng vừa bấm ở hàng «kết nối tới một thiết bị cụ thể» — bấm nút
+  // nào thì lọc đúng dòng máy đó cho nhanh, khỏi phải lội danh sách.
+  //
+  // Trước đây đây còn là đường DUY NHẤT để tách hai đời máy 2.13" (chúng quảng
+  // bá cùng một tên mà nói hai dịch vụ BLE khác nhau). Từ 25/08/2026 đời mới
+  // mang tên riêng «DIY-2_13N-» nên chuyện đó hết; giữ lại vì vẫn tiện.
   let explicitPick = null;
 
   function detectType(name) {
@@ -180,6 +183,9 @@
       return explicitPick;
     }
     if (name.startsWith('DLG-CLOCK-')) return 'dlg';
+    // Chữ N tách đời mới khỏi đời cũ. Phải xét TRƯỚC 'DIY-2_13-' cho dễ đọc,
+    // dù thật ra không chồng nhau: 'DIY-2_13N-…' không khớp 'DIY-2_13-'.
+    if (name.startsWith('DIY-2_13N-')) return '2_13n';
     if (name.startsWith('DIY-2_13-')) return '2_13';
     if (name.startsWith('DIY-2_9-')) return '2_9';
     if (name.startsWith('DIY-4_2C-')) return '4_2c';

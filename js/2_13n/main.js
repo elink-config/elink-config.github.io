@@ -59,24 +59,25 @@ const EpdCmd = {
 };
 
 const EPD_SERVICE = '62750001-d828-918d-fb46-b6c11c675aec';
-// ⚠ HAI ĐỜI 2.13" QUẢNG BÁ CÙNG MỘT TÊN «DIY-2_13-xxxx».
-//
-// Đời cũ (v1.10, dựng từ HMCLOCK) nói giao thức họ HM qua service 0xff00; đời
-// này (v2.0 trở lên) nói giao thức họ EPD qua service 128-bit dưới đây. Tên
-// Bluetooth không phân biệt được hai đời, nên hub KHÔNG tự nhận dạng theo tên
-// cho máy 2.13" — người dùng phải bấm đúng thẻ máy (xem explicitPick trong
-// js/connector.js). Kết nối nhầm đời thì không tìm thấy service và báo lỗi
-// ngay ở bước lấy EPD Service, không ghi bậy gì vào máy.
+/* Đời máy này quảng bá «DIY-2_13N-xxxx» — có chữ N để tách khỏi ĐỜI CŨ
+ * (v1.10, dựng từ HMCLOCK) đang bán dưới tên «DIY-2_13-xxxx».
+ *
+ * Hai đời nói hai giao thức khác hẳn: đời cũ dùng dịch vụ 16 bit 0xFF00, đời
+ * này dùng UUID 128 bit. Hồi còn trùng tên thì hub không tự nhận dạng được,
+ * người dùng phải bấm đúng thẻ máy; nay tên đã khác nên vào thẳng.
+ *
+ * Tiền tố có dấu gạch ở cuối: «DIY-2_13N-» chứ đừng để «DIY-2_13» trơ — bỏ
+ * gạch là hộp chọn thiết bị hiện cả máy đời cũ. */
 const BLE_REQUEST_FILTERS = [
-  { namePrefix: 'DIY-2_13' },
+  { namePrefix: 'DIY-2_13N-' },
 ];
 
 
 function logBleConnectHelp(error) {
   addLog(`connect: ${error.name} - ${error.message}`);
   addLog('Gợi ý xử lý khi kết nối thất bại:');
-  addLog('1. Đảm bảo thiết bị đã nạp firmware v2.0 trở lên, tên Bluetooth là DIY-2_13-xxxx');
-  addLog('   (máy còn chạy firmware v1.x thì dùng thẻ «2.13"» — không phải thẻ này)');
+  addLog('1. Đảm bảo thiết bị đã nạp firmware v2.0 trở lên, tên Bluetooth là DIY-2_13N-xxxx');
+  addLog('   (máy còn chạy firmware v1.x quảng bá tên DIY-2_13-xxxx, không có chữ N — dùng thẻ «2.13"»)');
   addLog('2. Đặt thiết bị gần máy tính, màn hình chưa vào chế độ ngủ');
   addLog('3. Windows: xóa ghép nối cũ trong cài đặt Bluetooth rồi thử lại');
   addLog('4. Ngắt kết nối thiết bị khỏi điện thoại/máy tính khác');
@@ -534,7 +535,7 @@ async function preConnect() {
     } catch (e) {
       console.error(e);
       if (e.name === 'NotFoundError') {
-        addLog("Không tìm thấy thiết bị E-Ink 2.13\" (tên DIY-2_13-xxxx)");
+        addLog("Không tìm thấy thiết bị E-Ink 2.13\" đời mới (tên DIY-2_13N-xxxx)");
       } else if (e.message) {
         addLog("requestDevice: " + e.message);
       }
