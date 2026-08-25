@@ -173,8 +173,10 @@
   function battAt(x, bx, cy, col) { battery(x, bx, cy - 4, col, null); }
   /* draw_status_batt: icon ở mép phải, chuỗi pin bên trái icon. */
   function statusBattAt(x, W, cy, col) {
+    const nhan = voltLabel();
     battery(x, W - 16, cy - 4, col || BK, null);
-    smlR(x, voltLabel(), W - 16 - 6, (cy - 4) + BL_6X10, 0, col || BK);
+    // cài đặt «Không» -> chuỗi rỗng, chỉ còn icon (batt_text cũng trả rỗng)
+    if (nhan) smlR(x, nhan, W - 16 - 6, (cy - 4) + BL_6X10, 0, col || BK);
   }
   function tempCornerUni(x, col) { uni(x, panelTempVal() + '°C', 4, 1 + BL_UNI, 0, col); }
 
@@ -468,7 +470,7 @@
     gridMon(x, now, 3, 19, cw, rh, 1);
 
     sml(x, pad2(now.getMonth() + 1) + '-' + now.getFullYear(), dvx + 5, 5 + BL_6X10, 0);
-    battAt(x, W - 18, 9, BK);
+    statusBattAt(x, W, 9, BK);        // icon + chữ theo cài đặt «Hiển thị pin»
 
     let r = ((W - dvx) / 2 - 7) | 0;
     if (r > (H - 46) / 2) r = ((H - 46) / 2) | 0;
@@ -491,7 +493,7 @@
     // dải trên cùng: giờ | thứ | pin
     uni(x, pad2(now.getHours()) + ':' + pad2(now.getMinutes()), 4, 0 + BL_UNI, 1);
     uniC(x, WD_FULL[now.getDay()], W / 2, 0 + BL_UNI, 1);
-    battAt(x, W - 18, 8, BK);
+    statusBattAt(x, W, 8, BK);        // icon + chữ theo cài đặt «Hiển thị pin»
     x.fillStyle = BK;
     x.fillRect(4, 16, W - 8, 1);
     x.fillRect(half, 18, 1, H - 21);        // vạch dọc ngăn hai lịch

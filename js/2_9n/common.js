@@ -69,7 +69,19 @@ function voltValue() {
   return 3.1;
 }
 
-function voltLabel() { return voltValue().toFixed(1) + 'v'; }
+/* Chuỗi cạnh icon pin — theo ĐÚNG cài đặt «Hiển thị pin», y như batt_text()
+ * bên firmware: 0 = không có chữ, 1 = phần trăm, 2 = điện áp.
+ * Trước đây luôn trả điện áp nên xem trước vẽ một kiểu, máy hiện một kiểu. */
+function battStyleVal() {
+  const r = document.querySelector('input[name="battStyle"]:checked');
+  return r ? (parseInt(r.value) || 0) : 2;
+}
+function voltLabel() {
+  const st = battStyleVal();
+  if (st === 0) return '';
+  if (st === 1) return battPct(Math.round(voltValue() * 1000)) + '%';
+  return voltValue().toFixed(1) + 'v';
+}
 
 function panelTempVal() {
   const el = document.getElementById('panelTemp');

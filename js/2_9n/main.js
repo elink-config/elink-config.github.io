@@ -922,13 +922,15 @@ function handleNotify(value, idx) {
       if (typeof updateShowImgUI === 'function') updateShowImgUI();
       if (typeof updateIntervalUI === 'function') updateIntervalUI();
       if (window.refreshModeGallery) window.refreshModeGallery();
-      // «Hiển thị pin» cần fw >= 1.9 — máy cũ mờ radio + giữ hint nhắc cập nhật
-      {
-        const ok19 = FwCheck.atLeast('1.9');
-        document.querySelectorAll('input[name="battStyle"]').forEach(r => { r.disabled = !ok19; });
-        const h = document.getElementById('battStyleHint');
-        if (h) h.textContent = ok19 ? 'Thiết bị vẽ lại ngay khi đổi.' : 'Cần firmware ≥ 1.9 — hãy cập nhật ở mục OTA bên dưới.';
-      }
+      /* «Hiển thị pin»: máy này CÓ SẴN từ v1.0 nên không khoá gì cả.
+       *
+       * Bản chép từ app 2.13" khoá theo `FwCheck.atLeast('1.9')` — bên đó 1.9
+       * mới là bản thêm tính năng. Máy này số hiệu đang là v1.0, tức LUÔN nhỏ
+       * hơn 1.9, nên ba nút radio bị mờ vĩnh viễn và người dùng tưởng cài đặt
+       * hỏng. Cùng kiểu lỗi với __fwFreeSize / __fwIconRed ở ngay trên. */
+      document.querySelectorAll('input[name="battStyle"]').forEach(r => { r.disabled = false; });
+      { const h = document.getElementById('battStyleHint');
+        if (h) h.textContent = 'Thiết bị vẽ lại ngay khi đổi.'; }
     }
   }
 }
