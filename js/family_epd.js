@@ -165,6 +165,10 @@ function disconnect() {
   document.getElementById("connectbutton").innerHTML = 'Kết nối';
   // gate lại theo firmware của thiết bị kế tiếp
   document.getElementById('imgAutoRow').style.display = 'none';
+  // hàng «Hiện lại ảnh khe» cũng phải tắt theo: để lại thì rút máy ra rồi bấm
+  // vào chỉ nhận được hộp thoại «Chưa kết nối thiết bị»
+  const showRow = document.getElementById('imgShowRow');
+  if (showRow) showRow.style.display = 'none';
   imgSlotMask = 0;
 }
 
@@ -195,7 +199,9 @@ function updateImgAutoUI() {
 // Chu kỳ đổi ảnh: một byte mã CẢ HAI đơn vị — 1/12/24 là GIỜ, 15/30/40 là PHÚT
 // (không có chu kỳ 15/30/40 giờ nên không nhập nhằng). Firmware đời cũ nhận giá
 // trị phút sẽ nắn về 24h, nên máy chưa cập nhật chỉ mất tính năng chứ không loạn.
-function imgIntervalIsMinutes(v) { return v === 15 || v === 30 || v === 40; }
+// 40 là nấc PHÚT của một đời firmware cũ (v2.8 bản 4.2"); từ v2.9 đổi thành
+// 45 cho liền mạch 15/30/45. Giữ cả hai: máy cũ vẫn đọc đúng nhãn.
+function imgIntervalIsMinutes(v) { return v === 15 || v === 30 || v === 40 || v === 45; }
 function imgIntervalSecs(v) { return imgIntervalIsMinutes(v) ? v * 60 : v * 3600; }
 function imgIntervalLabel(v) { return imgIntervalIsMinutes(v) ? (v + ' phút') : (v + ' giờ'); }
 

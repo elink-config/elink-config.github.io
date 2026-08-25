@@ -70,24 +70,47 @@
 			</div>
 		</fieldset>
 		<fieldset>
-			<legend>Thiết kế màn hình (chế độ 20)</legend>
-			<p class="mode-gallery-hint">Bấm nút để thêm thành phần, kéo-thả trên khung để sắp xếp, chọn thành phần rồi «Đổi cỡ»/«Xóa». Đồng hồ và nhiệt độ vẫn tự cập nhật mỗi phút không chớp màn hình như các chế độ khác.</p>
+			<legend>Thiết kế màn hình</legend>
+			<p class="mode-gallery-hint">Bấm nút để thêm thành phần, <b>kéo-thả trên khung để di chuyển</b>, chọn một thành phần rồi <b>kéo thanh «Cỡ» (hoặc lăn chuột ngay trên khung) để phóng to / thu nhỏ</b>. Đồng hồ kim và lịch tháng co giãn từng pixel; chữ và icon chỉ nhân được 1…6 lần vì font của máy là ảnh điểm, nên thanh kéo tự bám nấc. Đồng hồ và nhiệt độ vẫn tự cập nhật mỗi phút không chớp màn hình như các chế độ khác.</p>
 			<div class="designer-palette">
 				<button type="button" class="secondary" onclick="dsAdd(1)">+ Đồng hồ số</button>
 				<button type="button" class="secondary" onclick="dsAdd(2)">+ Đồng hồ kim</button>
 				<button type="button" class="secondary" onclick="dsAdd(3)">+ Pin</button>
 				<button type="button" class="secondary" onclick="dsAdd(4)">+ Nhiệt độ</button>
+				<button type="button" class="secondary dsTextExtra" onclick="dsAdd(15)">+ Thứ</button>
+				<button type="button" class="secondary dsTextExtra" onclick="dsAdd(16)">+ Ngày dương</button>
 				<button type="button" class="secondary" onclick="dsAdd(5)">+ Ngày tháng</button>
 				<button type="button" class="secondary" onclick="dsAdd(6)">+ Âm lịch</button>
 				<button type="button" class="secondary" onclick="dsAdd(7)">+ Lịch tháng</button>
 				<button type="button" class="secondary" onclick="dsAdd(8)">+ Chữ 1</button>
 				<button type="button" class="secondary" onclick="dsAdd(9)">+ Chữ 2</button>
+				<button type="button" class="secondary dsTextExtra" onclick="dsAdd(11)">+ Chữ 3</button>
+				<button type="button" class="secondary dsTextExtra" onclick="dsAdd(12)">+ Chữ 4</button>
+				<button type="button" class="secondary dsTextExtra" onclick="dsAdd(13)">+ Chữ 5</button>
+				<button type="button" class="secondary dsTextExtra" onclick="dsAdd(14)">+ Chữ 6</button>
 				<button type="button" class="secondary" onclick="dsAdd(10)">+ Icon (lấy từ mục Truyền hình ảnh)</button>
 			</div>
-			<canvas id="designerCanvas" width="400" height="300" class="designer-canvas"></canvas>
-			<div class="flex-container">
+			<!-- Ô chọn thiết kế: board hiện tại (chip flash 512KB) chỉ đủ chỗ cho
+			     MỘT thiết kế nên hàng này ẩn. Bản chip 2MB sẽ có hai — lúc đó
+			     main.js tự hiện theo EPD_PROFILE.soThietKe. -->
+			<div class="flex-container" id="dsDesignRow" style="display:none">
 				<div class="flex-group">
-					<button type="button" class="secondary" onclick="dsCycleSize()">Đổi cỡ</button>
+					<label for="dsDesignSel">Đang sửa:</label>
+					<select id="dsDesignSel" onchange="dsSelectDesign(+this.value)">
+						<option value="0">Tự thiết kế 1</option>
+						<option value="1">Tự thiết kế 2</option>
+					</select>
+				</div>
+			</div>
+			<canvas id="designerCanvas" width="960" height="640" class="designer-canvas"></canvas>
+			<div class="flex-container">
+				<div class="flex-group" style="flex:1 1 100%">
+					<label for="dsSize">Cỡ:</label>
+					<input type="range" id="dsSize" min="16" max="96" step="16" value="16" disabled
+					       style="flex:1;max-width:320px" oninput="dsSizeInput(this.value)">
+					<span class="mode-gallery-hint" style="margin:0" id="dsSizeLbl">Chọn một thành phần để đổi cỡ</span>
+				</div>
+				<div class="flex-group">
 					<button type="button" class="secondary" onclick="dsDelete()">Xóa</button>
 					<button type="button" class="secondary" onclick="dsClear()">Xóa hết</button>
 					<label for="dsFrame">Khung:</label>
@@ -97,6 +120,25 @@
 						<option value="2">Viền kép</option>
 					</select>
 				</div>
+				<details class="mode-gallery-hint" style="margin:6px 0;flex:1 1 100%">
+					<summary>Hướng dẫn dùng «Tự thiết kế» (bấm để mở)</summary>
+					<p style="margin:6px 0 0"><b>Cách làm một màn hình riêng, theo thứ tự:</b></p>
+					<ol style="margin:4px 0 0;padding-left:20px;line-height:1.7">
+						<li>Bấm các nút <b>+ Đồng hồ số</b>, <b>+ Lịch tháng</b>, <b>+ Chữ 1</b>… để thêm thành phần. Tối đa <b>10 thành phần</b>.</li>
+						<li><b>Kéo thả</b> từng thành phần trên khung xem trước để xếp chỗ. Bấm chọn rồi kéo thanh <b>Cỡ</b> (hoặc lăn chuột ngay trên khung) để phóng to / thu nhỏ.</li>
+						<li>Muốn có chữ của riêng bạn thì thêm thành phần <b>Chữ 1…Chữ 6</b> rồi gõ nội dung vào ô <b>Chữ</b> cùng số bên dưới. Mỗi ô tối đa 47 byte — chữ có dấu tốn 2-3 byte mỗi ký tự, nên khoảng 20 chữ cái.</li>
+						<li>Muốn có <b>ảnh nền toàn màn</b>: lên mục <b>Truyền hình ảnh</b> chọn ảnh, chỉnh cắt/màu cho vừa ý, rồi quay lại bấm <b>Làm nền thiết kế</b>.</li>
+						<li>Bấm <b>Gửi lên thiết bị</b>. Máy nhận xong tự chuyển sang chế độ đó và vẽ lại.</li>
+					</ol>
+					<p style="margin:8px 0 0"><b>Những điều dễ nhầm:</b></p>
+					<ul style="margin:4px 0 0;padding-left:20px;line-height:1.7">
+						<li><b>Ảnh nền và nút «Bỏ ảnh nền» chỉ đổi trên trình duyệt.</b> Máy chỉ nhận khi bạn bấm <b>Gửi lên thiết bị</b> — nên cứ thử tới lui thoải mái, máy chưa đổi gì cả.</li>
+						<li><b>Ảnh nền của màn này được NÉN lại</b> khi ghi vào máy: một ảnh 960×640 hai mặt là 153.600 byte mà chỗ dành cho nó chỉ 102.400 byte. Ảnh nhiều mảng phẳng (nét lớn, nền trơn) nén rất tốt; <b>ảnh chụp dày hạt có thể không đủ chỗ</b> — khi đó máy báo và bạn chọn ảnh khác hoặc bớt chi tiết.</li>
+						<li>Ảnh nền <b>không</b> chiếm khe ảnh của mục «Truyền hình ảnh»: nó có khe riêng.</li>
+						<li>Thành phần <b>Ngày tháng</b> hiện «Thứ Năm, 26/08/2026». Muốn tách rời thì dùng <b>Thứ</b> và <b>Ngày dương</b>.</li>
+						<li>Bố cục lưu trong <b>trình duyệt này</b>. Đổi máy tính hay xoá dữ liệu duyệt web là mất, phải xếp lại — máy vẫn giữ cái đã gửi.</li>
+					</ul>
+				</details>
 				<div class="flex-group" style="flex:1 1 100%">
 					<label for="dsText1">Chữ 1:</label>
 					<input id="dsText1" type="text" maxlength="47" style="flex:1" oninput="dsTexts()" placeholder="Nội dung cho thành phần «Chữ 1»">
@@ -104,6 +146,22 @@
 				<div class="flex-group" style="flex:1 1 100%">
 					<label for="dsText2">Chữ 2:</label>
 					<input id="dsText2" type="text" maxlength="47" style="flex:1" oninput="dsTexts()" placeholder="Nội dung cho thành phần «Chữ 2»">
+				</div>
+				<div class="flex-group dsTextRow dsTextExtra" style="flex:1 1 100%">
+					<label for="dsText3">Chữ 3:</label>
+					<input id="dsText3" type="text" maxlength="47" style="flex:1" oninput="dsTexts()" placeholder="Nội dung cho thành phần «Chữ 3»">
+				</div>
+				<div class="flex-group dsTextRow dsTextExtra" style="flex:1 1 100%">
+					<label for="dsText4">Chữ 4:</label>
+					<input id="dsText4" type="text" maxlength="47" style="flex:1" oninput="dsTexts()" placeholder="Nội dung cho thành phần «Chữ 4»">
+				</div>
+				<div class="flex-group dsTextRow dsTextExtra" style="flex:1 1 100%">
+					<label for="dsText5">Chữ 5:</label>
+					<input id="dsText5" type="text" maxlength="47" style="flex:1" oninput="dsTexts()" placeholder="Nội dung cho thành phần «Chữ 5»">
+				</div>
+				<div class="flex-group dsTextRow dsTextExtra" style="flex:1 1 100%">
+					<label for="dsText6">Chữ 6:</label>
+					<input id="dsText6" type="text" maxlength="47" style="flex:1" oninput="dsTexts()" placeholder="Nội dung cho thành phần «Chữ 6»">
 				</div>
 				<div class="flex-group">
 					<button id="uploadlayoutbutton" type="button" class="primary" onclick="dsUpload()">Gửi lên thiết bị</button>
@@ -192,10 +250,19 @@
 					<button type="button" class="secondary debug" onclick="rotateCanvas()">Xoay canvas</button>
 					<button type="button" class="secondary" onclick="clearCanvas()">Xóa canvas</button>
 					<button type="button" class="secondary debug" onclick="downloadDataArray()">Tải mảng dữ liệu</button>
-					<!-- Màn 10.2" KHÔNG có khe ảnh trong flash (76800B/mặt > khe 32KB):
-					     một nút gửi thẳng lên màn, không lưu khe -->
+					<!-- Từ v2.0 màn 10.2" CÓ khe ảnh: 1 khe lưu ảnh thô 153.600B ở vùng
+					     mở rộng của chip flash (xem epd_flashmap.h). Ảnh vừa hiện lên màn
+					     vừa được ghi vào khe, nên gửi một lần là dùng mãi. -->
 					<button id="sendimgbutton" type="button" class="primary" onclick="sendimg(0)">Gửi ảnh</button>
-					<button type="button" class="secondary" onclick="dsIconFromCanvas()">Thêm ảnh vào thiết kế</button>
+					<button type="button" class="secondary" onclick="dsIconFromCanvas()">Icon từ ảnh</button>
+				</div>
+			</div>
+			<!-- Ảnh NỀN của «Tự thiết kế» — hàng riêng cho khỏi lẫn với khe ảnh.
+			     Khe nền có riêng, không ăn vào khe ảnh. -->
+			<div class="flex-container">
+				<div class="flex-group btn-row">
+					<span id="dsBgRow" style="display:none"><button type="button" class="secondary" onclick="dsBgToDesign(0)">Làm nền thiết kế</button></span>
+					<button type="button" class="secondary" onclick="dsClearBackground()">Bỏ ảnh nền</button>
 				</div>
 			</div>
 			<!-- Tự đổi ảnh (fw >= 1.5): bật được khi đã có >= 2 khe ảnh trên thiết bị -->
@@ -205,10 +272,29 @@
 						<input type="checkbox" id="imgAutoCHK" onchange="setImgAuto()">
 						Tự động đổi ảnh đã tải
 					</label>
+					<!-- Xếp TĂNG DẦN: phút trước, giờ sau. Ba nấc PHÚT bọc trong
+					     .imgIntervalMin để ẩn với firmware v1.0 (nó nhận rồi âm thầm
+					     rơi về 24 giờ). -->
+					<label class="imgIntervalMin"><input type="radio" name="imgInterval" value="15" onchange="setImgAuto()"> 15 phút</label>
+					<label class="imgIntervalMin"><input type="radio" name="imgInterval" value="30" onchange="setImgAuto()"> 30 phút</label>
+					<label class="imgIntervalMin"><input type="radio" name="imgInterval" value="45" onchange="setImgAuto()"> 45 phút</label>
 					<label><input type="radio" name="imgInterval" value="1" onchange="setImgAuto()"> 1 giờ</label>
 					<label><input type="radio" name="imgInterval" value="12" onchange="setImgAuto()"> 12 giờ</label>
 					<label><input type="radio" name="imgInterval" value="24" checked onchange="setImgAuto()"> 24 giờ</label>
-					<span class="mode-gallery-hint" style="margin:0" id="imgAutoHint">Cần gửi ảnh vào ít nhất 2 khe để bật tự đổi ảnh (khe 1 → 2 → 3 → 1).</span>
+					<span class="mode-gallery-hint" style="margin:0" id="imgAutoHint">Tự đổi ảnh cần từ <b>2 khe ảnh</b> trở lên. Board hiện tại (chip flash 512KB) chỉ đủ chỗ cho <b>1 khe</b> vì một ảnh 960×640 hai mặt là 153.600 byte — dùng nút «Hiện lại ảnh» bên dưới để đưa ảnh đã lưu ra màn.</span>
+				</div>
+			</div>
+			<!-- HIỆN LẠI ảnh đã lưu (lệnh 0x27 05, fw >= 2.0). Với máy chỉ có MỘT
+			     khe thì đây là đường DUY NHẤT quay lại ảnh sau khi đã chọn một
+			     giao diện lịch — vòng tự đổi ảnh đòi từ hai khe trở lên. -->
+			<div class="flex-container" id="imgShowRow" style="display:none">
+				<div class="flex-group btn-row">
+					<span class="mode-gallery-hint" style="margin:0 8px 0 0">Hiện lại ảnh đã lưu trong máy:</span>
+					<button id="showimgbutton1" type="button" class="secondary" onclick="showImgSlot(0)">Khe 1</button>
+					<button id="showimgbutton2" type="button" class="secondary" onclick="showImgSlot(1)" style="display:none">Khe 2</button>
+					<button id="showimgbutton3" type="button" class="secondary" onclick="showImgSlot(2)" style="display:none">Khe 3</button>
+					<button id="showimgbutton4" type="button" class="secondary" onclick="showImgSlot(3)" style="display:none">Khe 4</button>
+					<button id="showimgbutton5" type="button" class="secondary" onclick="showImgSlot(4)" style="display:none">Khe 5</button>
 				</div>
 			</div>
 			<div class="flex-container">
@@ -305,6 +391,15 @@
 					<span id="otaProgress" class="system-time"></span>
 				</div>
 			</div>
+			<!-- Cập nhật OTA chỉ ghi bank firmware, KHÔNG mang bộ chữ theo. Máy
+			     tự báo «asset=none» lúc kết nối và webtool gửi lại ngay, nhưng
+			     vẫn để một nút bấm tay cho trường hợp cần gửi lại. -->
+			<div class="flex-container">
+				<div class="flex-group btn-row">
+					<button id="assetbutton" type="button" class="secondary" onclick="sendAsset()">Gửi lại bộ chữ</button>
+					<span class="mode-gallery-hint" style="margin:0">Dùng khi màn hiện đủ số và đường kẻ nhưng <b>mất chữ</b> — thường gặp ngay sau khi cập nhật lên v2.0.</span>
+				</div>
+			</div>
 			<p class="mode-gallery-hint">Nạp file <b>.bin</b> tải về từ mục «Danh sách firmware» bên dưới. Không tắt nguồn thiết bị khi đang cập nhật — nếu lỗi giữa chừng, thiết bị vẫn chạy firmware cũ.</p>
 		</fieldset>
 		<fieldset>
@@ -329,6 +424,16 @@
 							<td><b>CHỈ dành cho màn 10.2" 960×640 (thiết bị DIY-10_2)</b> — KHÔNG nạp cho máy khác. <br>Bản phát hành đầu tiên: giao diện lịch/đồng hồ toàn màn, truyền hình ảnh, âm lịch Việt Nam. <br>Bản ngày 19/08: màn giới thiệu ghi rõ địa chỉ web và thao tác Sync time</td>
 							<td>19/08/2026</td>
 							<td><a href="OTA firmware/10_2/fw_10_2inch_v1.0.bin" download>Tải về</a></td>
+							<td><button type="button" class="primary" onclick="fwInstallRow(this)">Cài ngay</button></td>
+						</tr>
+						<tr>
+							<td>2</td>
+							<td>2.0</td>
+							<td><b>CHỈ dành cho màn 10.2" 960×640 (thiết bị DIY-10_2)</b> — KHÔNG nạp cho máy khác.
+								<br>Dựng lại trên nền chung với bản 4.2". Thêm <b>1 khe ảnh</b> (ảnh lưu lại trong máy, có nút «Hiện lại ảnh»), <b>«Tự thiết kế» đầy đủ</b> (kéo giãn cỡ tự do, 6 ô chữ, thành phần «Thứ» / «Ngày dương», ảnh nền toàn màn) và <b>Khôi phục cài đặt gốc</b>. Số thứ tự giao diện được đánh lại cho liền mạch.
+								<br><b>⚠ Bản này xoá sạch máy một lần.</b> Cập nhật xong máy tự về như mới: <b>mất bố cục «Tự thiết kế», icon và mọi cài đặt</b>. Mã kích hoạt vẫn giữ nguyên.<br><b>⚠ Sau khi cập nhật, mở lại webtool và kết nối một lần.</b> Máy sẽ tự nhận bộ chữ tiếng Việt (khoảng 8 KB, chừng một phút) — trong lúc chưa nhận xong, màn có thể hiện số và đường kẻ mà thiếu chữ.</td>
+							<td>26/08/2026</td>
+							<td><a href="OTA firmware/10_2/fw_10_2inch_v2.0.bin" download>Tải về</a></td>
 							<td><button type="button" class="primary" onclick="fwInstallRow(this)">Cài ngay</button></td>
 						</tr>
 					</tbody>

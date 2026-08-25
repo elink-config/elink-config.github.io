@@ -10,6 +10,91 @@ let deviceMode = null;      // display mode reported by the device config
 // 3 khe ảnh (fw >= 1.5): mask bit0..2 = khe đã có ảnh trên thiết bị (đọc từ
 // config blob byte 214); cần >= 2 khe mới bật được «Tự động đổi ảnh»
 let imgSlotMask = 0;
+let imgCurrent = 0;         // khe máy đang hiện (config)
+
+/* ---- SỐ KHE của máy này ----------------------------------------------------
+ * Đọc từ hồ sơ sinh ra (js/10_2/profile.gen.js) chứ không ghim số ở đây: bản
+ * board gắn chip flash 2MB sẽ có 5 khe + 2 «Tự thiết kế», và khi đó chỉ cần
+ * sửa tools/profile/10_2.json + epd_flashmap.h rồi sinh lại — trang này tự
+ * theo. Khe NỀN của «Tự thiết kế» xếp ngay sau các khe ảnh. */
+const IMG_SLOTS = (window.EPD_PROFILE && window.EPD_PROFILE.soKhe) || 1;
+const IMG_BG_SLOT = d => IMG_SLOTS + d;
+
+/* js/common/designer.js hỏi tên hàm này để biết máy có KHE NỀN RIÊNG hay
+ * không. Có thì ảnh nền đi vào khe nền của nó; không thì bản chung lùi về
+ * đường cũ của màn 4.2" đời đầu (mượn tạm một khe ảnh). Máy này có khe nền
+ * riêng ngay từ v2.0 nên gắn thẳng vào cổng «khe_anh». */
+function fwHasNewSlots() { return EpdProf.co('khe_anh'); }
+
+/* ---- Quy đổi SỐ MODE cho máy chạy firmware v1.0 ----------------------------
+ * v2.0 đánh lại số mode cho liền mạch (số thẻ = số mode). Máy chưa cập nhật
+ * vẫn hiểu bảng số CŨ, nên phải quy đổi lúc gửi và lúc đọc config về. Bảng
+ * sinh ra từ hồ sơ (mode_new2old) — bỏ nó đi khi không còn máy nào chạy v1.0.
+ * family_epd.js tự gọi modeToWire() nếu app có khai. */
+const MODE_NEW2OLD = (window.EPD_PROFILE && window.EPD_PROFILE.modeNew2Old) || {};
+const MODE_OLD2NEW = Object.fromEntries(
+  Object.entries(MODE_NEW2OLD).map(([nw, od]) => [od, +nw]));
+
+function modeNumberingIsNew() { return EpdProf.co('danh_lai_so_mode'); }
+// số gửi XUỐNG máy
+function modeToWire(m) {
+  if (modeNumberingIsNew()) return m;
+  return MODE_NEW2OLD[m] !== undefined ? MODE_NEW2OLD[m] : m;
+}
+// số máy BÁO LÊN (config) -> số thẻ
+function modeFromWire(m) {
+  if (modeNumberingIsNew()) return m;
+  return MODE_OLD2NEW[m] !== undefined ? MODE_OLD2NEW[m] : m;
+}
+
+/* HIỆN LẠI một khe ảnh đã lưu (lệnh 0x27 05).
+ *
+ * Vì sao cần: ảnh trong khe chỉ hiện ra qua VÒNG TỰ ĐỔI ẢNH, mà vòng đó lại
+ * nằm sau cửa «máy đang ở chế độ ẢNH». Lỡ chọn một giao diện lịch là vừa mất
+ * vòng tự đổi, vừa không còn đường nào quay lại ảnh — phải gửi lại cả tấm ảnh
+ * dù nó đang nằm sẵn trong flash. Với máy này (chỉ MỘT khe) thì lệnh này còn
+ * là đường DUY NHẤT để hiện lại ảnh: vòng tự đổi đòi từ hai khe trở lên. */
+async function showImgSlot(slot) {
+  if (!epdCharacteristic) { alert('Chưa kết nối thiết bị.'); return; }
+  if (!(imgSlotMask & (1 << slot))) {
+    alert('Khe ' + (slot + 1) + ' chưa có ảnh.');
+    return;
+  }
+  addLog('Hiện lại ảnh ở khe ' + (slot + 1) + '...', '⇑');
+  await write(EpdCmd.IMG_SLOT, [0x05, slot]);
+  deviceMode = 0;  // máy tự chuyển về chế độ ẢNH
+  if (typeof highlightMode === 'function') highlightMode(0);
+}
+
+/* Bật/tắt hàng nút «Hiện lại ảnh»: chỉ hiện với firmware hiểu lệnh, và từng
+ * nút chỉ bật khi khe đó THẬT SỰ có ảnh (đọc từ mask trong config). */
+function updateShowImgUI() {
+  const row = document.getElementById('imgShowRow');
+  if (!row) return;
+  const ok = EpdProf.co('hien_khe_anh');
+  row.style.display = ok ? '' : 'none';
+  if (!ok) return;
+  for (let i = 0; i < 5; i++) {
+    const b = document.getElementById('showimgbutton' + (i + 1));
+    if (!b) continue;
+    b.style.display = (i < IMG_SLOTS) ? '' : 'none';
+    b.disabled = !(imgSlotMask & (1 << i));
+    b.classList.toggle('primary', i === imgCurrent && !b.disabled);
+    b.classList.toggle('secondary', !(i === imgCurrent && !b.disabled));
+  }
+}
+
+/* Ba nấc chu kỳ tính bằng PHÚT (15/30/45) chỉ có từ v2.0. Firmware v1.0 nhận
+ * byte đó bình thường rồi âm thầm rơi về 24 GIỜ — đúng loại lỗi câm mà trang
+ * này gate cẩn thận ở mọi tính năng khác. */
+function updateIntervalUI() {
+  const ok = EpdProf.co('chu_ky_phut');
+  document.querySelectorAll('.imgIntervalMin').forEach(e => { e.style.display = ok ? '' : 'none'; });
+  if (!ok && !document.querySelector('input[name="imgInterval"]:checked')) {
+    const r = document.querySelector('input[name="imgInterval"][value="24"]');
+    if (r) r.checked = true;
+  }
+}
 let timeSynced = false;     // device clock is valid (reported or just synced);
                             // gates the mode gallery in [Điều khiển thiết bị]
 
@@ -27,6 +112,7 @@ const EpdCmd = {
   SET_HOURLY_FULL: 0x23, // clock cleanup cadence: 1 = full refresh hourly, 0 = only at 00:00
   SET_LAYOUT: 0x24, // MODE_CUSTOM (mode 20) widget layout from the designer
   SET_ICON: 0x25, // MODE_CUSTOM 1-bit icon, chunked: [0x00,w,h,data...] then [0x01,data...]
+  ASSET: 0x2C, // nạp blob dữ liệu vào flash: [00 len_u16] mở / [01 data] / [02 crc32_u32] chốt
   IMG_SLOT: 0x27, // 3 khe ảnh (fw >= 1.5): [01 slot] mở khe / [02] chốt / [03 auto interval]
   DARK_BOOST: 0x28, // [0/1] chữ đậm cho màn lô in nhạt (ép 0°C khi làm mới toàn màn)
   BATT_STYLE: 0x29, // [0/1/2] hiển thị pin: chỉ icon / phần trăm / điện áp (fw >= 0.4)
@@ -208,16 +294,95 @@ function getDriverOption() {
   return sel.options[sel.selectedIndex] || sel.options[0] || null;
 }
 
+
+/* ---- Vùng dữ liệu ở flash (lệnh 0x2C) --------------------------------------
+ * Từ v2.0, font hiển thị + bốn bảng âm lịch đã tách khỏi firmware để trả RAM
+ * (firmware DA14585 nạp trọn vào 96KB SysRAM nên mảng const cũng ăn RAM; lên
+ * lõi chung tốn thêm ~4KB mã nên không tách là không đủ chỗ).
+ *
+ * Máy nạp dây đã có sẵn blob trong ảnh nạp; máy cập nhật qua OTA thì CHƯA có,
+ * vì OTA chỉ ghi bank firmware — lúc đó máy báo 'asset=none' và hàm dưới tự
+ * gửi. ⚠ THIẾU BLOC NÀY THÌ MÁY MẤT HẾT CHỮ (số và đường kẻ vẫn vẽ bình
+ * thường, nên rất dễ tưởng là lỗi font chứ không phải thiếu dữ liệu). */
+let assetResolve = null;
+let assetBusy = false;
+
+function waitAsset(timeoutMs) {
+  return new Promise(resolve => {
+    const t = setTimeout(() => { assetResolve = null; resolve(''); }, timeoutMs);
+    assetResolve = (m) => { clearTimeout(t); resolve(m); };
+  });
+}
+
+function crc32(buf) {
+  let c = 0xFFFFFFFF;
+  for (let i = 0; i < buf.length; i++) {
+    c ^= buf[i];
+    for (let k = 0; k < 8; k++) c = (c >>> 1) ^ (0xEDB88320 & -(c & 1));
+  }
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+
+async function sendAsset() {
+  if (assetBusy) return;
+  { const nm = (bleDevice && bleDevice.name) || '';
+    if (nm.indexOf('DIY-10_2-') !== 0) return; }
+  assetBusy = true;
+  // phủ kín màn hình: luồng này gần 500 gói, bấm nút khác trong lúc đó là lệnh
+  // chen vào giữa và máy nhận nhầm (xem syncOverlayShow ở app_common.js)
+  syncOverlayShow('Đang chuẩn bị dữ liệu hiển thị…',
+    'Máy chưa có bộ chữ tiếng Việt và bảng âm lịch — webtool đang tải về để gửi xuống.');
+  try {
+    addLog('Máy chưa có dữ liệu hiển thị (font + âm lịch) — đang gửi xuống…');
+    const r = await fetch('OTA%20firmware/10_2/asset.bin?v=' + Date.now());
+    if (!r.ok) { addLog('Không tải được asset.bin'); return; }
+    const raw = new Uint8Array(await r.arrayBuffer());
+    if (raw.length < 16 || raw[0] !== 0x45 || raw[1] !== 0x50) { addLog('asset.bin hỏng'); return; }
+    const body = raw.subarray(16);              // bỏ header, máy tự dựng lại
+    const crc = crc32(body);
+
+    const rdy = waitAsset(8000);                // máy xóa sector rồi mới báo
+    if (!await write(EpdCmd.ASSET, [0x00, body.length & 0xFF, body.length >> 8])) return;
+    if (await rdy !== 'asset=rdy') { addLog('Máy không mở được vùng dữ liệu.'); return; }
+
+    const mtu = parseInt(document.getElementById('mtusize').value) || 20;
+    const step = Math.max(16, mtu - 4);
+    for (let off = 0; off < body.length; off += step) {
+      if (!await write(EpdCmd.ASSET, [0x01, ...body.subarray(off, off + step)])) {
+        addLog('Gửi dữ liệu hiển thị thất bại.');
+        return;
+      }
+      syncOverlayStep('Đang gửi dữ liệu hiển thị…',
+        'Bộ chữ tiếng Việt + bảng âm lịch (' + body.length + ' byte). Không tắt máy, không đóng trang.');
+      syncOverlayProgress(off + step, body.length);
+    }
+
+    const fin = waitAsset(5000);
+    await write(EpdCmd.ASSET, [0x02, crc & 0xFF, (crc >>> 8) & 0xFF, (crc >>> 16) & 0xFF, (crc >>> 24) & 0xFF]);
+    const m = await fin;
+    addLog(m.startsWith('asset=') && m !== 'asset=none' && m !== 'asset=err'
+      ? 'Đã gửi xong dữ liệu hiển thị (' + body.length + ' byte) — thiết bị đang vẽ lại toàn màn hình.'
+      : 'Máy không nhận được dữ liệu — thử kết nối lại.');
+  } catch (e) {
+    addLog('Gửi dữ liệu hiển thị lỗi: ' + e.message);
+  } finally {
+    assetBusy = false;
+    syncOverlayHide();
+  }
+}
+
 async function sendimg(slot = 0) {
   if (cropManager.isCropMode()) {
     alert("Vui lòng hoàn tất cắt ảnh trước! Đã hủy gửi.");
     return;
   }
 
-  // 3 khe ảnh cần firmware >= 1.5; đời cũ chỉ hiển thị được (không lưu khe)
-  const slotCapable = FwCheck.atLeast('1.5');
-  if (!slotCapable && slot > 0) {
-    if (!confirm('Firmware của thiết bị chưa hỗ trợ 3 khe ảnh (cần v1.5). Ảnh sẽ chỉ hiển thị, không lưu vào khe. Tiếp tục?')) return;
+  // Khe ảnh chỉ có từ v2.0 — v1.0 không có khe nào (ảnh 960x640 hai mặt là
+  // 153.600B, bản đó chưa dùng vùng flash mở rộng). Máy đời cũ vẫn gửi ảnh
+  // được, chỉ là hiện lên màn rồi thôi, tắt nguồn là mất.
+  const slotCapable = EpdProf.co('khe_anh');
+  if (!slotCapable) {
+    addLog('Firmware v1.0 không có khe ảnh: ảnh sẽ hiện lên màn nhưng KHÔNG được lưu lại.');
   }
 
   const canvasSize = document.getElementById('canvasSize').value;
@@ -252,14 +417,16 @@ async function sendimg(slot = 0) {
   // trong lúc erase là gói dồn đống cạn MSG heap BLE -> thiết bị reset (v1.5)
   if (slotCapable) {
     setStatus(`Đang chuẩn bị khe ${slot + 1} (xóa flash)…`);
-    const rdyWait = FwCheck.atLeast('1.6') ? waitImgRdy(8000) : null;
+    // Máy này chỉ có khe từ v2.0, và bản đó luôn báo 'img=rdy' sau khi xoá
+    // xong — không có đời nào vừa có khe vừa không báo.
+    const rdyWait = waitImgRdy(8000);
     if (!await write(EpdCmd.IMG_SLOT, [0x01, slot])) {
       imgRdyResolve = null;
       setStatus('Không mở được khe ảnh — thử lại.');
       updateButtonStatus();
       return;
     }
-    if (rdyWait && !await rdyWait) {
+    if (await rdyWait !== 'img=rdy') {
       setStatus('Không mở được khe ảnh (thiết bị không báo sẵn sàng) — thử lại.');
       updateButtonStatus();
       return;
@@ -292,12 +459,30 @@ async function sendimg(slot = 0) {
     return;
   }
 
-  // chốt khe (ghi trailer hợp lệ) TRƯỚC khi làm mới màn
+  // chốt khe (ghi dấu hợp lệ) TRƯỚC khi làm mới màn
   if (slotCapable) {
+    /* Khe NỀN của «Tự thiết kế» lưu NÉN — ảnh quá nhiều chi tiết thì không đủ
+     * chỗ, firmware huỷ khe và báo 'img=full'. Phải đợi câu trả lời đó rồi mới
+     * dám nói đã lưu: báo bừa thành công là người dùng gửi xong mới phát hiện
+     * nền không lên, mà không có một manh mối nào. */
+    const kq = waitImgRdy(6000);
     if (await write(EpdCmd.IMG_SLOT, [0x02])) {
-      imgSlotMask |= (1 << slot);
-      updateImgAutoUI();
-      addLog(`Đã lưu ảnh vào khe ${slot + 1} trên thiết bị.`);
+      const m = await kq;
+      if (m === 'img=full') {
+        imgSlotMask &= ~(1 << slot);
+        updateImgAutoUI();
+        updateShowImgUI();
+        addLog(slot >= IMG_SLOTS
+          ? 'Ảnh nền quá nhiều chi tiết nên KHÔNG đủ chỗ trong máy — chưa lưu được. Hãy chọn ảnh ít chi tiết hơn (nét lớn, mảng phẳng), hoặc giảm nhiễu ở phần chỉnh ảnh.'
+          : 'Ảnh không đủ chỗ trong khe — chưa lưu được.');
+        setStatus('Ảnh không đủ chỗ — chưa lưu vào máy.');
+      } else {
+        imgSlotMask |= (1 << slot);
+        imgCurrent = (slot < IMG_SLOTS) ? slot : imgCurrent;
+        updateImgAutoUI();
+        updateShowImgUI();
+        addLog(`Đã lưu ảnh vào khe ${slot + 1} trên thiết bị.`);
+      }
     }
   }
 
@@ -423,7 +608,7 @@ function handleNotify(value, idx) {
     updateDitcherOptions();
     // config byte 11 = current display mode: highlight it in the gallery
     if (data.length > 11) {
-      deviceMode = data[11];
+      deviceMode = modeFromWire(data[11]);
       if (typeof highlightMode === 'function') highlightMode(deviceMode);
     }
     // clock cleanup cadence (1 = full refresh hourly; 0xFF -> enabled):
@@ -437,7 +622,11 @@ function handleNotify(value, idx) {
     // u32 activation ở 208 — struct căn 4 byte)
     if (data.length >= 216) {
       const auto = data[212], itv = data[213];
-      imgSlotMask = (data[214] <= 7) ? data[214] : 0;
+      // bit0..(IMG_SLOTS-1) = khe ẢNH, bit tiếp theo = khe NỀN «Tự thiết kế»
+      imgSlotMask = (data[214] <= 0x7F) ? data[214] : 0;
+      imgCurrent = (data[215] < IMG_SLOTS) ? data[215] : 0;
+      updateShowImgUI();
+      updateIntervalUI();
       document.getElementById('imgAutoCHK').checked = auto === 1;
       const r = document.querySelector(`input[name="imgInterval"][value="${itv}"]`);
       if (r) r.checked = true;
@@ -479,16 +668,51 @@ function handleNotify(value, idx) {
         addLog("Đồng hồ thiết bị chưa được đồng bộ — bấm «Sync time», hoặc chọn thẳng một giao diện (lệnh chọn giao diện tự gửi kèm ngày giờ).");
       }
       updateButtonStatus();
+    } else if (msg.startsWith('asset=')) {
+      // Vùng dữ liệu ở flash (font + bảng âm lịch, tách khỏi firmware để trả
+      // RAM). 'asset=none' = máy chưa có blob — hay gặp ở máy vừa cập nhật qua
+      // OTA vì OTA chỉ ghi bank firmware. Tự gửi luôn, khách không phải làm gì.
+      if (assetResolve) { const f = assetResolve; assetResolve = null; f(msg); }
+      else if (msg === 'asset=none') sendAsset();
     } else if (msg.startsWith('img=') && imgRdyResolve) {
-      // trả lời lệnh mở khe ảnh: 'img=rdy' (xóa flash xong) / 'img=err'
-      const f = imgRdyResolve; imgRdyResolve = null; f(msg === 'img=rdy');
+      /* Trả NGUYÊN VĂN chứ không phải true/false như các app khác — máy này
+       * có thêm câu 'img=full' (ảnh nén không đủ chỗ, khe đã bị huỷ) và phải
+       * phân biệt được nó với 'img=err'. Mọi nơi đợi hàm này trong file này
+       * đều so chuỗi. */
+      const f = imgRdyResolve; imgRdyResolve = null; f(msg);
     } else if (msg.startsWith('fw=') && msg.length > 3) {
       FwCheck.report(msg.substring(3));
-      // khu «Tự động đổi ảnh» chỉ hiện khi firmware hỗ trợ 3 khe (>= 1.5)
-      if (FwCheck.atLeast('1.5')) {
+      // khu «Tự động đổi ảnh» chỉ hiện khi firmware CÓ khe ảnh (>= 2.0)
+      if (EpdProf.co('khe_anh')) {
         document.getElementById('imgAutoRow').style.display = '';
         updateImgAutoUI();
       }
+      updateShowImgUI();
+      updateIntervalUI();
+
+      /* ---- các cổng của «Tự thiết kế» ------------------------------------
+       * Máy chưa hỗ trợ thì ẩn hẳn nút đi: để lại là người dùng xếp xong mới
+       * biết không gửi được — đúng loại lỗi câm mà trang này tránh ở mọi chỗ
+       * khác. */
+      // cỡ TỰ DO: máy cũ bám về ba nấc (designer.js đọc cờ này lúc dựng thanh kéo)
+      window.__fwFreeSize = EpdProf.co('co_tu_do');
+      // «Chữ 3..6» + «Thứ» + «Ngày dương»
+      {
+        const six = EpdProf.co('6_o_chu');
+        document.querySelectorAll('.dsTextExtra').forEach(e => { e.style.display = six ? '' : 'none'; });
+      }
+      // «Làm nền thiết kế» — khe nền riêng, ảnh được NÉN lúc ghi vào máy
+      {
+        const bgRow = document.getElementById('dsBgRow');
+        if (bgRow) bgRow.style.display = EpdProf.co('anh_nen_thiet_ke') ? '' : 'none';
+      }
+      // ô «Đang sửa»: chỉ có nghĩa khi máy có từ HAI thiết kế trở lên
+      {
+        const dRow = document.getElementById('dsDesignRow');
+        const nTk = (window.EPD_PROFILE && window.EPD_PROFILE.soThietKe) || 1;
+        if (dRow) dRow.style.display = (nTk >= 2 && EpdProf.co('anh_nen_thiet_ke')) ? '' : 'none';
+      }
+      if (window.dsRedraw) window.dsRedraw();
       // mode 14 «Lịch dương + âm» thay Đếm ngược: cần fw 10.2" >= 0.2 —
       // preview card 14 đổi hình + tên theo cờ này (mode_preview.js)
       window.__fwCal = FwCheck.atLeast('0.2');

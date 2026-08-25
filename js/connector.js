@@ -157,7 +157,17 @@
       fragment: 'apps/10_2.html',
       prefixes: ['DIY-10_2-'],
       scripts: ['js/app_common.js', 'js/family_epd.js', 'js/dithering.js', 'js/paint.js', 'js/crop.js',
-        'js/10_2/mode_preview.js', 'js/10_2/designer.js', 'js/diy_store.js', 'js/10_2/main.js'],
+        // profile.gen.js + modes.gen.js SINH RA tu tools/profile/10_2.json ben
+        // kho firmware — bang the va enum cua may sinh tu MOT nguon nen khong
+        // the lech nhau. Phai nap TRUOC mode_preview.js (no doc window.EPD_MODES
+        // ngay luc nap) va truoc main.js (doc window.EPD_PROFILE).
+        'js/10_2/profile.gen.js', 'js/10_2/modes.gen.js',
+        'js/10_2/mode_preview.js',
+        // designer_10_2.js phải nạp TRƯỚC designer.js: nó khai window.EPD_DS_DEVICE
+        // mà designer.js đọc ngay lúc nạp (khoảng co giãn của khổ 960x640 rộng
+        // hơn hẳn bản 4.2" — xem chú thích trong file đó).
+        'js/10_2/designer_10_2.js', 'js/common/designer.js',
+        'js/diy_store.js', 'js/10_2/main.js'],
     },
   };
 

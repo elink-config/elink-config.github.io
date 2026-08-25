@@ -849,32 +849,26 @@
   window.__pv = { font, center, multi, seg7, segStr, battery, analogClock, monthGrid, pad2, lunarish,
                   RED, BK, WH, WD_SHORT, WD_FULL };
 
-  const MODE_LIST = [
-    { mode: 1, name: 'Lịch tháng', tick: 'Cập nhật lúc 0h', id: 'calendarmodebutton', draw: m1 },
-    { mode: 2, name: 'Đồng hồ', tick: 'Nhảy từng phút (fw ≥ 0.3)', id: 'clockmodebutton', draw: m2 },
-    { mode: 3, name: 'Đồng hồ + Lịch', tick: 'Nhảy từng phút (fw ≥ 0.3)', id: 'combomodebutton', draw: m3 },
-    { mode: 4, name: 'Lịch để bàn (đỏ)', tick: 'Nhảy từng phút (fw ≥ 0.3)', id: 'redcombomodebutton', draw: m4 },
-    { mode: 5, name: 'Lịch VN (Can Chi)', tick: 'Cập nhật lúc 0h', id: 'vncalendarmodebutton', draw: m5 },
-    { mode: 6, name: 'Đồng hồ số', tick: 'Nhảy từng phút (fw ≥ 0.3)', id: 'digitalmodebutton', draw: m6 },
-    { mode: 7, name: 'Đồng hồ kim', tick: 'Nhảy từng phút (fw ≥ 0.3)', id: 'analogmodebutton', draw: m7 },
-    { mode: 8, name: 'Lịch bloc', tick: 'Cập nhật lúc 0h', id: 'dayblocmodebutton', draw: m8 },
-    { mode: 9, name: 'Lịch tuần', tick: 'Nhảy từng phút (fw ≥ 0.3)', id: 'weekmodebutton', draw: m9 },
-    { mode: 10, name: 'Giờ + lịch tháng', tick: 'Nhảy từng phút (fw ≥ 0.3)', id: 'digitalcalmodebutton', draw: m10 },
-    { mode: 11, name: 'Kim + thẻ ngày', tick: 'Nhảy từng phút (fw ≥ 0.3)', id: 'analogdaymodebutton', draw: m11 },
-    { mode: 12, name: 'Tối giản', tick: 'Cập nhật lúc 0h', id: 'minimalmodebutton', draw: m12 },
-    { mode: 13, name: 'Lịch vạn niên', tick: 'Cập nhật lúc 0h', id: 'vanniemodebutton', draw: m13 },
-    { mode: 14, name: 'Đếm ngược sự kiện', nameNew: 'Lịch dương + âm', tick: 'Cập nhật lúc 0h', tickNew: 'Nhảy từng phút (fw ≥ 0.3)', id: 'countdownmodebutton', draw: m14 },
-    { mode: 15, name: 'Hai tháng', tick: 'Cập nhật lúc 0h', id: 'twomonthmodebutton', draw: m15 },
-    { mode: 16, name: 'Lịch cả năm', tick: 'Cập nhật lúc 0h', id: 'yearmodebutton', draw: m16 },
-    { mode: 17, name: 'Nhiệt kế', tick: 'Nhảy từng phút (fw ≥ 0.3)', id: 'thermomodebutton', draw: m17 },
-    { mode: 18, name: 'Trăng', tick: 'Cập nhật lúc 0h', id: 'moonmodebutton', draw: m18 },
-    { mode: 19, name: 'Ghi chú', tick: 'Nhảy từng phút (fw ≥ 0.3)', id: 'notemodebutton', draw: m19 },
-    { mode: 20, name: 'Tự thiết kế', tick: 'Nhảy từng phút (fw ≥ 0.3)', id: 'custommodebutton', draw: m20 },
-    { mode: 21, name: 'Núi tuyết 8-bit', tick: 'Cập nhật lúc 0h', id: 'retromtnmodebutton', draw: m21 },
-    { mode: 22, name: 'Hoàng hôn 8-bit', tick: 'Nhảy từng phút (fw ≥ 0.3)', id: 'retrosunsetmodebutton', draw: m22 },
-    { mode: 23, name: 'Khủng long 8-bit', tick: 'Cập nhật lúc 0h', id: 'retrowinmodebutton', draw: m23 },
-    { mode: 24, name: 'Thành phố pixel', tick: 'Nhảy từng phút (fw ≥ 0.3)', id: 'retrocitymodebutton', draw: m24 },
-  ];
+  /* BANG THE NAY DUOC SINH RA — xem js/10_2/modes.gen.js (window.EPD_MODES),
+   * nguon la tools/profile/10_2.json trong kho firmware.
+   *
+   * VI SAO: truoc day danh sach che do phai giu KHOP BANG TAY giua enum
+   * display_mode_t cua firmware va bang nay. Lech mot so la bam the nay ra che
+   * do khac. Nay ca hai deu sinh tu mot ho so.
+   *
+   * Ham ve VAN NAM O DAY: chung dung cac helper cuc bo cua IIFE (font, seg7,
+   * monthGrid...) nen khong dua ra file sinh duoc. Ho so chi mang KHOA, bang
+   * DRAW duoi day noi khoa vao ham. */
+  const DRAW = {
+    m1, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15, m16, m17,
+    m20, m21, m22, m23, m24,
+  };
+
+  const MODE_LIST = (window.EPD_MODES || []).map(e => {
+    const d = DRAW[e.draw];
+    if (!d) console.error('mode ' + e.mode + ': khong co ham ve cho khoa "' + e.draw + '"');
+    return Object.assign({}, e, { draw: d || (() => {}) });
+  });
 
   // highlight the mode the device reports (config byte 11) or was just set to
   window.highlightMode = function (mode) {
@@ -897,8 +891,8 @@
         '<div class="mode-tick">' + m.tick + '</div>' +
         '<button id="' + m.id + '" type="button" class="primary" onclick="syncTime(' + m.mode + ')">Áp dụng</button>';
       gallery.appendChild(card);
-      // mode 2 + 18 đã bỏ ở firmware v1.7: ẩn card khi thiết bị khai fw >= 1.7
-      if (v17() && (m.mode === 2 || m.mode === 18)) card.style.display = 'none';
+      // Tu v2.0 KHONG con the nao phai an: so mode danh lai cho LIEN MACH nen
+      // moi the trong danh sach deu la mot che do CO THAT tren may.
       try { m.draw(ctx2d(card.querySelector('canvas')), now); }
       catch (e) { console.error('preview mode ' + m.mode, e); }
     }
@@ -912,17 +906,6 @@
     const t = new Date();
     document.querySelectorAll('.mode-card').forEach((card, i) => {
       if (MODE_LIST[i]) {
-        // mode 2 + 18 đã bỏ ở firmware v1.7 — ẩn/hiện lại theo cờ fw hiện tại
-        const gone = MODE_LIST[i].mode === 2 || MODE_LIST[i].mode === 18;
-        card.style.display = (v17() && gone) ? 'none' : '';
-        // tên card đổi theo firmware (card 14: Đếm ngược -> Lịch dương + âm)
-        if (MODE_LIST[i].nameNew) {
-          const useNew = !!window.__fwCal;
-          const nm = card.querySelector('.mode-name');
-          const tk = card.querySelector('.mode-tick');
-          if (nm) nm.textContent = useNew ? MODE_LIST[i].nameNew : MODE_LIST[i].name;
-          if (tk) tk.textContent = useNew ? (MODE_LIST[i].tickNew || MODE_LIST[i].tick) : MODE_LIST[i].tick;
-        }
         try { MODE_LIST[i].draw(ctx2d(card.querySelector('canvas')), t); }
         catch (e) { console.error('preview mode ' + MODE_LIST[i].mode, e); }
       }
