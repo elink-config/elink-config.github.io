@@ -22,6 +22,46 @@
   let lastSeenDev = '';           // tên máy của lần dò trước (phát hiện kết nối mới)
   let autoLoaded = {};            // tên máy đã tự nạp trong phiên này
 
+  /* MÃ MÁY của app đang mở — dùng để lọc danh sách. Lấy từ móc thiết bị của
+     * bộ dựng, hoặc từ hồ sơ máy; không có thì trả rỗng (bản lưu cũ). */
+    function mayKey() {
+    try {
+      if (window.EPD_DS_DEVICE && window.EPD_DS_DEVICE.key) return window.EPD_DS_DEVICE.key;
+      if (window.EPD_PROFILE && window.EPD_PROFILE.may) return window.EPD_PROFILE.may;
+    } catch (e) {}
+    return '';
+  }
+
+  /* Khổ màn hiện tại — lưới an toàn thứ hai khi nạp. */
+  function manSize() {
+    try {
+      if (window.EPD_DS_DEVICE && window.EPD_DS_DEVICE.size) return window.EPD_DS_DEVICE.size();
+      if (window.EPD_PROFILE) return { w: window.EPD_PROFILE.rong, h: window.EPD_PROFILE.cao };
+    } catch (e) {}
+    return null;
+  }
+
+  /* «DIY-2_9N-AB12» -> «DIY-2_9N-». Dùng cho bản lưu ĐỜI CŨ chưa ghi mã máy:
+   * cùng tiền tố thì cùng dòng máy. */
+  function tienTo(name) {
+    const i = String(name || '').lastIndexOf('-');
+    return i > 0 ? name.slice(0, i + 1) : '';
+  }
+
+  /* Bản lưu này có thuộc máy đang mở không? */
+  function hopMay(name, rec) {
+    const may = mayKey();
+    /* CẢ HAI bên đều biết mã máy -> so mã, chắc chắn nhất. */
+    if (may && rec && rec.may) return rec.may === may;
+    /* Thiếu một bên (bản lưu đời cũ, hoặc app chưa khai mã như 2.9" cũ /
+     * 7.3" / 7.5") -> so TIỀN TỐ tên thiết bị: cùng tiền tố là cùng dòng máy. */
+    const dev = devName();
+    if (dev) return tienTo(name) === tienTo(dev);
+    /* Chưa kết nối và cũng không có mã -> không đủ căn cứ, ẨN đi cho chắc.
+     * Thà danh sách trống còn hơn bày ra một bản lưu của máy khác. */
+    return false;
+  }
+
   function devName() {
     try {
       return (typeof bleDevice !== 'undefined' && bleDevice && bleDevice.name) || '';
@@ -57,7 +97,13 @@
     const st = window.dsGetState && window.dsGetState();
     if (isEmpty(st)) { if (!quiet) alert('Thiết kế còn trống — chưa có gì để lưu.'); return false; }
     const all = readAll();
-    all[name] = { savedAt: Date.now(), state: st };
+    const sz = manSize();
+    all[name] = {
+      savedAt: Date.now(),
+      may: mayKey(),                        // để lần sau lọc đúng máy
+      w: sz ? sz.w : 0, h: sz ? sz.h : 0,   // để từ chối nạp nhầm khổ màn
+      state: st,
+    };
     if (!writeAll(all)) return false;
     if (!quiet) log('Đã lưu thiết kế cho «' + name + '».');
     refreshUi();
@@ -67,6 +113,18 @@
   function loadFor(name, quiet) {
     const rec = readAll()[name];
     if (!rec || !rec.state) { if (!quiet) alert('Chưa có thiết kế nào lưu cho «' + name + '».'); return false; }
+    /* Lưới an toàn thứ hai: kể cả lọt qua bộ lọc danh sách (bản lưu đời cũ,
+     * nhập từ file .diy...) thì khác khổ màn vẫn phải TỪ CHỐI — toạ độ của màn
+     * khác rơi vào đây là bố cục vỡ, mà người dùng chỉ thấy sau khi đã gửi. */
+    {
+      const sz = manSize();
+      if (sz && rec.w && rec.h && (rec.w !== sz.w || rec.h !== sz.h)) {
+        if (!quiet)
+          alert('Bản lưu này của màn ' + rec.w + '×' + rec.h + ', còn máy đang mở là ' +
+                sz.w + '×' + sz.h + '.\n\nNạp vào sẽ vỡ bố cục nên đã dừng lại.');
+        return false;
+      }
+    }
     if (!window.dsSetState || !window.dsSetState(rec.state)) {
       if (!quiet) alert('Bản lưu không dùng được với trang này (khác loại màn hình?).');
       return false;
@@ -177,7 +235,10 @@
     const row = buildUi();
     if (!row) return;
     const all = readAll();
-    const names = Object.keys(all).sort();
+    /* CHỈ bày bản lưu của máy đang mở. Trước đây bày tất cả, nên đang cắm màn
+     * 2.9" vẫn thấy bản lưu của màn 4.2" — nạp vào là vỡ bố cục vì toạ độ của
+     * màn 400x300 rơi vào màn 296x128. */
+    const names = Object.keys(all).filter(k => hopMay(k, all[k])).sort();
     const pick = row.querySelector('#diyPick');
     const cur = pick.value;
     const dev = devName();
