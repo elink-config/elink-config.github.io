@@ -18,9 +18,9 @@ window.EPD_PROFILE = {
     'icon_hai_mat': { bwr: '2.3', bwry: null },  // icon den + DO — chi man BA MAU moi co mat mau
     'thoi_khoa_bieu': { bwr: '2.5', bwry: '3.6' },
     'co_tu_do': { bwr: '2.6', bwry: '3.7' },
-    'khoi_phuc_goc': { bwr: '3.0', bwry: null },  // lenh 0x2F
-    'hien_khe_anh': { bwr: '3.0', bwry: null },  // lenh 0x27 05
-    'chu_ky_phut': { bwr: '3.0', bwry: null },  // 15/30/45 phut
+    'khoi_phuc_goc': { bwr: '3.0', bwry: '4.0' },  // lenh 0x2F; ban 4 mau co tu v4.0 (len loi chung epd_common)
+    'hien_khe_anh': { bwr: '3.0', bwry: '4.0' },  // lenh 0x27 05; ban 4 mau co tu v4.0 (len loi chung epd_common)
+    'chu_ky_phut': { bwr: '3.0', bwry: null },  // 15/30/45 phut. Ban 4 mau KHONG dung cong nay: no co radio rieng 15/30/40 ghim thang trong apps/4_2c.html
     'nhip_lam_moi_3': { bwr: null, bwry: '3.3' },  // ban 4 mau: lenh 0x23 mang BA gia tri
   },
   anTheTrongKhoang: {
