@@ -784,14 +784,20 @@ canvas.text-placement-mode {
     width: 100%;
     max-width: 480px;
     height: auto;
-    /* màn nhỏ phóng to hơn 2 lần: giữ nét vuông của điểm ảnh, đừng làm mờ */
-    image-rendering: pixelated;
     border: 1px solid var(--md-sys-color-outline);
     border-radius: 10px;
     background: #f6f4ec;
     touch-action: none;
     cursor: move;
     margin-bottom: 12px;
+}
+
+/* Chỉ máy nào phóng to hơn 2 lần mới cần: màn 2.13" rộng 212px mà khung bày
+   tới 480px, để trình duyệt làm mịn thì nét chữ điểm ảnh nhoè hết. Đặt thành
+   LỚP RIÊNG chứ không sửa .designer-canvas, để màn 4.2" (400px, phóng 1,2 lần)
+   giữ nguyên cách vẽ như trước — không đụng vào máy đang chạy. */
+.designer-canvas.pixel-preview {
+    image-rendering: pixelated;
 }
 
 /* Bảng danh sách firmware (dưới khu OTA) */
