@@ -11,8 +11,24 @@
   /* KHO MAN lay tu HO SO MAY (js/<may>/profile.gen.js). Bo cuc nguoi dung xep
      duoc luu theo toa do THAT tren man, nen moi phep quy doi chuot va chan bien
      deu dung hai so nay — day la thu DUY NHAT khien file nay phu thuoc may. */
-  const DS_W = (window.EPD_PROFILE && window.EPD_PROFILE.rong) || 400;
-  const DS_H = (window.EPD_PROFILE && window.EPD_PROFILE.cao) || 300;
+  /* MOC THEO MAY (khong bat buoc). Man nao co hinh hoc widget khac han man
+     4.2" thi khai window.EPD_DS_DEVICE TRUOC khi nap file nay:
+
+       { size()      -> {w, h}   kho man HIEN TAI (goi moi lan dung, nen may
+                                  hai do phan giai doi duoc giua chung)
+         freeSize    -> false    may chi co BA NAC co, khong co co tu do
+         parOf(t, s) -> {...}    tham so ve that cua mot widget
+         dims        -> {t: s => [w, h]}   khung bao cua widget
+         drawWidget(x, w, now, api)        ve mot widget
+       }
+
+     Khong khai thi chay nguyen duong cu cua man 4.2" — day la ly do moi cai
+     deu co duong lui `DEV && DEV.x ? ... : ...`. */
+  const DEV = window.EPD_DS_DEVICE || null;
+  const DS_W0 = (window.EPD_PROFILE && window.EPD_PROFILE.rong) || 400;
+  const DS_H0 = (window.EPD_PROFILE && window.EPD_PROFILE.cao) || 300;
+  const dsW = () => (DEV && DEV.size) ? DEV.size().w : DS_W0;
+  const dsH = () => (DEV && DEV.size) ? DEV.size().h : DS_H0;
 
   const pv = window.__pv; // helpers exposed by mode_preview.js
   // Tu BWR v2.7 / 4 mau v3.7 co HAI «Tu thiet ke», moi cai bo cuc + anh nen +
@@ -38,11 +54,16 @@
    *   pin                       -> một cỡ duy nhất
    * Hàm snapSize() dưới đây ép con số về đúng cái máy vẽ được, nên kéo góc
    * bao giờ cũng ra hình y như trên màn hình. */
-  const FREE = s => s >= 3;
+  // may khong co co tu do (firmware kep size > 2 ve 2) thi moi byte deu la NAC
+  const FREE = s => (DEV && DEV.freeSize === false) ? false : s >= 3;
   const pxOf = (s, base, lo, hi) => Math.max(lo, Math.min(hi, Math.round(base * s / 16)));
   const mulOf = (s, lo, hi) => Math.max(lo, Math.min(hi, Math.round(s / 16)));
   // tham số vẽ THẬT của một widget theo byte size
   function parOf(type, s) {
+    if (DEV && DEV.parOf) return DEV.parOf(type, s);
+    return parOf42(type, s);
+  }
+  function parOf42(type, s) {
     switch (type) {
       case 1: return { cS: FREE(s) ? Math.max(1, Math.min(8, Math.round((s + 4) / 8))) : [2, 3, 4][s] };
       case 2: return { r: FREE(s) ? pxOf(s, 40, 12, 150) : [40, 60, 85][s] };
@@ -69,6 +90,11 @@
   // ép size về đúng nấc mà firmware vẽ ra được, và về khoảng cho phép
   function snapSize(type, s) {
     s = Math.round(s);
+    // may ba nac: ep thang ve 0/1/2 theo so nac cua loai widget do
+    if (DEV && DEV.freeSize === false) {
+      const nac = (TYPES[type] && TYPES[type].sizes) || 1;
+      return Math.max(0, Math.min(nac - 1, s));
+    }
     switch (type) {
       case 1: return Math.max(8, Math.min(64, Math.round(s / 8) * 8));   // cS nguyên 1..8
       case 2: return Math.max(5, Math.min(60, s));                        // r 12..150
@@ -108,6 +134,10 @@
     15: { name: 'Thứ', sizes: 2, dim: s => { const k = parOf(15, s).k; return [100 * k, 16 * k]; } },
     16: { name: 'Ngày dương', sizes: 2, dim: s => { const k = parOf(16, s).k; return [110 * k, 16 * k]; } },
   };
+
+  // khung bao riêng của máy (nếu có) — đè lên bảng của màn 4.2"
+  if (DEV && DEV.dims) Object.keys(DEV.dims).forEach(k => { if (TYPES[k]) TYPES[k].dim = DEV.dims[k]; });
+  if (DEV && DEV.sizes) Object.keys(DEV.sizes).forEach(k => { if (TYPES[k]) TYPES[k].sizes = DEV.sizes[k]; });
 
   // 8, 9 rồi 11..14 -> ô chữ 0..5 (giấu chỗ hụt vì 10 là Icon)
   const TEXT_TYPES = [8, 9, 11, 12, 13, 14];
@@ -156,7 +186,10 @@
 
   function dimOf(w) {
     const t = TYPES[w.type];
-    if (t.dim) return t.dim(w.size);
+    // Tham so thu HAI la NOI DUNG chu — man nao dung font diem anh (be rong
+    // moi ky tu co dinh) can no de tinh khung bao cho dung. Bang cua man 4.2"
+    // bo qua tham so nay nen khong doi gi.
+    if (t.dim) return t.dim(w.size, isTextType(w.type) ? textOf(w) : null);
     // text widgets: measure with the canvas font the preview uses
     const k = parOf(w.type, w.size).k;
     pv.font(ctx, 15 * k, 1);
@@ -167,6 +200,13 @@
      match the firmware so positions transfer 1:1) ---- */
 
   function drawWidget(x, w, now) {
+    if (DEV && DEV.drawWidget) {
+      DEV.drawWidget(x, w, now, { parOf, textOf, TYPES, iconImage, pv });
+      return;
+    }
+    return drawWidget42(x, w, now);
+  }
+  function drawWidget42(x, w, now) {
     const BK = pv.BK, RED = pv.RED;
     switch (w.type) {
       case 1: { // 7-seg HH:MM; unit chosen so the width matches the firmware box
@@ -325,7 +365,7 @@
   };
 
   function renderLayout(x, now, withSelection) {
-    x.fillStyle = '#f6f4ec'; x.fillRect(0, 0, DS_W, DS_H);
+    x.fillStyle = '#f6f4ec'; x.fillRect(0, 0, dsW(), dsH());
     // ảnh nền toàn màn (nếu đã đặt) — vẽ trước, widget nằm đè lên
     if (st.bgPrev) {
       // ảnh tải xong thì vẽ lại CẢ trình sửa lẫn thẻ xem trước — thẻ của
@@ -335,10 +375,11 @@
         bgImg.onload = () => { redraw(); if (window.refreshModeGallery) window.refreshModeGallery(); };
         bgImg.src = st.bgPrev;
       }
-      if (bgImg.complete && bgImg.naturalWidth) x.drawImage(bgImg, 0, 0, DS_W, DS_H);
+      if (bgImg.complete && bgImg.naturalWidth) x.drawImage(bgImg, 0, 0, dsW(), dsH());
     }
-    if (st.frame >= 1) { x.strokeStyle = pv.BK; x.lineWidth = 2; x.strokeRect(3, 3, 394, 294); }
-    if (st.frame >= 2) x.strokeRect(7, 7, 386, 286);
+    // khung vien suy tu kho man (o 400x300 ra dung hai so cu 394/386)
+    if (st.frame >= 1) { x.strokeStyle = pv.BK; x.lineWidth = 2; x.strokeRect(3, 3, dsW() - 6, dsH() - 6); }
+    if (st.frame >= 2) x.strokeRect(7, 7, dsW() - 14, dsH() - 14);
     st.widgets.forEach(w => drawWidget(x, w, now));
     if (withSelection && sel >= 0 && st.widgets[sel]) {
       const w = st.widgets[sel], [bw, bh] = dimOf(w);
@@ -385,8 +426,8 @@
     return withDesign((d === 1) ? 1 : 0, function () {
       if (!st.widgets.length) {
         pv.font(x, 15, 0);
-        pv.center(x, 'Chưa có giao diện tự thiết kế', 200, 140, pv.BK);
-        pv.center(x, 'Tạo trong mục «Thiết kế màn hình»', 200, 168, pv.BK);
+        pv.center(x, 'Chưa có giao diện tự thiết kế', dsW() / 2, dsH() / 2 - 10, pv.BK);
+        pv.center(x, 'Tạo trong mục «Thiết kế màn hình»', dsW() / 2, dsH() / 2 + 18, pv.BK);
         return;
       }
       renderLayout(x, now, false);
@@ -468,13 +509,13 @@
   function evPos(ev) {
     const r = canvas.getBoundingClientRect();
     const t = ev.touches ? ev.touches[0] : ev;
-    return [(t.clientX - r.left) * DS_W / r.width, (t.clientY - r.top) * DS_H / r.height];
+    return [(t.clientX - r.left) * dsW() / r.width, (t.clientY - r.top) * dsH() / r.height];
   }
 
   function clampW(w) {
     const [bw, bh] = dimOf(w);
-    w.x = Math.round(Math.max(0, Math.min(DS_W - bw, w.x)));
-    w.y = Math.round(Math.max(0, Math.min(DS_H - bh, w.y)));
+    w.x = Math.round(Math.max(0, Math.min(dsW() - bw, w.x)));
+    w.y = Math.round(Math.max(0, Math.min(dsH() - bh, w.y)));
   }
 
   window.dsAdd = function (type) {
@@ -503,6 +544,9 @@
   };
 
   window.dsSetFrame = function (v) { st.frame = Number(v) || 0; save(); redraw(); };
+  // Ve lai khung dung — may doi duoc KHO MAN (2.13" co hai tam) can goi sau
+  // khi da doi kich thuoc the <canvas>.
+  window.dsRedraw = function () { redraw(); };
 
   window.dsTexts = function () {
     for (let i = 0; i < 6; i++) {

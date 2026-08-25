@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  const VER = '20260825d'; // cache-buster, keep in sync with index.html
+  const VER = '20260825e'; // cache-buster, keep in sync with index.html
 
   const EPD42_SERVICE = '62750001-d828-918d-fb46-b6c11c675aec';
   const HM213_SERVICE = '0000ff00-0000-1000-8000-00805f9b34fb';
@@ -62,7 +62,12 @@
       // (v1.10 để 28, v2.x để 0). Nhìn như hằng số vẽ nhưng thật ra là một
       // giao ước SỐ với firmware.
       scripts: ['js/app_common.js', 'js/family_epd.js', 'js/dithering.js', 'js/paint.js', 'js/crop.js',
-        'js/2_13n/common.js', 'js/2_13n/mode_preview.js', 'js/2_13n/main.js'],
+        'js/common/lunar_vn.js', 'js/2_13n/common.js', 'js/2_13n/mode_preview.js',
+        // designer_2_13.js phải nạp TRƯỚC designer.js: nó khai window.EPD_DS_DEVICE
+        // mà designer.js đọc ngay lúc nạp (hình học widget của màn 2.13" khác hẳn
+        // màn 4.2" — không có font 7 đoạn, chỉ ba nấc cỡ).
+        'js/2_13n/designer_2_13.js', 'js/common/designer.js', 'js/diy_store.js',
+        'js/2_13n/main.js'],
     },
     '2_9': {
       label: '2.9"',

@@ -10,6 +10,21 @@ let deviceMode = null;      // display mode reported by the device config
 // 3 khe ảnh (fw >= 1.5): mask bit0..2 = khe đã có ảnh trên thiết bị (đọc từ
 // config blob byte 214); cần >= 2 khe mới bật được «Tự động đổi ảnh»
 let imgSlotMask = 0;
+let imgCurrent = 0;         // khe ẢNH máy đang hiển thị (config byte 215)
+// 5 khe ẢNH + 2 khe NỀN của «Tự thiết kế» (bit 5/6) — khớp IMG_SLOT_COUNT /
+// IMG_SLOT_TOTAL trong epd_flashmap.h. slotCount() ở family_epd.js đọc hằng
+// này để KHÔNG đếm hai khe nền vào điều kiện bật «Tự động đổi ảnh».
+let IMG_SLOTS = 5;
+
+// Máy 2.13" có HAI tấm; chọn tấm nào là do mục «Driver» (0d = 212×104,
+// 0e = 250×122) chứ không có nút riêng. mode_preview.js đọc RESOLUTIONS/resIdx
+// để vẽ thẻ đúng khổ, nên updateDitcherOptions() phải cập nhật resIdx rồi dựng
+// lại thư viện mỗi khi đổi driver.
+const RESOLUTIONS = [
+  { w: 212, h: 104, label: '212×104', drv: '0d' },
+  { w: 250, h: 122, label: '250×122', drv: '0e' },
+];
+let resIdx = 0;
 let timeSynced = false;     // device clock is valid (reported or just synced);
                             // gates the mode gallery in [Điều khiển thiết bị]
 
@@ -27,10 +42,15 @@ const EpdCmd = {
   SET_HOURLY_FULL: 0x23, // clock cleanup cadence: 1 = full refresh hourly, 0 = only at 00:00
   SET_LAYOUT: 0x24, // MODE_CUSTOM (mode 20) widget layout from the designer
   SET_ICON: 0x25, // MODE_CUSTOM 1-bit icon, chunked: [0x00,w,h,data...] then [0x01,data...]
-  IMG_SLOT: 0x27, // 3 khe ảnh (fw >= 1.5): [01 slot] mở khe / [02] chốt / [03 auto interval]
+  IMG_SLOT: 0x27, // khe ảnh: [01 slot] mở khe / [02] chốt / [03 auto+chu kỳ]
+                  //           [04 slot] xoá khe / [05 slot] hiện lại khe
   DARK_BOOST: 0x28, // [0/1] chữ đậm cho màn lô in nhạt (ép 0°C khi làm mới toàn màn)
 
   WRITE_IMG: 0x30, // v1.6
+  // SỰ KIỆN đếm ngược (chế độ 20 và 25): [năm_lo, năm_hi, tháng, ngày, tên…].
+  // Năm = 0 nghĩa là XOÁ sự kiện. Máy TỰ đóng dấu ngày đặt để vẽ thanh tiến
+  // độ — webtool không gửi mốc đó, hai bên không thể lệch cách đổi ngày.
+  SET_EVENT: 0x31,
 
   SET_CONFIG: 0x90,
   SYS_RESET: 0x91,
@@ -39,20 +59,24 @@ const EpdCmd = {
 };
 
 const EPD_SERVICE = '62750001-d828-918d-fb46-b6c11c675aec';
-// Chỉ liệt kê đúng máy 7.5" V1 (DIY-7_5B-xxxx, firmware epd_7_5inch —
-// KHÔNG khớp DIY-7_5-xxxx của bản lịch 640x384): các board 2.13"/2.9" quảng bá
-// DIY-2_13-/DIY-2_9- dùng giao thức khác (service 0xff00), hiện trong hộp
-// chọn chỉ gây nhầm. Board 4.2" chạy firmware quá cũ (tên chưa gắn cỡ màn)
-// vẫn kết nối được bằng chế độ dev (?debug=true).
+// ⚠ HAI ĐỜI 2.13" QUẢNG BÁ CÙNG MỘT TÊN «DIY-2_13-xxxx».
+//
+// Đời cũ (v1.10, dựng từ HMCLOCK) nói giao thức họ HM qua service 0xff00; đời
+// này (v2.0 trở lên) nói giao thức họ EPD qua service 128-bit dưới đây. Tên
+// Bluetooth không phân biệt được hai đời, nên hub KHÔNG tự nhận dạng theo tên
+// cho máy 2.13" — người dùng phải bấm đúng thẻ máy (xem explicitPick trong
+// js/connector.js). Kết nối nhầm đời thì không tìm thấy service và báo lỗi
+// ngay ở bước lấy EPD Service, không ghi bậy gì vào máy.
 const BLE_REQUEST_FILTERS = [
-  { namePrefix: 'DIY-7_5B' },
+  { namePrefix: 'DIY-2_13' },
 ];
 
 
 function logBleConnectHelp(error) {
   addLog(`connect: ${error.name} - ${error.message}`);
   addLog('Gợi ý xử lý khi kết nối thất bại:');
-  addLog('1. Đảm bảo thiết bị đã nạp firmware mới nhất, tên Bluetooth là DIY-7_5B-xxxx');
+  addLog('1. Đảm bảo thiết bị đã nạp firmware v2.0 trở lên, tên Bluetooth là DIY-2_13-xxxx');
+  addLog('   (máy còn chạy firmware v1.x thì dùng thẻ «2.13"» — không phải thẻ này)');
   addLog('2. Đặt thiết bị gần máy tính, màn hình chưa vào chế độ ngủ');
   addLog('3. Windows: xóa ghép nối cũ trong cài đặt Bluetooth rồi thử lại');
   addLog('4. Ngắt kết nối thiết bị khỏi điện thoại/máy tính khác');
@@ -157,8 +181,121 @@ async function writeImage(data, step = 'bw') {
 }
 
 
-// («Chữ đậm» dark_boost 0x28 ĐÃ GỠ 2026-08-05 theo yêu cầu người dùng —
-// firmware 7.5 cũng bỏ lệnh; opcode 0x28 giữ chỗ trong bảng EpdCmd)
+// («Chữ đậm» dark_boost 0x28 ĐÃ GỠ 2026-08-05 theo yêu cầu người dùng;
+// opcode 0x28 giữ chỗ trong bảng EpdCmd)
+
+/* HIỆN LẠI một khe ảnh đã lưu (lệnh 0x27 05).
+ *
+ * Không có lệnh này thì ảnh trong khe chỉ ra màn qua VÒNG TỰ ĐỔI ẢNH, mà vòng
+ * đó nằm sau cửa «máy đang ở chế độ ẢNH» — lỡ chọn một giao diện lịch là vừa
+ * mất vòng tự đổi, vừa không còn đường quay lại ảnh: phải gửi lại cả tấm dù nó
+ * đang nằm sẵn trong flash. */
+async function showImgSlot(slot) {
+  if (!epdCharacteristic) { alert('Chưa kết nối thiết bị.'); return; }
+  if (!(imgSlotMask & (1 << slot))) { alert('Khe ' + (slot + 1) + ' chưa có ảnh.'); return; }
+  addLog('Hiện lại ảnh ở khe ' + (slot + 1) + '...', '⇑');
+  if (!await write(EpdCmd.IMG_SLOT, [0x05, slot])) return;
+  imgCurrent = slot;
+  deviceMode = 0;                       // máy tự về chế độ ẢNH
+  if (typeof highlightMode === 'function') highlightMode(0);
+  updateShowImgUI();
+}
+
+/* Mỗi nút chỉ bật khi khe ĐÓ thật sự có ảnh (đọc từ mask trong config), và
+ * khe máy đang hiện được tô đậm để người dùng biết mình đang ở đâu. */
+function updateShowImgUI() {
+  for (let i = 0; i < IMG_SLOTS; i++) {
+    const b = document.getElementById('showimgbutton' + (i + 1));
+    if (!b) continue;
+    const has = !!(imgSlotMask & (1 << i));
+    b.disabled = !has;
+    b.classList.toggle('primary', has && i === imgCurrent);
+    b.classList.toggle('secondary', !(has && i === imgCurrent));
+  }
+}
+
+/* GHI CHÚ — ghi đè bản dùng chung ở family_epd.js vì hai chỗ khác nhau:
+ * máy này ghép BA dòng bằng ký tự xuống dòng (firmware tách lại để vẽ ba dòng),
+ * và màn ghi chú ở đây là chế độ 26 chứ không phải 19. */
+async function sendNote() {
+  const ln = [0, 1, 2].map(i => (document.getElementById('noteLine' + i) || {}).value || '');
+  while (ln.length && ln[ln.length - 1].trim() === '') ln.pop();
+  const text = ln.join('\n');
+  const bytes = new TextEncoder().encode(text);
+  if (bytes.length > 190) {
+    alert(`Ghi chú quá dài: ${bytes.length}/190 byte (chữ có dấu chiếm 2-3 byte mỗi chữ). Hãy rút gọn rồi gửi lại.`);
+    return;
+  }
+  if (await write(EpdCmd.SET_NOTE, bytes.length ? bytes : null)) {
+    saveLocalFields();
+    addLog(text ? "Đã gửi ghi chú!" : "Đã xóa ghi chú!");
+    addLog("Thiết bị chuyển sang màn hình «Bảng tên / ghi chú».");
+    if (typeof highlightMode === 'function') highlightMode(26);
+  }
+}
+
+/* SỰ KIỆN đếm ngược (lệnh 0x31) — dùng cho chế độ 20 và 25.
+ *
+ * Chỉ gửi NGÀY + TÊN. Máy tự đóng dấu ngày đặt làm mốc thanh tiến độ, nên hai
+ * bên không thể lệch nhau ở cách đổi ngày. Máy KHÔNG gửi lại tên sự kiện trong
+ * gói config (gói đó đã gần chạm trần MTU) nên webtool tự nhớ vào máy người
+ * dùng — xem saveLocalFields(). */
+async function sendEvent() {
+  const name = (document.getElementById('eventName').value || '').trim();
+  const dv = document.getElementById('eventDate').value;
+  if (!dv) { alert('Hãy chọn ngày diễn ra sự kiện.'); return; }
+  const d = new Date(dv + 'T00:00:00');
+  if (isNaN(d)) { alert('Ngày không hợp lệ.'); return; }
+  const bytes = new TextEncoder().encode(name);
+  if (bytes.length > 43) {
+    alert(`Tên sự kiện quá dài: ${bytes.length}/43 byte (chữ có dấu chiếm 2-3 byte mỗi chữ).`);
+    return;
+  }
+  const y = d.getFullYear();
+  const payload = [y & 0xFF, (y >> 8) & 0xFF, d.getMonth() + 1, d.getDate(), ...bytes];
+  if (await write(EpdCmd.SET_EVENT, payload)) {
+    saveLocalFields();
+    addLog(`Đã đặt sự kiện «${name || '(không tên)'}» ngày ${dv}.`);
+    addLog('Thiết bị chuyển sang màn hình «Đếm ngược sự kiện».');
+    if (typeof highlightMode === 'function') highlightMode(25);
+    if (typeof redrawModePreviews === 'function') redrawModePreviews();
+  }
+}
+
+async function clearEvent() {
+  // năm = 0 là quy ước XOÁ ở phía firmware
+  if (await write(EpdCmd.SET_EVENT, [0, 0, 0, 0])) {
+    document.getElementById('eventName').value = '';
+    document.getElementById('eventDate').value = '';
+    saveLocalFields();
+    addLog('Đã xoá sự kiện đếm ngược.');
+    if (typeof redrawModePreviews === 'function') redrawModePreviews();
+  }
+}
+
+/* Ghi chú và sự kiện KHÔNG được máy gửi lại (gói config chỉ chở phần cũ, đã
+ * gần chạm trần MTU 244 byte). Nhớ tại máy người dùng để lần sau mở trang còn
+ * thấy mình đã đặt gì — chỉ là bản sao cho tiện, máy vẫn là nguồn thật. */
+const LOCAL_KEY = 'epd_2_13n_fields';
+function saveLocalFields() {
+  try {
+    const o = {};
+    ['noteLine0', 'noteLine1', 'noteLine2', 'eventName', 'eventDate'].forEach(id => {
+      const e = document.getElementById(id);
+      if (e) o[id] = e.value;
+    });
+    localStorage.setItem(LOCAL_KEY, JSON.stringify(o));
+  } catch (e) { /* trình duyệt chặn localStorage: bỏ qua, không phải lỗi */ }
+}
+function loadLocalFields() {
+  try {
+    const o = JSON.parse(localStorage.getItem(LOCAL_KEY) || '{}');
+    Object.keys(o).forEach(id => {
+      const e = document.getElementById(id);
+      if (e && o[id]) e.value = o[id];
+    });
+  } catch (e) { /* dữ liệu hỏng: bỏ qua */ }
+}
 
 async function setHourlyFull() {
   const chk = document.getElementById('hourlyFullCHK');
@@ -216,11 +353,10 @@ async function sendimg(slot = 0) {
     return;
   }
 
-  // 3 khe ảnh cần firmware >= 1.5; đời cũ chỉ hiển thị được (không lưu khe)
-  const slotCapable = FwCheck.atLeast('1.5');
-  if (!slotCapable && slot > 0) {
-    if (!confirm('Firmware của thiết bị chưa hỗ trợ 3 khe ảnh (cần v1.5). Ảnh sẽ chỉ hiển thị, không lưu vào khe. Tiếp tục?')) return;
-  }
+  // Dòng firmware của máy này bắt đầu từ v2.0 và đã có đủ 7 khe ngay từ đó,
+  // nên không cần cổng theo phiên bản như bản 4.2" (bản đó phải đỡ cả đời cũ
+  // 3 khe). Giữ biến để phần dưới đọc cho dễ theo.
+  const slotCapable = true;
 
   const canvasSize = document.getElementById('canvasSize').value;
   const ditherMode = document.getElementById('ditherMode').value;
@@ -346,9 +482,17 @@ function updateButtonStatus(forceDisabled = false) {
   });
   document.getElementById("sendnotebutton").disabled = status;
   document.getElementById("clearscreenbutton").disabled = status;
-  document.getElementById("sendimgbutton").disabled = status;
-  document.getElementById("sendimgbutton2").disabled = status;
-  document.getElementById("sendimgbutton3").disabled = status;
+  // 5 nút khe ảnh + 2 nút khe nền «Tự thiết kế» + ô sự kiện
+  ['sendimgbutton', 'sendimgbutton2', 'sendimgbutton3', 'sendimgbutton4', 'sendimgbutton5',
+   'sendbgbutton1', 'sendbgbutton2', 'sendeventbutton', 'clreventbutton'].forEach(id => {
+    const b = document.getElementById(id);
+    if (b) b.disabled = status;
+  });
+  if (connected && !forceDisabled) updateShowImgUI();
+  else for (let i = 1; i <= 5; i++) {
+    const b = document.getElementById('showimgbutton' + i);
+    if (b) b.disabled = 'disabled';
+  }
   document.getElementById("setDriverbutton").disabled = status;
   document.getElementById("otabutton").disabled = status;
 }
@@ -356,6 +500,19 @@ function updateButtonStatus(forceDisabled = false) {
 setInterval(tickSystemTime, 1000);
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', tickSystemTime);
 else tickSystemTime();
+
+
+/* CỜ KHẢ NĂNG cho js/common/designer.js.
+ *
+ * File đó đỡ cả firmware 4.2" đời cũ nên mọi tính năng đều hỏi qua một hàm/cờ
+ * toàn cục; không khai thì nó rơi về ĐƯỜNG CŨ — mượn khe ảnh số 3 làm nền rồi
+ * gửi lệnh 0x2B đã bỏ, tức là vừa mất ảnh vừa không có nền. Dòng máy này ra
+ * mắt đã có đủ, nên khai thẳng là có. */
+function fwHasNewSlots() { return true; }   // khe NỀN riêng (5 và 6)
+function fwHasSixText() { return true; }    // đủ 6 ô chữ
+window.__fw17 = true;                       // tuần bắt đầu từ THỨ HAI
+window.__fwBg = true;                       // có ảnh nền toàn màn
+window.__fwFreeSize = false;                // chỉ ba nấc cỡ, không có cỡ tự do
 
 
 async function preConnect() {
@@ -377,7 +534,7 @@ async function preConnect() {
     } catch (e) {
       console.error(e);
       if (e.name === 'NotFoundError') {
-        addLog("Không tìm thấy thiết bị E-Ink 7.5\" (tên DIY-7_5B-xxxx)");
+        addLog("Không tìm thấy thiết bị E-Ink 2.13\" (tên DIY-2_13-xxxx)");
       } else if (e.message) {
         addLog("requestDevice: " + e.message);
       }
@@ -452,11 +609,15 @@ function handleNotify(value, idx) {
     // u32 activation ở 208 — struct căn 4 byte)
     if (data.length >= 216) {
       const auto = data[212], itv = data[213];
-      imgSlotMask = (data[214] <= 7) ? data[214] : 0;
+      // 7 khe -> mask tới 0x7F. Ngưỡng cũ (<= 7) là của đời 3 khe: máy 5 khe
+      // báo mask 0x1F sẽ bị ném về 0, webtool tưởng máy chưa có ảnh nào.
+      imgSlotMask = (data[214] <= 0x7F) ? data[214] : 0;
+      imgCurrent = (data[215] < IMG_SLOTS) ? data[215] : 0;
       document.getElementById('imgAutoCHK').checked = auto === 1;
       const r = document.querySelector(`input[name="imgInterval"][value="${itv}"]`);
       if (r) r.checked = true;
       updateImgAutoUI();
+      updateShowImgUI();
     }
     // (byte dark_boost tại offset 216 không còn dùng — «chữ đậm» đã gỡ)
   } else {
@@ -489,15 +650,10 @@ function handleNotify(value, idx) {
       const f = imgRdyResolve; imgRdyResolve = null; f(msg === 'img=rdy');
     } else if (msg.startsWith('fw=') && msg.length > 3) {
       FwCheck.report(msg.substring(3));
-      // khu «Tự động đổi ảnh» chỉ hiện khi firmware hỗ trợ 3 khe (>= 1.5)
-      if (FwCheck.atLeast('1.5')) {
-        document.getElementById('imgAutoRow').style.display = '';
-        updateImgAutoUI();
-      }
-      // mode 14 «Lịch dương + âm» thay Đếm ngược: cần fw 7.5" V1 >= 0.4 —
-      // preview card 14 đổi hình + tên theo cờ này (mode_preview.js)
-      window.__fwCal = FwCheck.atLeast('0.4');
-      if (window.refreshModeGallery) window.refreshModeGallery();
+      document.getElementById('imgAutoRow').style.display = '';
+      updateImgAutoUI();
+      // (máy 7.5" có cờ __fwCal để đổi hình thẻ 14 theo phiên bản; máy này
+      // ra mắt với đủ 30 chế độ nên không cần cổng nào theo phiên bản)
     }
   }
 }
@@ -505,12 +661,15 @@ function handleNotify(value, idx) {
 
 async function connect() {
   if (bleDevice == null || epdCharacteristic != null) return;
-  // đời cũ không tự khai coi như 1.3.1; kèm tên thiết bị để popup nhắc
-  // tối đa 1 lần/ngày cho mỗi máy
-  FwCheck.reset('1.3.1', bleDevice && bleDevice.name);
+  // Dòng firmware này bắt đầu từ v2.0 và bản nào cũng tự khai 'fw='; đặt mốc
+  // 2.0 để máy không khai (lỗi rớt gói) vẫn được xếp đúng dòng chứ không bị
+  // coi là đời 1.x. Kèm tên thiết bị để popup nhắc tối đa 1 lần/ngày mỗi máy.
+  FwCheck.reset('2.0', bleDevice && bleDevice.name);
 
   try {
     addLog("Đang kết nối: " + bleDevice.name);
+    window.__devNm = bleDevice.name || '';
+    window.bleDeviceName = window.__devNm;
     gattServer = await connectGattWithRetry(bleDevice);
     addLog('  Đã tìm thấy GATT Server');
     epdService = await gattServer.getPrimaryService(EPD_SERVICE);
@@ -624,15 +783,27 @@ function updateDitcherOptions() {
   if (colorMode) document.getElementById('ditherMode').value = colorMode;
   if (canvasSize) document.getElementById('canvasSize').value = canvasSize;
 
-  // Màn 7.5" V1 (UC8159): «làm mới mỗi giờ» ẩn vĩnh viễn, hiện ghi chú
-  // nhịp cập nhật. («Chữ đậm» đã gỡ hẳn 2026-08-05.)
+  // Màn 2.13" CÓ cập nhật cục bộ (khác 7.5" V1 dùng UC8159) nên lựa chọn
+  // «làm mới toàn màn mỗi giờ» có ý nghĩa thật — hiện nó ra.
   const hfRow = document.getElementById('hourlyFullRow');
   const hint = document.getElementById('fourColorHint');
-  if (hfRow) hfRow.style.display = 'none';
+  if (hfRow) hfRow.style.display = '';
   if (hint) hint.style.display = '';
 
-  // gallery preview vẽ điểm nhấn VÀNG khi driver là màn 4 màu — vẽ lại
-  if (window.refreshModeGallery) window.refreshModeGallery();
+  // Đổi driver là ĐỔI KHỔ MÀN (0d = 212×104, 0e = 250×122). Thẻ xem trước vẽ
+  // theo RESOLUTIONS[resIdx] nên phải cập nhật rồi DỰNG LẠI cả thư viện —
+  // canvas của thẻ đổi kích thước, vẽ lại thôi không đủ.
+  const drv = selectedOption.value;
+  const idx = RESOLUTIONS.findIndex(r => r.drv === drv);
+  if (idx >= 0 && idx !== resIdx) {
+    resIdx = idx;
+    addLog('Thẻ xem trước chuyển sang khổ ' + RESOLUTIONS[idx].label + '.');
+    if (window.rebuildModeGallery) window.rebuildModeGallery();
+    // khung dựng «Tự thiết kế» cũng phải đổi theo khổ tấm
+    const dc = document.getElementById('designerCanvas');
+    if (dc) { dc.width = RESOLUTIONS[idx].w; dc.height = RESOLUTIONS[idx].h; }
+    if (window.dsRedraw) window.dsRedraw();
+  }
 
   updateCanvasSize(); // always update image
 }
@@ -775,8 +946,9 @@ document.body.onload = () => {
   paintManager.initPaintTools();
   cropManager.initCropTools();
   initEventHandlers();
-  // đồng bộ canvas 640×384 + chế độ màu + các row tùy chọn theo driver 08
-  // ngay khi mở trang (thẻ <canvas> trong HTML vẫn là 400×300 thừa kế 4.2")
+  // đồng bộ canvas + chế độ màu + các row tùy chọn theo driver đang chọn ngay
+  // khi mở trang (thẻ <canvas> trong HTML thừa kế cỡ của máy khác)
+  loadLocalFields();
   updateDitcherOptions();
   updateButtonStatus();
   checkDebugMode();

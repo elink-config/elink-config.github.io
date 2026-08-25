@@ -38,9 +38,25 @@
 			<div class="mode-gallery" id="modeGallery"></div>
 			<div class="flex-container">
 				<div class="flex-group" style="flex:1 1 100%">
-					<label for="noteTXT">Ghi chú:</label>
-					<input type="text" id="noteTXT" maxlength="190" style="flex:1" placeholder="Nội dung cho màn hình «Ghi chú» (tối đa 190 byte)">
+					<!-- BA dong rieng chu khong phai mot o: firmware ve man «Bang ten /
+					     ghi chu» thanh ba dong (ten to o tren, gach ngang, hai dong nho)
+					     va tach chuoi theo ky tu xuong dong. Gop lai mot o thi nguoi dung
+					     khong biet cho nao xuong dong. main.js noi ba o bang '\n'. -->
+					<label for="noteLine0">Bảng tên / ghi chú:</label>
+					<input type="text" id="noteLine0" maxlength="60" style="flex:1 1 100%" placeholder="Dòng 1 — tên, chữ to nhất" oninput="redrawModePreviews()">
+					<input type="text" id="noteLine1" maxlength="60" style="flex:1 1 45%" placeholder="Dòng 2" oninput="redrawModePreviews()">
+					<input type="text" id="noteLine2" maxlength="60" style="flex:1 1 45%" placeholder="Dòng 3" oninput="redrawModePreviews()">
 					<button id="sendnotebutton" type="button" class="primary" onclick="sendNote()">Gửi ghi chú</button>
+				</div>
+				<!-- SU KIEN cho hai man dem nguoc (che do 20 va 25), lenh 0x31.
+				     Chi gui NGAY + TEN; may tu tinh so ngay con lai va tu ghi moc
+				     dat de ve thanh tien do — hai ben khong the lech cach doi ngay. -->
+				<div class="flex-group" style="flex:1 1 100%">
+					<label for="eventName">Sự kiện đếm ngược:</label>
+					<input type="text" id="eventName" maxlength="43" style="flex:1 1 50%" placeholder="Tên sự kiện (tối đa 43 byte)" oninput="redrawModePreviews()">
+					<input type="date" id="eventDate" onchange="redrawModePreviews()">
+					<button id="sendeventbutton" type="button" class="primary" onclick="sendEvent()">Gửi sự kiện</button>
+					<button id="clreventbutton" type="button" class="secondary" onclick="clearEvent()">Xóa</button>
 				</div>
 				<div class="flex-group" style="flex:1 1 100%" id="hourlyFullRow">
 					<label style="display:flex;align-items:center;gap:6px;cursor:pointer">
@@ -49,7 +65,7 @@
 					</label>
 				</div>
 					<div class="flex-group" style="flex:1 1 100%; display:none" id="fourColorHint">
-						<span class="mode-gallery-hint" style="margin:0">Màn 7.5" V1 (UC8159) không có cập nhật cục bộ: các chế độ đồng hồ tự làm mới <b>mỗi giờ</b> (hiển thị HH:00), các chế độ lịch làm mới lúc 00:00. Ảnh dùng chế độ màu «3 màu (đen trắng đỏ)».</span>
+						<span class="mode-gallery-hint" style="margin:0">Màn 2.13" cập nhật cục bộ được: các chế độ đồng hồ nhảy <b>từng phút</b> mà không chớp cả màn. Ảnh dùng chế độ màu «Đen trắng».</span>
 					</div>
 				<div class="flex-group">
 					<button id="clearscreenbutton" type="button" class="secondary" onclick="clearScreen()">Xóa màn hình</button>
@@ -57,9 +73,74 @@
 			</div>
 		</fieldset>
 		<fieldset>
-			<legend>Thiết kế màn hình (chế độ 20)</legend>
-			<p class="mode-gallery-hint">Bấm nút để thêm thành phần, kéo-thả trên khung để sắp xếp, chọn thành phần rồi «Đổi cỡ»/«Xóa». Đồng hồ và nhiệt độ vẫn tự cập nhật mỗi phút không chớp màn hình như các chế độ khác.</p>
-			
+			<legend>Thiết kế màn hình</legend>
+			<p class="mode-gallery-hint">Bấm nút để thêm thành phần, <b>kéo-thả trên khung để di chuyển</b>, chọn một thành phần rồi dùng thanh <b>«Cỡ»</b> để đổi cỡ. Màn 2.13" chỉ có <b>ba nấc cỡ</b> (chữ thì hai) vì font của máy là ảnh điểm — thanh kéo tự bám nấc, nên xem trước ra đúng cái máy vẽ. Đồng hồ và nhiệt độ vẫn tự cập nhật mỗi phút không chớp màn hình.</p>
+			<div class="designer-palette">
+				<button type="button" class="secondary" onclick="dsAdd(1)">+ Đồng hồ số</button>
+				<button type="button" class="secondary" onclick="dsAdd(2)">+ Đồng hồ kim</button>
+				<button type="button" class="secondary" onclick="dsAdd(3)">+ Pin</button>
+				<button type="button" class="secondary" onclick="dsAdd(4)">+ Nhiệt độ</button>
+				<button type="button" class="secondary" onclick="dsAdd(15)">+ Thứ</button>
+				<button type="button" class="secondary" onclick="dsAdd(16)">+ Ngày dương</button>
+				<button type="button" class="secondary" onclick="dsAdd(5)">+ Ngày tháng</button>
+				<button type="button" class="secondary" onclick="dsAdd(6)">+ Âm lịch</button>
+				<button type="button" class="secondary" onclick="dsAdd(7)">+ Lịch tháng</button>
+				<button type="button" class="secondary" onclick="dsAdd(8)">+ Chữ 1</button>
+				<button type="button" class="secondary" onclick="dsAdd(9)">+ Chữ 2</button>
+				<button type="button" class="secondary" onclick="dsAdd(11)">+ Chữ 3</button>
+				<button type="button" class="secondary" onclick="dsAdd(12)">+ Chữ 4</button>
+				<button type="button" class="secondary" onclick="dsAdd(13)">+ Chữ 5</button>
+				<button type="button" class="secondary" onclick="dsAdd(14)">+ Chữ 6</button>
+				<button type="button" class="secondary" onclick="dsAdd(10)">+ Icon (lấy từ mục Truyền hình ảnh)</button>
+			</div>
+			<div class="flex-container" id="dsDesignRow">
+				<div class="flex-group">
+					<label for="dsDesignSel">Đang sửa:</label>
+					<select id="dsDesignSel" onchange="dsSelectDesign(+this.value)">
+						<option value="0">Tự thiết kế 1 (chế độ 27)</option>
+						<option value="1">Tự thiết kế 2 (chế độ 28)</option>
+					</select>
+					<span class="mode-gallery-hint" style="margin:0">Hai thiết kế độc lập: bố cục, ảnh nền và icon riêng.</span>
+				</div>
+			</div>
+			<!-- Khung dựng đúng khổ tấm mặc định 212x104; đổi Driver sang 0e thì
+			     main.js dựng lại theo 250x122. -->
+			<canvas id="designerCanvas" width="212" height="104" class="designer-canvas"></canvas>
+			<div class="flex-container">
+				<div class="flex-group" style="flex:1 1 100%">
+					<label for="dsSize">Cỡ:</label>
+					<input type="range" id="dsSize" min="0" max="2" step="1" value="0" disabled
+					       style="flex:1;max-width:320px" oninput="dsSizeInput(this.value)">
+					<span class="mode-gallery-hint" style="margin:0" id="dsSizeLbl">Chọn một thành phần để đổi cỡ</span>
+				</div>
+				<div class="flex-group">
+					<button type="button" class="secondary" onclick="dsDelete()">Xóa</button>
+					<button type="button" class="secondary" onclick="dsClear()">Xóa hết</button>
+					<label for="dsFrame">Khung:</label>
+					<select id="dsFrame" onchange="dsSetFrame(this.value)">
+						<option value="0">Không</option>
+						<option value="1">Viền đơn</option>
+						<option value="2">Viền kép</option>
+					</select>
+				</div>
+				<details class="mode-gallery-hint" style="margin:6px 0;flex:1 1 100%">
+					<summary>Hướng dẫn dùng «Tự thiết kế» (bấm để mở)</summary>
+					<ol style="margin:4px 0 0;padding-left:20px;line-height:1.7">
+						<li>Chọn <b>Thiết kế 1</b> hay <b>Thiết kế 2</b> ở ô trên. Hai thiết kế tách hẳn nhau: bố cục, ảnh nền và icon riêng, ứng với hai chế độ «Tự thiết kế» và «Tự thiết kế 2».</li>
+						<li>Bấm các nút <b>+ Đồng hồ số</b>, <b>+ Lịch tháng</b>, <b>+ Chữ 1</b>… để thêm thành phần. Tối đa <b>10 thành phần</b> mỗi thiết kế.</li>
+						<li><b>Kéo thả</b> trên khung để xếp chỗ; chọn rồi kéo thanh <b>Cỡ</b> để đổi cỡ, <b>Xoá</b> để bỏ.</li>
+						<li>Muốn chữ riêng thì thêm <b>Chữ 1…Chữ 6</b> rồi gõ vào ô cùng số bên dưới. Mỗi ô tối đa 47 byte — chữ có dấu tốn 2-3 byte mỗi ký tự.</li>
+						<li>Muốn <b>ảnh nền toàn màn</b>: lên mục <b>Truyền hình ảnh</b> chọn ảnh, chỉnh cho vừa ý, rồi bấm <b>Làm nền Thiết kế 1</b> (hoặc 2) ở mục đó.</li>
+						<li>Bấm <b>Gửi lên thiết bị</b>. Máy nhận xong tự chuyển sang chế độ đó.</li>
+					</ol>
+					<p style="margin:8px 0 0"><b>Những điều dễ nhầm:</b></p>
+					<ul style="margin:4px 0 0;padding-left:20px;line-height:1.7">
+						<li><b>Ảnh nền và «Bỏ ảnh nền» chỉ đổi trên trình duyệt.</b> Máy chỉ nhận khi bấm <b>Gửi lên thiết bị</b>.</li>
+						<li>Ảnh nền <b>không</b> chiếm khe ảnh nào: mỗi thiết kế có khe nền riêng.</li>
+						<li>Màn này <b>đen trắng</b> và rộng 212px — chữ cỡ đôi đã chiếm 16px mỗi ký tự, xếp vừa vài chữ là hết bề ngang.</li>
+						<li>Bố cục lưu trong <b>trình duyệt này</b>. Đổi máy tính hay xoá dữ liệu duyệt web là mất, phải xếp lại — máy vẫn giữ cái đã gửi.</li>
+					</ul>
+				</details>
 				<div class="flex-group" style="flex:1 1 100%">
 					<label for="dsText1">Chữ 1:</label>
 					<input id="dsText1" type="text" maxlength="47" style="flex:1" oninput="dsTexts()" placeholder="Nội dung cho thành phần «Chữ 1»">
@@ -68,7 +149,25 @@
 					<label for="dsText2">Chữ 2:</label>
 					<input id="dsText2" type="text" maxlength="47" style="flex:1" oninput="dsTexts()" placeholder="Nội dung cho thành phần «Chữ 2»">
 				</div>
-				
+				<div class="flex-group" style="flex:1 1 100%">
+					<label for="dsText3">Chữ 3:</label>
+					<input id="dsText3" type="text" maxlength="47" style="flex:1" oninput="dsTexts()" placeholder="Nội dung cho thành phần «Chữ 3»">
+				</div>
+				<div class="flex-group" style="flex:1 1 100%">
+					<label for="dsText4">Chữ 4:</label>
+					<input id="dsText4" type="text" maxlength="47" style="flex:1" oninput="dsTexts()" placeholder="Nội dung cho thành phần «Chữ 4»">
+				</div>
+				<div class="flex-group" style="flex:1 1 100%">
+					<label for="dsText5">Chữ 5:</label>
+					<input id="dsText5" type="text" maxlength="47" style="flex:1" oninput="dsTexts()" placeholder="Nội dung cho thành phần «Chữ 5»">
+				</div>
+				<div class="flex-group" style="flex:1 1 100%">
+					<label for="dsText6">Chữ 6:</label>
+					<input id="dsText6" type="text" maxlength="47" style="flex:1" oninput="dsTexts()" placeholder="Nội dung cho thành phần «Chữ 6»">
+				</div>
+				<div class="flex-group">
+					<button id="uploadlayoutbutton" type="button" class="primary" onclick="dsUpload()">Gửi lên thiết bị</button>
+				</div>
 			</div>
 		</fieldset>
 		<fieldset>
@@ -82,7 +181,7 @@
 					<select id="canvasSize" onchange="updateCanvasSize()">
 						<option value="1.54_152_152">1.54 (152x152)</option>
 						<option value="1.54_200_200">1.54 (200x200)</option>
-						<option value="2.13_104_212">2.13 (104x212)</option>
+						<option value="2.13_104_212" selected>2.13 (104x212)</option>
 						<option value="2.13_122_250">2.13 (122x250)</option>
 						<option value="2.66_152_296">2.66 (152x296)</option>
 						<option value="2.66_184_360">2.66 (184x360)</option>
@@ -98,7 +197,7 @@
 						<option value="5.79_792_272">5.79 (792x272)</option>
 						<option value="5.83_600_448">5.83 (600x448)</option>
 						<option value="5.83_648_480">5.83 (648x480)</option>
-						<option value="7.5_640_384" selected>7.5 (640x384)</option>
+						<option value="7.5_640_384">7.5 (640x384)</option>
 						<option value="7.5_800_480">7.5 (800x480)</option>
 						<option value="7.5_880_528">7.5 (880x528)</option>
 						<option value="10.2_960_640">10.2 (960x640)</option>
@@ -156,6 +255,32 @@
 					<button id="sendimgbutton" type="button" class="primary" onclick="sendimg(0)">Gửi ảnh khe 1</button>
 					<button id="sendimgbutton2" type="button" class="primary" onclick="sendimg(1)">Gửi ảnh khe 2</button>
 					<button id="sendimgbutton3" type="button" class="primary" onclick="sendimg(2)">Gửi ảnh khe 3</button>
+					<button id="sendimgbutton4" type="button" class="primary" onclick="sendimg(3)">Gửi ảnh khe 4</button>
+					<button id="sendimgbutton5" type="button" class="primary" onclick="sendimg(4)">Gửi ảnh khe 5</button>
+				</div>
+			</div>
+			<!-- HIEN LAI mot khe da luu (lenh 0x27 05). Khong co no thi anh trong
+			     khe chi ra man qua vong TU DOI ANH, ma vong do nam sau cua «may dang
+			     o che do ANH» — lo chon mot giao dien lich la khong con duong quay
+			     lai anh, phai gui lai ca tam du no dang nam san trong flash. -->
+			<div class="flex-container" id="imgShowRow">
+				<div class="flex-group">
+					<span class="mode-gallery-hint" style="margin:0 8px 0 0">Hiện lại ảnh đã lưu trong máy:</span>
+					<button id="showimgbutton1" type="button" class="secondary" onclick="showImgSlot(0)">Khe 1</button>
+					<button id="showimgbutton2" type="button" class="secondary" onclick="showImgSlot(1)">Khe 2</button>
+					<button id="showimgbutton3" type="button" class="secondary" onclick="showImgSlot(2)">Khe 3</button>
+					<button id="showimgbutton4" type="button" class="secondary" onclick="showImgSlot(3)">Khe 4</button>
+					<button id="showimgbutton5" type="button" class="secondary" onclick="showImgSlot(4)">Khe 5</button>
+				</div>
+			</div>
+			<!-- Anh nen cua hai ban «Tu thiet ke»: KHE RIENG (5 va 6), khong an
+			     vao 5 khe anh o tren — giong may 4.2" tu ban v2.4. -->
+			<div class="flex-container">
+				<div class="flex-group" style="flex:1 1 100%">
+					<span class="mode-gallery-hint" style="margin:0 8px 0 0">Ảnh nền cho «Tự thiết kế» (khe riêng, không chiếm khe ảnh):</span>
+					<button id="sendbgbutton1" type="button" class="secondary" onclick="dsBgToDesign(0)">Làm nền Thiết kế 1</button>
+					<button id="sendbgbutton2" type="button" class="secondary" onclick="dsBgToDesign(1)">Làm nền Thiết kế 2</button>
+					<button id="sendbgbutton0" type="button" class="secondary" onclick="dsClearBackground()">Bỏ ảnh nền</button>
 				</div>
 			</div>
 			<!-- Tự đổi ảnh (fw >= 1.5): bật được khi đã có >= 2 khe ảnh trên thiết bị -->
@@ -168,7 +293,7 @@
 					<label><input type="radio" name="imgInterval" value="1" onchange="setImgAuto()"> 1 giờ</label>
 					<label><input type="radio" name="imgInterval" value="12" onchange="setImgAuto()"> 12 giờ</label>
 					<label><input type="radio" name="imgInterval" value="24" checked onchange="setImgAuto()"> 24 giờ</label>
-					<span class="mode-gallery-hint" style="margin:0" id="imgAutoHint">Cần gửi ảnh vào ít nhất 2 khe để bật tự đổi ảnh (khe 1 → 2 → 3 → 1).</span>
+					<span class="mode-gallery-hint" style="margin:0" id="imgAutoHint">Cần gửi ảnh vào ít nhất 2 khe để bật tự đổi ảnh (chạy vòng qua các khe đã có ảnh).</span>
 				</div>
 			</div>
 			<div class="flex-container">

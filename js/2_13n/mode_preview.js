@@ -48,6 +48,13 @@
   // het RAM (thay bang arial52 — xem epd_gui.c). Giu lai chi lam the gallery
   // hua mot kieu chu may khong ve duoc. Dung them lai neu khong nap font moi.
 
+  // Cỡ chữ số LỚN, đo từ chính font trong máy (asset_2_13.bin):
+  //   ARIAL_BIG -> arial52_2_13_tn, chữ số cao 37px
+  //   TIMES_BIG -> times72_2_13_tn, chữ số cao 50px (tên font nói 72 là lệch)
+  // Times New Roman trên canvas cao ~0,662em nên phải 75px mới ra 50px.
+  const ARIAL_BIG = '50px Arial, sans-serif';
+  const TIMES_BIG = 75;
+
   // pin của firmware: khung 15×9, đầu (nub) bên TRÁI, điện áp "X.Xv" chữ NHỎ
   // (6x10) bên trái icon, CĂN GIỮA theo icon. Mức pin theo điện áp tuyến tính:
   // 3.1V = đầy (100%), 2.4V = cạn (0%). bx = mép trái khung (firmware: x = W-16, tâm y = 7).
@@ -89,22 +96,6 @@
     font(x, 9, 0);
     center(x, 'Đông chí', W / 2 + 14, H - 3, BK);
     right(x, panelTempVal() + '°C', W - 4, H - 3, BK);
-  }
-
-  // --- mode 29: Đồng hồ tối giản — chỉ giờ thật lớn + một dòng ngày mảnh.
-  // v1.10 đã bỏ thẻ này nên hàm vẽ bị xoá kèm; v2.0 đưa thẻ trở lại (đánh số
-  // liền mạch thì mọi chế độ đều phải có thẻ) nên dựng lại hàm vẽ.
-  function m2(x, now, W, H) {
-    // Firmware dung ARIAL (font_dseg cua v1.10), KHONG phai Hobo — Hobo danh
-    // rieng cho the 1. Va co ca nhiet do goc trai + pin goc phai.
-    tempCorner(x);
-    statusBatt(x, W);
-    const ty = 14 + (H - 14 - 18 - 50) / 2;   // khop DrawMinimal
-    x.font = ARIAL_BIG;
-    center(x, pad2(now.getHours()) + ':' + pad2(now.getMinutes()), W / 2, ty + 48, BK);
-    font(x, 9, 0);
-    center(x, WD_SUN[now.getDay()] + '  ' + pad2(now.getDate()) + '/' +
-              pad2(now.getMonth() + 1) + '  ' + lunarText(now), W / 2, H - 5, BK);
   }
 
   // --- mode 3: Lịch tháng ---
@@ -812,14 +803,21 @@
     x.fillRect(8, H / 2 - 3, W - 16, 3);      // vạch ngang phân cách (trắng)
   }
 
-  // --- mode 15: Tự thiết kế (designer.js vẽ qua hook renderCustomLayout) ---
-  function m15(x, now, W, H) {
-    if (typeof window.renderCustomLayout === 'function') {
-      window.renderCustomLayout(x, now, W, H);
-    } else {
-      font(x, 10, 0);
-      center(x, 'Chưa có giao diện tự thiết kế', W / 2, H / 2, BK);
-    }
+  /* --- Tự thiết kế 1 và 2 — designer.js vẽ qua hook renderCustomLayout.
+   *
+   * ⚠ Tham số thứ ba là SỐ THIẾT KẾ (0 hoặc 1), KHÔNG phải bề rộng. Bản chép
+   * từ máy khác truyền (x, now, W, H) nên designer.js đọc W=212 rồi quy về 0 —
+   * cả hai thẻ cùng hiện Thiết kế 1, và người dùng không có cách nào xem trước
+   * Thiết kế 2. */
+  function mCustom(d) {
+    return function (x, now, W, H) {
+      if (typeof window.renderCustomLayout === 'function') {
+        window.renderCustomLayout(x, now, d);
+      } else {
+        font(x, 10, 0);
+        center(x, 'Chưa có giao diện tự thiết kế', W / 2, H / 2, BK);
+      }
+    };
   }
 
   // --- Ảnh đã lưu (fw mode 1, đặt bằng 0x94 01) ---
@@ -865,12 +863,11 @@
     // Tự thiết kế (15), Ảnh đã lưu — giao dien moi them vao TRUOC nhom nay.
     { mode: 25, name: 'Đếm ngược sự kiện', tick: 'Làm mới mỗi phút — đặt ở ô bên dưới', draw: m5 },
     { mode: 26, name: 'Bảng tên / ghi chú', tick: 'Tĩnh — soạn ở ô bên dưới', draw: m6 },
-    { mode: 27, name: 'Tự thiết kế', tick: 'Làm mới mỗi phút — soạn ở «Thiết kế màn hình»', draw: m15 },
+    { mode: 27, name: 'Tự thiết kế', tick: 'Làm mới mỗi phút — soạn ở «Thiết kế màn hình»', draw: mCustom(0) },
     // v2.0: đánh số LIỀN MẠCH theo quy ước họ máy — ẢNH về 0, nên chỗ 28
     // trả ra cho «Tự thiết kế 2», và «Đồng hồ tối giản» (29) được đưa lại
     // vào gallery thay vì chỉ chọn được bằng lệnh.
-    { mode: 28, name: 'Tự thiết kế 2', tick: 'Làm mới mỗi phút — soạn ở «Thiết kế màn hình»', draw: m15 },
-    { mode: 29, name: 'Đồng hồ tối giản', tick: 'Làm mới mỗi phút', draw: m2 },
+    { mode: 28, name: 'Tự thiết kế 2', tick: 'Làm mới mỗi phút — soạn ở «Thiết kế màn hình»', draw: mCustom(1) },
     { mode: 0, name: 'Ảnh đã lưu', tick: 'Ảnh tĩnh từ flash', draw: mImg },
   ];
 
@@ -926,6 +923,16 @@
       window.highlightMode(deviceMode === IMG_MODE ? 'img' : deviceMode);
     if (typeof updateButtonStatus === 'function') updateButtonStatus();
   }
+
+  /* Cầu nối cho js/common/designer.js — nó đọc window.__pv để vẽ chữ, khung
+   * và mấy hằng số màu. Thiếu cái này thì bộ dựng «Tự thiết kế» chết ngay lúc
+   * nạp. Máy này còn khai thêm window.EPD_DS_DEVICE (js/2_13n/designer_2_13.js)
+   * để tự vẽ widget theo hình học của chính nó. */
+  window.__pv = {
+    font, center, battery, pad2, BK, WH,
+    RED: BK,                       // màn này ĐEN TRẮNG: «đỏ» quy về đen
+    WD_FULL, WD_SHORT: WD_HDR,
+  };
 
   // main.js gọi lại khi đổi phân giải để vẽ thẻ xem trước theo kích thước mới
   window.rebuildModeGallery = build;
