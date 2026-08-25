@@ -116,7 +116,7 @@
 				<button type="button" class="secondary dsTextExtra" onclick="dsAdd(14)">+ Chữ 6</button>
 				<button type="button" class="secondary" onclick="dsAdd(10)">+ Icon (lấy từ mục Truyền hình ảnh)</button>
 			</div>
-			<div class="flex-container" id="dsDesignRow" style="display:none">
+			<div class="flex-container" id="dsDesignRow">
 					<div class="flex-group">
 						<label for="dsDesignSel">Đang sửa:</label>
 						<select id="dsDesignSel" onchange="dsSelectDesign(+this.value)">
@@ -284,8 +284,8 @@
 					<button id="sendimgbutton" type="button" class="primary" onclick="sendimg(0)">Gửi ảnh khe 1</button>
 					<button id="sendimgbutton2" type="button" class="primary" onclick="sendimg(1)">Gửi ảnh khe 2</button>
 					<button id="sendimgbutton3" type="button" class="primary" onclick="sendimg(2)">Gửi ảnh khe 3</button>
-					<button id="sendimgbutton4" type="button" class="primary" onclick="sendimg(3)" style="display:none">Gửi ảnh khe 4</button>
-					<button id="sendimgbutton5" type="button" class="primary" onclick="sendimg(4)" style="display:none">Gửi ảnh khe 5</button>
+					<button id="sendimgbutton4" type="button" class="primary" onclick="sendimg(3)">Gửi ảnh khe 4</button>
+					<button id="sendimgbutton5" type="button" class="primary" onclick="sendimg(4)">Gửi ảnh khe 5</button>
 				</div>
 			</div>
 			<!-- HIỆN LẠI ảnh đã lưu (fw >= 2.9). Trước đây lỡ chuyển sang một giao
@@ -305,7 +305,11 @@
 			<!-- Anh nen cua «Tu thiet ke» - hang rieng cho khoi lan voi khe anh -->
 			<div class="flex-container">
 				<div class="flex-group btn-row">
-					<span id="dsBgRow" style="display:none"><button type="button" class="secondary" onclick="dsBgToDesign(0)">Làm nền Thiết kế 1</button><button type="button" class="secondary" onclick="dsBgToDesign(1)">Làm nền Thiết kế 2</button></span><span id="dsBgOldRow"><button type="button" class="secondary" onclick="dsIconFromCanvas()">Thêm ảnh vào thiết kế</button></span>
+					<!-- May nay LUON co 5 khe anh + 2 khe NEN rieng, khong gate theo phien ban.
+					     Da BO han span dsBgOldRow («Them anh vao thiet ke»): do la duong cua
+					     thoi MOT thiet ke, no muon KHE ANH SO 3 lam nen roi gui lenh 0x2B
+					     da bo — vua mat anh trong khe vua khong co nen. -->
+					<span id="dsBgRow"><button type="button" class="secondary" onclick="dsBgToDesign(0)">Làm nền Thiết kế 1</button><button type="button" class="secondary" onclick="dsBgToDesign(1)">Làm nền Thiết kế 2</button></span>
 					<button type="button" class="secondary" onclick="dsClearBackground()">Bỏ ảnh nền</button>
 				</div>
 			</div>
