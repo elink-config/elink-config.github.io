@@ -77,9 +77,6 @@
 						Chữ đậm hơn — dành cho màn in mực đen nhạt (chữ đen xám mờ); làm mới toàn màn sẽ chậm hơn một chút
 					</label>
 				</div>
-					<div class="flex-group" style="flex:1 1 100%; display:none" id="fourColorHint">
-						<span class="mode-gallery-hint" style="margin:0">Màn 4 màu: driver <b>JD79668</b> (06) đồng hồ nhảy <b>từng phút</b> bằng cập nhật cục bộ — chỉ <b>ô số phút</b> chớp ~15s (chế độ kim analog: cả mặt đồng hồ vì kim quét khắp mặt), mỗi giờ làm mới toàn màn; driver <b>IST7158</b> (05) không có cập nhật cục bộ nên đồng hồ làm mới <b>mỗi giờ</b> (hiển thị HH:00). Các chế độ lịch làm mới lúc 00:00. Ảnh dùng chế độ màu «4 màu (đen trắng đỏ vàng)».</span>
-					</div>
 				<div class="flex-group" style="flex:1 1 100%" id="battStyleRow">
 					<span>Hiển thị pin:</span>
 					<label><input type="radio" name="battStyle" value="0" onchange="setBattStyle()"> Không (chỉ icon với mức pin)</label>
@@ -164,7 +161,7 @@
 						<li>Thành phần <b>Ngày tháng</b> hiện «Thứ Năm, 20/08/2026». Muốn tách rời thì dùng <b>Thứ</b> và <b>Ngày dương</b>.</li>
 						<li>Thành phần <b>Icon</b> lấy ảnh từ mục «Truyền hình ảnh» qua nút <b>Icon từ ảnh</b>, tối đa 176 px — phóng to hơn sẽ vỡ. Icon khác ảnh nền: icon nhỏ, đặt được ở bất cứ đâu.</li>
 						<li>Bố cục lưu trong <b>trình duyệt này</b>. Đổi máy tính hay xoá dữ liệu duyệt web là mất, phải xếp lại — máy vẫn giữ cái đã gửi.</li>
-						<li>Chữ 3-6, «Thứ» và «Ngày dương» cần firmware 4.2" ba màu từ <b>v2.8</b>, bốn màu từ <b>v3.8</b>. Máy cũ hơn thì các nút đó tự ẩn đi.</li>
+						<li>Màn này <b>đen trắng</b> và chỉ rộng 212px — chữ cỡ đôi đã chiếm 16px mỗi ký tự, xếp vừa vài chữ là hết bề ngang.</li>
 					</ul>
 				</details>
 				<div class="flex-group" style="flex:1 1 100%">
@@ -239,10 +236,10 @@
 				<div class="flex-group debug">
 					<label for="ditherMode">Chế độ màu:</label>
 					<select id="ditherMode" onchange="applyDither()">
-						<option value="blackWhiteColor">2 màu (đen trắng)</option>
-						<option value="threeColor">3 màu (đen trắng đỏ)</option>
-						<option value="fourColor">4 màu (đen trắng đỏ vàng)</option>
-						<option value="sixColor">6 màu</option>
+						<!-- Tấm 2.13" của máy này là ĐEN TRẮNG (COLOR_BW trong EPD_models.c).
+						     Bỏ hẳn ba chế độ màu kia: chọn nhầm là ảnh gửi xuống sai hoàn
+						     toàn vì số lớp bit không khớp cái firmware chờ nhận. -->
+						<option value="blackWhiteColor" selected>2 màu (đen trắng)</option>
 					</select>
 				</div>
 				<div class="flex-group">

@@ -463,42 +463,12 @@ async function setBattStyle() {
     addLog('Đã đặt hiển thị pin: ' + (style === 0 ? 'chỉ icon' : style === 1 ? 'phần trăm' : 'điện áp') + '.');
   }
 }
-
-// ---- Nhịp làm mới của màn 4 MÀU (cùng lệnh 0x23, ba giá trị) ----
-// Mọi lượt làm mới của panel 4 màu đều chớp ~15s (kể cả lượt "nhảy phút"
-// chỉ quét ô số phút), nên cho chọn: 1 = nhảy phút + full mỗi giờ (mặc
-// định, không tích ô nào), 2 = chỉ full mỗi giờ, 3 = chỉ full lúc 00:00.
-// KHÔNG dùng số 0 (nghĩa cũ của bản BWR): máy 4 màu đời trước v3.2 có thể
-// đang lưu 0 trong flash, firmware >= 3.3 coi 0 là "mặc định" để những máy
-// đó không tự dưng đứng phút. Hai ô loại trừ nhau; fw màn 4 màu cần >= 3.3.
-let refreshModeLast = 1;
-
-function applyRefreshModeUI(v) {
-  if (v !== 2 && v !== 3) v = 1;  // 0 / 0xFF / lạ = mặc định (khớp firmware)
-  refreshModeLast = v;
-  const h = document.getElementById('onlyHourlyCHK');
-  const d = document.getElementById('onlyMidnightCHK');
-  if (h) h.checked = (v === 2);
-  if (d) d.checked = (v === 3);
-}
-
-async function setRefreshMode(which) {
-  const h = document.getElementById('onlyHourlyCHK');
-  const d = document.getElementById('onlyMidnightCHK');
-  if (which === 'hour' && h.checked) d.checked = false;   // loại trừ nhau
-  if (which === 'day' && d.checked) h.checked = false;
-  const v = d.checked ? 3 : (h.checked ? 2 : 1);
-  if (await write(EpdCmd.SET_HOURLY_FULL, [v])) {
-    refreshModeLast = v;
-    addLog(v === 3
-      ? 'Đã đặt: chỉ làm mới lúc 00:00 — màn đứng yên cả ngày (đồng hồ sẽ đứng ở 00:00).'
-      : v === 2
-        ? 'Đã đặt: chỉ làm mới mỗi giờ — không nhảy phút nữa (đồng hồ hiện HH:00).'
-        : 'Đã đặt: nhảy phút + làm mới toàn màn mỗi giờ (mặc định).');
-  } else {
-    applyRefreshModeUI(refreshModeLast);  // gửi thất bại: trả UI về trạng thái cũ
-  }
-}
+/* «Nhịp làm mới» ba lựa chọn (1 = nhảy phút + full mỗi giờ, 2 = chỉ mỗi giờ,
+ * 3 = chỉ 00:00) là đường RIÊNG của bản 4 MÀU. Firmware dùng chung chỉ nhận
+ * `p_data[1] < 2` cho lệnh 0x23 — tức 0 hoặc 1 — nên máy này chỉ có ô
+ * «làm mới toàn màn mỗi giờ» bật/tắt ở dưới. Đã gỡ applyRefreshModeUI() và
+ * setRefreshMode() cho khỏi tưởng là còn dùng được.
+ */
 
 async function setHourlyFull() {
   const chk = document.getElementById('hourlyFullCHK');
@@ -856,8 +826,6 @@ function handleNotify(value, idx) {
     if (hf !== null) {
       const c = document.getElementById('hourlyFullCHK');
       if (c) c.checked = hf !== 0;
-      // màn 4 màu: cùng byte này mang BA giá trị 1/2/3 (xem setRefreshMode)
-      applyRefreshModeUI(hf);
     }
     // 3 khe ảnh (fw >= 1.5): auto/interval/mask tại offset 212/213/214 (sau
     // u32 activation ở 208 — struct căn 4 byte)
@@ -1094,12 +1062,8 @@ function updateDitcherOptions() {
    * thật; hàng «Nhịp làm mới» ba lựa chọn là của màn 4 màu, ở đây không dùng. */
   const hfRow = document.getElementById('hourlyFullRow');
   const dbRow = document.getElementById('darkBoostRow');
-  const rmRow = document.getElementById('refreshModeRow');
-  const hint = document.getElementById('fourColorHint');
   if (hfRow) hfRow.style.display = '';
   if (dbRow) dbRow.style.display = '';
-  if (rmRow) rmRow.style.display = 'none';
-  if (hint) hint.style.display = '';
 
   /* ĐỔI DRIVER = ĐỔI KHỔ MÀN (0d = 212×104, 0e = 250×122). Thẻ xem trước và
    * khung dựng «Tự thiết kế» vẽ theo RESOLUTIONS[resIdx] nên phải cập nhật rồi
