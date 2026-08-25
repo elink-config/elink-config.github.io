@@ -35,9 +35,45 @@
   // icon rieng. Bo cuc luu rieng trong trinh duyet theo tung thiet ke; khoa cu
   // (mot thiet ke) van doc duoc cho thiet ke 1.
   let dsDesign = 0;                                   // 0 = Thiet ke 1, 1 = Thiet ke 2
-  const LS_KEY_BASE = 'customLayout_v1';
+
+  /* KHOÁ LƯU BẢN NHÁP — TÁCH THEO MÁY.
+   *
+   * Trước đây mọi app dùng chung đúng một khoá 'customLayout_v1'. Ai có nhiều
+   * máy (4.2" và 2.13" chẳng hạn) thì mở app này lại thấy bố cục của máy kia —
+   * và tệ hơn: bấm «Gửi lên thiết bị» là gửi thẳng bố cục của máy khác sang,
+   * toạ độ của màn 400x300 rơi vào màn 212x104 thì tràn hết ra ngoài.
+   * diy_store.js CÓ tách theo tên thiết bị, nhưng chỉ sau khi đã kết nối —
+   * không cứu được lúc mở trang.
+   *
+   * Nay mỗi máy một khoá riêng, lấy tên máy từ hồ sơ (EPD_PROFILE.may) hoặc từ
+   * móc thiết bị (EPD_DS_DEVICE.key). Không khai gì thì vẫn dùng khoá cũ. */
+  const LS_LEGACY = 'customLayout_v1';
+  const DS_KEY = (DEV && DEV.key) || (window.EPD_PROFILE && window.EPD_PROFILE.may) || '';
+  const LS_KEY_BASE = DS_KEY ? (LS_LEGACY + '_' + DS_KEY) : LS_LEGACY;
   const lsKey = () => dsDesign === 0 ? LS_KEY_BASE : LS_KEY_BASE + '_d' + dsDesign;
   const LS_KEY = LS_KEY_BASE;
+
+  /* Dời bản nháp cũ sang khoá mới — CHỈ cho app 4.2".
+   *
+   * Khoá 'customLayout_v1' vốn là của app 4.2": tới 25/08/2026 nó là app DUY
+   * NHẤT dùng bộ dựng này, nên bản nháp nằm ở đó chắc chắn là của màn 4.2".
+   * Chép sang khoá mới để người đang dở tay không mất bố cục. Các máy khác
+   * KHÔNG chép — chép là tái lập đúng cái lỗi vừa vá.
+   *
+   * Chỉ chép khi khoá mới CHƯA có, và giữ nguyên khoá cũ (lỡ phải lùi bản). */
+  const LEGACY_OWNER = '4_2';
+  if (DS_KEY === LEGACY_OWNER) {
+    try {
+      [0, 1].forEach(d => {
+        const oldK = (d === 0) ? LS_LEGACY : LS_LEGACY + '_d' + d;
+        const newK = (d === 0) ? LS_KEY_BASE : LS_KEY_BASE + '_d' + d;
+        if (localStorage.getItem(newK) === null) {
+          const v = localStorage.getItem(oldK);
+          if (v !== null) localStorage.setItem(newK, v);
+        }
+      });
+    } catch (e) { /* trình duyệt chặn localStorage: bỏ qua */ }
+  }
   const MAXW = 10;
 
   // widget metadata: display name and bounding box per size (mirrors the

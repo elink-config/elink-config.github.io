@@ -149,6 +149,10 @@
   });
 
   window.EPD_DS_DEVICE = {
+    /* Tên máy — designer.js lấy nó làm khoá lưu bản nháp, để bố cục của máy
+     * này không lẫn với máy khác dùng chung trình duyệt. */
+    key: '2_13n',
+
     // Khổ màn ĐỌC ĐỘNG: máy 2.13" có hai tấm, đổi driver là đổi khổ.
     /* ⚠ ĐỌC BẰNG TÊN TRẦN, đừng qua window.
      *
