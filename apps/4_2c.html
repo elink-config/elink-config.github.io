@@ -322,9 +322,7 @@
 						<input type="checkbox" id="imgAutoCHK" onchange="setImgAuto()">
 						Tự động đổi ảnh đã tải
 					</label>
-					<label><input type="radio" name="imgInterval" value="1" onchange="setImgAuto()"> 1 giờ</label>
-					<label><input type="radio" name="imgInterval" value="12" onchange="setImgAuto()"> 12 giờ</label>
-					<label><input type="radio" name="imgInterval" value="24" checked onchange="setImgAuto()"> 24 giờ</label>
+					<!-- Xếp TĂNG DẦN: phút trước, giờ sau. -->
 					<!-- Chu kỳ tính bằng PHÚT: cùng một byte img_interval, firmware hiểu
 					     15/30/45 là phút vì không có chu kỳ 15/30/45 giờ. Đổi ảnh dày thì
 					     mỗi lần đều là một lượt làm mới toàn màn, hao pin hơn hẳn.
@@ -335,7 +333,25 @@
 					<label><input type="radio" name="imgInterval" value="15" onchange="setImgAuto()"> 15 phút</label>
 					<label><input type="radio" name="imgInterval" value="30" onchange="setImgAuto()"> 30 phút</label>
 					<label><input type="radio" name="imgInterval" value="45" onchange="setImgAuto()"> 45 phút</label>
+					<label><input type="radio" name="imgInterval" value="1" onchange="setImgAuto()"> 1 giờ</label>
+					<label><input type="radio" name="imgInterval" value="12" onchange="setImgAuto()"> 12 giờ</label>
+					<label><input type="radio" name="imgInterval" value="24" checked onchange="setImgAuto()"> 24 giờ</label>
 					<span class="mode-gallery-hint" style="margin:0" id="imgAutoHint">Cần gửi ảnh vào ít nhất 2 khe để bật tự đổi ảnh (khe 1 → 2 → 3 → 1).</span>
+				</div>
+			</div>
+			<!-- HIỆN LẠI ảnh đã lưu (bản 4 màu: từ v4.0, lệnh 0x27 05 đi kèm lõi
+			     chung). Thiếu hàng này là NGÕ CỤT thật: chọn một giao diện lịch
+			     xong thì vòng tự đổi ảnh chết theo (nó chỉ chạy khi máy đang ở
+			     chế độ ẢNH), và không còn đường nào quay về ảnh đã lưu ngoài
+			     việc gửi lại cả tấm ảnh dù nó nằm sẵn trong máy. -->
+			<div class="flex-container" id="imgShowRow" style="display:none">
+				<div class="flex-group btn-row">
+					<span class="mode-gallery-hint" style="margin:0 8px 0 0">Hiện lại ảnh đã lưu trong máy:</span>
+					<button id="showimgbutton1" type="button" class="secondary" onclick="showImgSlot(0)">Khe 1</button>
+					<button id="showimgbutton2" type="button" class="secondary" onclick="showImgSlot(1)">Khe 2</button>
+					<button id="showimgbutton3" type="button" class="secondary" onclick="showImgSlot(2)">Khe 3</button>
+					<button id="showimgbutton4" type="button" class="secondary" onclick="showImgSlot(3)">Khe 4</button>
+					<button id="showimgbutton5" type="button" class="secondary" onclick="showImgSlot(4)">Khe 5</button>
 				</div>
 			</div>
 			<div class="flex-container">
