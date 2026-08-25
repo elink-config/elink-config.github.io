@@ -197,8 +197,11 @@ async function showImgSlot(slot) {
   addLog('Hiện lại ảnh ở khe ' + (slot + 1) + '...', '⇑');
   if (!await write(EpdCmd.IMG_SLOT, [0x05, slot])) return;
   imgCurrent = slot;
-  deviceMode = 0;                       // máy tự về chế độ ẢNH
-  if (typeof highlightMode === 'function') highlightMode(0);
+  deviceMode = IMG_MODE;                // máy tự về chế độ ẢNH
+  // Chế độ ẢNH không có thẻ trong thư viện (đã bỏ 25/08/2026) nên gọi thế này
+  // là TẮT hết thẻ đang sáng — đúng ý: máy giờ hiện ảnh chứ không hiện giao
+  // diện nào. Khe đang hiện thì đánh dấu ngay ở hàng nút dưới đây.
+  if (typeof highlightMode === 'function') highlightMode(IMG_MODE);
   updateShowImgUI();
 }
 

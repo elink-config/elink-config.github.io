@@ -3,8 +3,12 @@
  * Previews are drawn at the panel's landscape size (212x104 / 250x122,
  * supersampled 2x) and mirror the firmware layouts in user_custs1_impl.c.
  * BẢN CHO FIRMWARE v2.x — đánh số LIỀN MẠCH theo quy ước của cả họ máy:
- *     0      = Ảnh đã lưu
- *     1..29  = các chế độ, liền mạch, đúng thứ tự thẻ ở đây
+ *     0      = Ảnh đã lưu — CÓ trong firmware nhưng KHÔNG có thẻ ở đây
+ *     1..28  = các chế độ, liền mạch, đúng thứ tự thẻ ở đây
+ *
+ * Thẻ «Ảnh đã lưu» đã bỏ 25/08/2026: hàng nút «Hiện lại ảnh khe 1..5» (lệnh
+ * 0x27 05) làm việc đó tốt hơn — chọn được ĐÚNG khe muốn hiện, còn thẻ cũ chỉ
+ * đưa máy về chế độ ảnh rồi hiện khe đang chọn sẵn.
  * Bản cho firmware v1.10 nằm ở js/2_13 và giữ cách đánh số cũ (Ảnh = 28) —
  * ĐỪNG chép qua lại giữa hai bản.
  *
@@ -820,19 +824,8 @@
     };
   }
 
-  // --- Ảnh đã lưu (fw mode 1, đặt bằng 0x94 01) ---
-  function mImg(x, now, W, H) {
-    x.strokeStyle = BK; x.lineWidth = 1; x.strokeRect(4.5, 4.5, W - 9, H - 9);
-    x.beginPath(); x.arc(W * 0.3, H * 0.32, H * 0.1, 0, 7); x.stroke();
-    line(x, 8, H - 12, W * 0.4, H * 0.42, BK, 1.2);
-    line(x, W * 0.4, H * 0.42, W * 0.62, H - 18, BK, 1.2);
-    line(x, W * 0.55, H * 0.6, W * 0.72, H * 0.42, BK, 1.2);
-    line(x, W * 0.72, H * 0.42, W - 8, H - 12, BK, 1.2);
-    font(x, 9, 0); x.fillStyle = GY;
-    center(x, 'Ảnh đã lưu trong flash', W / 2, H - 8, GY);
-  }
-
-  // «Ảnh đã lưu» LUÔN đứng cuối — chế độ mới thêm vào TRƯỚC nó.
+  // Chế độ mới thêm vào CUỐI danh sách này (và cuối enum bên firmware) để
+  // dãy số vẫn liền mạch.
   const MODE_LIST = [
     { mode: 1, name: 'Đồng hồ + lịch âm', tick: 'Làm mới mỗi phút', draw: m0 },
     { mode: 2, name: 'Giờ nổi 3D', tick: 'Làm mới mỗi phút', draw: m13 },
@@ -860,7 +853,7 @@
     { mode: 23, name: 'Dọc: đồng hồ lật', tick: 'Dựng dọc — chỉ giờ:phút', draw: m27, vert: true },
     { mode: 24, name: 'Dọc: giờ tương phản', tick: 'Dựng dọc — chỉ giờ:phút', draw: m26, vert: true },
     // QUY TAC: 4 the CUOI theo dung thu tu: Đếm ngược (5), Bảng tên (6),
-    // Tự thiết kế (15), Ảnh đã lưu — giao dien moi them vao TRUOC nhom nay.
+    // Tự thiết kế — giao diện mới thêm vào TRƯỚC nhóm này.
     { mode: 25, name: 'Đếm ngược sự kiện', tick: 'Làm mới mỗi phút — đặt ở ô bên dưới', draw: m5 },
     { mode: 26, name: 'Bảng tên / ghi chú', tick: 'Tĩnh — soạn ở ô bên dưới', draw: m6 },
     { mode: 27, name: 'Tự thiết kế', tick: 'Làm mới mỗi phút — soạn ở «Thiết kế màn hình»', draw: mCustom(0) },
@@ -868,7 +861,6 @@
     // trả ra cho «Tự thiết kế 2», và «Đồng hồ tối giản» (29) được đưa lại
     // vào gallery thay vì chỉ chọn được bằng lệnh.
     { mode: 28, name: 'Tự thiết kế 2', tick: 'Làm mới mỗi phút — soạn ở «Thiết kế màn hình»', draw: mCustom(1) },
-    { mode: 0, name: 'Ảnh đã lưu', tick: 'Ảnh tĩnh từ flash', draw: mImg },
   ];
 
   // highlight the mode the device reports or was just set to
@@ -915,12 +907,14 @@
       try { m.draw(ctx2d(card.querySelector('canvas'), vw, vh), now, vw, vh); }
       catch (e) { console.error('preview mode ' + m.mode, e); }
     }
-    // deviceMode do main.js khai báo; script này nạp trước main.js nên phải kiểm typeof
-    // ẢNH = mode 28 (số 1 là «Đồng hồ + lịch âm»). Bản chép từ máy 2.9" ghi
-    // nhầm là 1 nên mỗi lần dựng lại thư viện (đổi phân giải) khi máy đang ở
-    // giao diện đồng hồ mặc định lại tô sáng nhầm thẻ «Ảnh đã lưu».
+    /* deviceMode do main.js khai báo; script này nạp trước main.js nên phải
+     * kiểm typeof.
+     *
+     * Máy đang ở chế độ ẢNH (0) thì KHÔNG thẻ nào sáng — đúng như vậy, vì thẻ
+     * đó đã bỏ. Lúc ấy khe đang hiện được đánh dấu ở hàng nút «Hiện lại ảnh»
+     * (updateShowImgUI trong main.js). */
     if (typeof deviceMode !== 'undefined' && deviceMode != null)
-      window.highlightMode(deviceMode === IMG_MODE ? 'img' : deviceMode);
+      window.highlightMode(deviceMode);
     if (typeof updateButtonStatus === 'function') updateButtonStatus();
   }
 
