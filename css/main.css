@@ -770,11 +770,22 @@ canvas.text-placement-mode {
     margin-bottom: 12px;
 }
 
+/* Khung dựng «Tự thiết kế».
+ *
+ * KHÔNG ghim aspect-ratio: mỗi máy một tỷ lệ màn, mà riêng 2.13" còn có HAI
+ * độ phân giải (212x104 và 250x122) đổi ngay trong lúc dùng. Ghim 4/3 của màn
+ * 4.2" thì khung 212x104 bị kéo giãn gấp đôi chiều cao — người dùng xếp theo
+ * cái méo đó, gửi lên máy là lệch hết.
+ *
+ * height:auto để canvas tự lấy tỷ lệ từ chính width/height của nó; JS đổi hai
+ * số đó là khung tự đổi hình theo. Màn 4.2" (400x300) vẫn ra đúng 4/3 như cũ. */
 .designer-canvas {
     display: block;
     width: 100%;
     max-width: 480px;
-    aspect-ratio: 4 / 3;
+    height: auto;
+    /* màn nhỏ phóng to hơn 2 lần: giữ nét vuông của điểm ảnh, đừng làm mờ */
+    image-rendering: pixelated;
     border: 1px solid var(--md-sys-color-outline);
     border-radius: 10px;
     background: #f6f4ec;
