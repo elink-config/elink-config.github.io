@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  const VER = '20260825p'; // cache-buster, keep in sync with index.html
+  const VER = '20260825q'; // cache-buster, keep in sync with index.html
 
   const EPD42_SERVICE = '62750001-d828-918d-fb46-b6c11c675aec';
   const HM213_SERVICE = '0000ff00-0000-1000-8000-00805f9b34fb';
@@ -68,6 +68,20 @@
         // màn 4.2" — không có font 7 đoạn, chỉ ba nấc cỡ).
         'js/2_13n/designer_2_13.js', 'js/common/designer.js', 'js/diy_store.js',
         'js/2_13n/main.js'],
+    },
+    // ĐỜI MỚI của máy 2.9" — dựng trên nền chung, cùng cách với 2.13".
+    // Quảng bá «DIY-2_9N-xxxx» (thêm chữ N) nên hub tự nhận dạng; bản cũ
+    // «DIY-2_9-xxxx» vẫn vào mục riêng bên dưới, hai đời không lẫn nhau.
+    '2_9n': {
+      label: '2.9" (firmware v1.x)',
+      sub: 'Màn 2.9" ba màu 296×128 (DIY-2_9N, DA14585): kết nối, cấu hình và truyền hình ảnh',
+      fragment: 'apps/2_9n.html',
+      prefixes: ['DIY-2_9N-'],
+      scripts: ['js/app_common.js', 'js/family_epd.js', 'js/dithering.js', 'js/paint.js', 'js/crop.js',
+        'js/common/lunar_vn.js', 'js/2_9n/common.js', 'js/2_9n/mode_preview.js',
+        // designer_2_9.js phải nạp TRƯỚC designer.js (khai window.EPD_DS_DEVICE)
+        'js/2_9n/designer_2_9.js', 'js/common/designer.js', 'js/diy_store.js',
+        'js/2_9n/main.js'],
     },
     '2_9': {
       label: '2.9"',
@@ -187,6 +201,7 @@
     // dù thật ra không chồng nhau: 'DIY-2_13N-…' không khớp 'DIY-2_13-'.
     if (name.startsWith('DIY-2_13N-')) return '2_13n';
     if (name.startsWith('DIY-2_13-')) return '2_13';
+    if (name.startsWith('DIY-2_9N-')) return '2_9n';
     if (name.startsWith('DIY-2_9-')) return '2_9';
     if (name.startsWith('DIY-4_2C-')) return '4_2c';
     if (name.startsWith('DIY-4_2R-')) return 'reader_4_2';
