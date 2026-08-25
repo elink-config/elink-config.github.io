@@ -16,8 +16,12 @@ window.FwCheck = (function () {
   let timer = null;
 
   // "v1.3.1" / "1.4" -> [1,3,1]; so sánh từng phần dạng số
+  /* "v1.3.1" / "1.4" / "r2.2" -> [1,3,1] / [1,4] / [2,2].
+   * Cắt MỌI chữ cái đứng đầu chứ không riêng «v»: máy đọc sách đánh số r1.0,
+   * để nguyên thì parseInt("r1") ra NaN -> 0 -> coi như không có phiên bản và
+   * lặng lẽ không bao giờ nhắc. */
   function parse(s) {
-    return String(s).trim().replace(/^v/i, '').split('.').map(n => parseInt(n) || 0);
+    return String(s).trim().replace(/^[a-z]+/i, '').split('.').map(n => parseInt(n) || 0);
   }
   function cmp(a, b) {
     for (let i = 0; i < Math.max(a.length, b.length); i++) {
@@ -38,6 +42,11 @@ window.FwCheck = (function () {
      * thứ tự cột bảng kia một cái là webtool bắt đầu so phiên bản của máy này
      * với firmware của máy khác rồi nhắc cập nhật sai. */
     document.querySelectorAll('.fw-table:not(.dev-table) tbody tr').forEach(tr => {
+      /* Hàng ĐỔI DÒNG MÁY (vd trang máy đọc sách có hàng nạp firmware lịch)
+       * KHÔNG phải firmware của dòng máy này — lấy vào là so nhầm với máy
+       * khác rồi nhắc cập nhật bậy. Bảng ở trang chủ đã lọc hàng này từ lâu,
+       * chỗ đây thì chưa. */
+      if (tr.classList.contains('fw-alt')) return;
       if (tr.cells && tr.cells.length > 1) {
         const v = parse(tr.cells[1].textContent);
         if (v.some(x => x > 0) && (!best || cmp(v, best.ver) > 0)) {
@@ -54,8 +63,17 @@ window.FwCheck = (function () {
     const cur = deviceVer || floor;
     if (!cur || cmp(cur, b.ver) >= 0) return;
     shown = true;
-    const curTxt = deviceVer ? cur.join('.') : 'cũ (≤ ' + floor.join('.') + ')';
-    if (typeof addLog === 'function') addLog('Firmware thiết bị: ' + curTxt + ' — đã có bản mới ' + b.text + '.');
+    /* Máy KHÔNG tự khai phiên bản thì đừng nói bừa nó đang chạy bản nào.
+     * Bản trước ghi «cũ (≤ 1.3)» dựa trên con số floor do người gọi đoán —
+     * đoán sai là báo sai, và chính vì vậy mà popup của màn 2.13 từng bị tắt
+     * hẳn (29/07/2026). Chỉ khai duy nhất điều CHẮC CHẮN đúng: máy không tự
+     * khai, còn bản mới nhất hiện có là bao nhiêu. */
+    const biet = !!deviceVer;
+    const curTxt = biet ? cur.join('.') : 'không rõ';
+    if (typeof addLog === 'function')
+      addLog(biet
+        ? 'Firmware thiết bị: ' + curTxt + ' — đã có bản mới ' + b.text + '.'
+        : 'Máy không tự khai phiên bản (firmware đời cũ) — bản mới nhất hiện có: ' + b.text + '.');
     // mỗi THIẾT BỊ chỉ popup 1 lần/ngày cho mỗi bản mới (kết nối lại nhiều
     // lần không bị nhắc dồn dập; ra bản mới hơn thì nhắc lại) — dòng nhật ký
     // phía trên vẫn ghi mỗi phiên
@@ -65,7 +83,9 @@ window.FwCheck = (function () {
       if (Date.now() - t < 86400000) return;
       localStorage.setItem(k, String(Date.now()));
     } catch (e) {}
-    if (confirm('Đã có firmware mới ' + b.text + ' (thiết bị đang chạy bản ' + curTxt + ').\n' +
+    if (confirm('Đã có firmware mới ' + b.text +
+                (biet ? ' (thiết bị đang chạy bản ' + curTxt + ')'
+                      : ' (máy không tự khai phiên bản — firmware đời cũ)') + '.\n' +
                 'Tải file .bin ở mục «Danh sách firmware» (đọc kỹ ghi chú từng bản) rồi nạp ở mục «Cập nhật firmware (OTA)».\n\n' +
                 'Cuộn tới khu vực cập nhật ngay?')) {
       const el = document.getElementById('otaFieldset');

@@ -81,6 +81,11 @@ function handleNotify(value, idx) {
     if (mtuNotifyResolve) { mtuNotifyResolve(); mtuNotifyResolve = null; }
   } else if (msg.startsWith('fw=')) {
     deviceFw = msg.substring(3);
+    /* Nhắc cập nhật: FwCheck tự đọc bảng «Danh sách firmware» của trang này.
+     * Số hiệu máy đọc sách có tiền tố chữ (r1.0) — parse() của FwCheck đã cắt
+     * được tiền tố đó. Hàng «đổi về máy lịch» mang class fw-alt nên bị bỏ
+     * qua, không so nhầm với firmware của dòng máy khác. */
+    if (typeof FwCheck !== 'undefined') FwCheck.report(deviceFw);
     if (!deviceFw.startsWith('r')) {
       addLog('⚠ Thiết bị đang chạy firmware LỊCH chuẩn (' + deviceFw + '), không phải firmware máy đọc sách (rX.Y).');
       addLog('⚠ Hãy nạp firmware fw_reader_4_2inch_rX.Y.bin (mục OTA bên dưới) trước khi gửi sách.');
@@ -142,6 +147,11 @@ async function preConnect() {
     addLog('Dùng Chrome/Edge (máy tính, Android) hoặc Bluefy (iOS), bật Bluetooth rồi thử lại.');
     return;
   }
+  /* Dọn trạng thái nhắc firmware cho PHIÊN kết nối này: cờ «đã nhắc» và tên
+   * máy còn sót lại từ lần kết nối trước sẽ làm nó im lặng nhầm.
+   * Không đặt floor — máy đọc sách đời nào cũng tự khai fw=rX.Y, nên không
+   * cần đoán, và không đoán thì không có cửa báo sai. */
+  if (typeof FwCheck !== 'undefined') FwCheck.reset(null, bleDevice && bleDevice.name);
   bleDevice.addEventListener('gattserverdisconnected', disconnect);
   await connect();
 }

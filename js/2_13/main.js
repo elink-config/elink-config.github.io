@@ -166,11 +166,10 @@ async function readStatus(quiet = false) {
       deviceMode = st.mode;                 // SO MODE = VI TRI THE (28 = ảnh, thẻ 'img')
       if (typeof highlightMode === 'function') highlightMode(st.mode === IMG_MODE ? 'img' : st.mode);
     }
-    // KHÔNG gọi FwCheck.report vì popup nhắc firmware đang TẮT (xem ghi chú
-    // ở connect); biến window.deviceFwVer đã đặt ở đầu hàm.
     if (st.fwVer !== null) {
       if (!quiet) addLog('Firmware thiết bị: v' + st.fwVer, '⇓');
-      // if (typeof FwCheck !== 'undefined') FwCheck.report(st.fwVer);
+      // máy CÓ khai phiên bản -> so chính xác, chỉ nhắc khi thật sự cũ hơn
+      if (typeof FwCheck !== 'undefined') FwCheck.report(st.fwVer);
     }
     updateButtonStatus();
     return st;
@@ -575,10 +574,19 @@ async function preConnect() {
 
 async function connect() {
   if (bleDevice == null || longValueChar != null) return;
-  // TAT nhac cap nhat firmware cho 2.13 (2026-07-29): ban <= v1.4 khong tu
-  // khai phien ban nen popup nhac ca may DA chay ban moi nhat — phien phuc.
-  // Muon bat lai: bo comment 2 dong FwCheck.reset / FwCheck.schedule.
-  // FwCheck.reset('1.3', bleDevice && bleDevice.name);
+  /* BẬT LẠI nhắc cập nhật firmware (26/08/2026).
+   *
+   * Tắt hồi 29/07/2026 vì bản <= v1.4 không tự khai phiên bản, mà lúc đó
+   * FwCheck lấy con số floor người gọi đoán ('1.3') làm phiên bản đang chạy —
+   * nên máy ĐÃ chạy bản mới nhất vẫn bị nhắc. Gốc rễ là chỗ ĐOÁN đó, không
+   * phải bản thân tính năng.
+   *
+   * Nay FwCheck không nói bừa nữa: máy nào không tự khai thì chỉ ghi «máy
+   * không tự khai phiên bản» kèm bản mới nhất hiện có. Với bản mới nhất là
+   * 2.0 thì câu đó luôn ĐÚNG — mọi máy không tự khai đều là đời cũ hơn 2.0.
+   * floor để 0.1 chỉ còn nhiệm vụ mở cổng so sánh, không còn được đem ra
+   * khoe với người dùng. */
+  FwCheck.reset('0.1', bleDevice && bleDevice.name);
 
   try {
     addLog("Đang kết nối: " + bleDevice.name);
@@ -613,7 +621,7 @@ async function connect() {
   if (!timeSynced) {
     addLog('Bấm «Sync time» để đồng bộ giờ trước khi chọn giao diện.');
   }
-  // FwCheck.schedule(1500);  // TAT popup nhac firmware (xem ghi chu o connect)
+  FwCheck.schedule(1500);  // máy đời cũ im lặng: vẫn nhắc sau 1,5 giây
 }
 
 
