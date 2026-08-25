@@ -484,26 +484,30 @@
     const half = (W / 2) | 0;
     const lcx = (half / 2) | 0, rcx = half + ((half / 2) | 0);
 
-    // dòng mảnh trên cùng: giờ | thứ | pin
-    sml(x, pad2(now.getHours()) + ':' + pad2(now.getMinutes()), 4, 1 + BL_6X10, 1);
-    smlC(x, WD_FULL[now.getDay()], W / 2, 1 + BL_6X10, 1);
-    battAt(x, W - 18, 6, BK);
+    /* ⚠ Chế độ này dùng UNIFONT cho MỌI chữ, kể cả mấy nhãn nhỏ.
+     * Máy chỉ có unifont là mang chữ tiếng Việt; font 6x10 thuần ASCII, vẽ
+     * chữ có dấu bằng nó thì máy nuốt mất ký tự mà không báo gì. */
+
+    // dải trên cùng: giờ | thứ | pin
+    uni(x, pad2(now.getHours()) + ':' + pad2(now.getMinutes()), 4, 0 + BL_UNI, 1);
+    uniC(x, WD_FULL[now.getDay()], W / 2, 0 + BL_UNI, 1);
+    battAt(x, W - 18, 8, BK);
     x.fillStyle = BK;
-    x.fillRect(4, 12, W - 8, 1);
-    x.fillRect(half, 15, 1, H - 18);        // vạch dọc ngăn hai lịch
+    x.fillRect(4, 16, W - 8, 1);
+    x.fillRect(half, 18, 1, H - 21);        // vạch dọc ngăn hai lịch
 
     // nửa TRÁI: dương lịch
-    smlC(x, 'DƯƠNG LỊCH', lcx, 16 + BL_6X10, 1);
-    big(x, now.getDate(), lcx, 78, BK);
-    uniC(x, 'Tháng ' + (now.getMonth() + 1), lcx, 98, 1);
-    smlC(x, 'Năm ' + now.getFullYear(), lcx, 114, 0);
+    uniC(x, 'DƯƠNG LỊCH', lcx, 18 + BL_UNI, 1);
+    big(x, now.getDate(), lcx, 86, BK);
+    uniC(x, 'Tháng ' + (now.getMonth() + 1), lcx, 90 + BL_UNI, 1);
+    uniC(x, 'Năm ' + now.getFullYear(), lcx, 108 + BL_UNI, 0);
 
     // nửa PHẢI: âm lịch, toàn bộ ĐỎ
     const l = lunarDayOf(now);
-    smlC(x, 'ÂM LỊCH', rcx, 16 + BL_6X10, 1, RED);
-    big(x, l.day, rcx, 78, RED);
-    uniC(x, 'Tháng ' + l.mon, rcx, 98, 1, RED);
-    smlC(x, canChi(now), rcx, 114, 0, RED);
+    uniC(x, 'ÂM LỊCH', rcx, 18 + BL_UNI, 1, RED);
+    big(x, l.day, rcx, 86, RED);
+    uniC(x, 'Tháng ' + l.mon, rcx, 90 + BL_UNI, 1, RED);
+    uniC(x, canChi(now), rcx, 108 + BL_UNI, 0, RED);
   }
   // can chi năm âm — bảng gọn, đủ cho thẻ xem trước
   const CAN = ['Canh', 'Tân', 'Nhâm', 'Quý', 'Giáp', 'Ất', 'Bính', 'Đinh', 'Mậu', 'Kỷ'];
