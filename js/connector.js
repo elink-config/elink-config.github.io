@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  const VER = '20260826a'; // cache-buster, keep in sync with index.html
+  const VER = '20260826b'; // cache-buster, keep in sync with index.html
 
   const EPD42_SERVICE = '62750001-d828-918d-fb46-b6c11c675aec';
   const HM213_SERVICE = '0000ff00-0000-1000-8000-00805f9b34fb';
@@ -32,7 +32,7 @@
       scripts: ['js/dlg/image.js', 'js/dlg/qrcode.min.js', 'js/dlg/main.js', 'js/dlg/editor.js'],
     },
     '2_13': {
-      label: '2.13"',
+      label: '2.13" (firmware v1.x — bản cũ)',
       sub: 'Màn 2.13" đen trắng (212×104 hoặc 250×122, DA14585): kết nối, cấu hình và truyền hình ảnh',
       fragment: 'apps/2_13.html',
       prefixes: ['DIY-2_13-'],
@@ -72,8 +72,16 @@
     // ĐỜI MỚI của máy 2.9" — dựng trên nền chung, cùng cách với 2.13".
     // Quảng bá «DIY-2_9N-xxxx» (thêm chữ N) nên hub tự nhận dạng; bản cũ
     // «DIY-2_9-xxxx» vẫn vào mục riêng bên dưới, hai đời không lẫn nhau.
+    '2_9': {
+      label: '2.9" (firmware v1.x — bản cũ)',
+      sub: 'DA14585 — 2.9" (296×128 BWR): kết nối, cấu hình và truyền hình ảnh',
+      fragment: 'apps/2_9.html',
+      prefixes: ['DIY-2_9-'],
+      scripts: ['js/app_common.js', 'js/family_hm.js', 'js/dithering.js', 'js/paint.js', 'js/crop.js',
+        'js/2_9/designer.js', 'js/diy_store.js', 'js/2_9/mode_preview.js', 'js/2_9/main.js'],
+    },
     '2_9n': {
-      label: '2.9" (firmware v1.x)',
+      label: '2.9" (firmware v2.x)',
       sub: 'Màn 2.9" ba màu 296×128 (DIY-2_9N, DA14585): kết nối, cấu hình và truyền hình ảnh',
       fragment: 'apps/2_9n.html',
       prefixes: ['DIY-2_9N-'],
@@ -82,14 +90,6 @@
         // designer_2_9.js phải nạp TRƯỚC designer.js (khai window.EPD_DS_DEVICE)
         'js/2_9n/designer_2_9.js', 'js/common/designer.js', 'js/diy_store.js',
         'js/2_9n/main.js'],
-    },
-    '2_9': {
-      label: '2.9"',
-      sub: 'DA14585 — 2.9" (296×128 BWR): kết nối, cấu hình và truyền hình ảnh',
-      fragment: 'apps/2_9.html',
-      prefixes: ['DIY-2_9-'],
-      scripts: ['js/app_common.js', 'js/family_hm.js', 'js/dithering.js', 'js/paint.js', 'js/crop.js',
-        'js/2_9/designer.js', 'js/diy_store.js', 'js/2_9/mode_preview.js', 'js/2_9/main.js'],
     },
     '4_2': {
       label: '4.2" (3 màu)',

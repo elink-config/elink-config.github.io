@@ -7,7 +7,7 @@
 	<title>E-Ink DA14585</title>
 	<link rel="shortcut icon" type="image/png" href="favicon.png">
 	<link rel="shortcut icon" type="image/png" href="favicon.png">
-	<link rel="stylesheet" href="css/main.css?v=20260826a">
+	<link rel="stylesheet" href="css/main.css?v=20260826b">
 	<script>
 		// apply the saved theme before first paint to avoid a flash
 		(function () {
@@ -86,17 +86,17 @@
 						</tr>
 						<tr>
 							<td data-label="Dòng máy"><b>Màn 2.13"</b></td>
-							<td data-label="Tên Bluetooth"><code>DIY-2_13-xxxx</code></td>
+							<td data-label="Tên Bluetooth"><code>DIY-2_13-xxxx</code><br><code>DIY-2_13N-xxxx</code></td>
 							<td data-label="Màn hình">2.13" (212×104 hoặc 250×122) đen trắng</td>
-							<td class="fw-latest" data-app="2_13" data-label="Firmware">…</td>
-							<td data-label="Ghi chú">Bản đã nạp firmware của shop: lịch, đồng hồ, ghi chú, truyền ảnh. Chạy được <b>hai loại panel</b> — đổi qua lại bằng một nút trong phần điều khiển (212×104 loại HINK-E0213A41/A55, 250×122 loại OPM021B1)</td>
+							<td class="fw-latest" data-app="2_13n" data-label="Firmware">…</td>
+							<td data-label="Ghi chú">Bản đã nạp firmware của shop: lịch, đồng hồ, ghi chú, truyền ảnh. Chạy được <b>hai loại panel</b> — đổi qua lại bằng một nút trong phần điều khiển (212×104 loại HINK-E0213A41/A55, 250×122 loại OPM021B1)<br><small>Từ firmware <b>2.0</b> máy đổi tên thành <code>DIY-2_13N-xxxx</code> — kết nối lại là trang tự mở giao diện đời mới.</small></td>
 						</tr>
 						<tr>
 							<td data-label="Dòng máy"><b>Màn 2.9"</b></td>
-							<td data-label="Tên Bluetooth"><code>DIY-2_9-xxxx</code></td>
+							<td data-label="Tên Bluetooth"><code>DIY-2_9-xxxx</code><br><code>DIY-2_9N-xxxx</code></td>
 							<td data-label="Màn hình">2.9" (296×128) đen trắng đỏ</td>
-							<td class="fw-latest" data-app="2_9" data-label="Firmware">…</td>
-							<td data-label="Ghi chú">Lịch, đồng hồ, truyền ảnh</td>
+							<td class="fw-latest" data-app="2_9n" data-label="Firmware">…</td>
+							<td data-label="Ghi chú">Lịch, đồng hồ, truyền ảnh<br><small>Từ firmware <b>2.0</b> máy đổi tên thành <code>DIY-2_9N-xxxx</code> — kết nối lại là trang tự mở giao diện đời mới.</small></td>
 						</tr>
 						<tr>
 							<td data-label="Dòng máy"><b>Màn 4.2"</b></td>
@@ -215,7 +215,7 @@
 	<!-- log.js PHẢI nạp trước connector.js: addLog/clearLog dùng chung cho
 	     hub và mọi app (trước đây bị chép lại ở 4 nơi) -->
 	<script type="text/javascript" src="js/log.js?v=20260815d"></script>
-	<script type="text/javascript" src="js/fw_check.js?v=20260826a"></script>
+	<script type="text/javascript" src="js/fw_check.js?v=20260826b"></script>
 	<!-- connector.js LUÔN lấy bản mới. GitHub Pages đặt Cache-Control:
 	     max-age=600 cho MỌI file, mà index.html lại không có tham số phiên
 	     bản — nên một index.html còn nằm trong cache trình duyệt sẽ ghim cả
@@ -226,7 +226,7 @@
 	<script>
 		(function () {
 			var s = document.createElement("script");
-			s.src = "js/connector.js?v=20260826a&t=" + Date.now();
+			s.src = "js/connector.js?v=20260826b&t=" + Date.now();
 			document.body.appendChild(s);
 		})();
 	</script>
