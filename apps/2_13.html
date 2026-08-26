@@ -16,8 +16,11 @@
 				<div class="flex-group">
 					<label>Độ phân giải hiện tại:</label>
 					<span id="resLabel" class="system-time">212×104</span>
-					<!-- nút đổi phân giải: chỉ hiện ở chế độ debug (?debug=true) -->
-					<button id="resswitchbutton" type="button" class="primary debug" onclick="switchResolution()">Chuyển sang 250×122</button>
+					<!-- Nút đổi phân giải HIỆN CHO KHÁCH. Trước đây đeo class «debug»
+					     nên chỉ thấy khi mở trang bằng ?debug=true — nhưng hai loại tấm
+					     2.13" khác khổ thật, chọn sai là màn hiện lệch hẳn, nên đây là
+					     lựa chọn BẮT BUỘC chứ không phải tùy chọn nâng cao. -->
+					<button id="resswitchbutton" type="button" class="primary" onclick="switchResolution()">Chuyển sang 250×122</button>
 				</div>
 				<div class="flex-group">
 					<label>Nhiệt độ màn hình:</label>

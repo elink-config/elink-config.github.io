@@ -26,10 +26,14 @@ let imgCurrent = -1;
 // khi thiết bị báo 'fw=' — trước đó cứ coi là 3 cho an toàn.
 let IMG_SLOTS = 5;
 
-/* HAI TẤM của máy 2.13" — chọn tấm nào là do mục «Driver» (0d = 212×104,
- * 0e = 250×122), không có nút riêng. mode_preview.js và bộ dựng «Tự thiết kế»
- * đọc RESOLUTIONS/resIdx để vẽ đúng khổ, nên updateDitcherOptions() phải cập
- * nhật resIdx rồi dựng lại thư viện thẻ mỗi khi đổi driver. */
+/* HAI TẤM của máy 2.13" (0d = 212×104, 0e = 250×122). mode_preview.js và bộ
+ * dựng «Tự thiết kế» đọc RESOLUTIONS/resIdx để vẽ đúng khổ, nên
+ * updateDitcherOptions() phải cập nhật resIdx rồi dựng lại thư viện thẻ mỗi
+ * khi đổi khổ.
+ *
+ * NGUỒN DUY NHẤT vẫn là ô «Driver» (nằm trong khung chế độ dev). Nút «Chuyển
+ * sang …» mà khách thấy chỉ điều khiển lại ô đó rồi gọi cùng một đường xử lý —
+ * cố ý làm vậy để không sinh ra hai nguồn sự thật về khổ màn. */
 const RESOLUTIONS = [
   { w: 212, h: 104, label: '212×104', drv: '0d' },
   { w: 250, h: 122, label: '250×122', drv: '0e' },
@@ -469,6 +473,37 @@ async function setBattStyle() {
  * «làm mới toàn màn mỗi giờ» bật/tắt ở dưới. Đã gỡ applyRefreshModeUI() và
  * setRefreshMode() cho khỏi tưởng là còn dùng được.
  */
+
+/* Đồng bộ nhãn + chữ trên nút theo khổ đang chọn. */
+function updateResUI() {
+  const lb = document.getElementById('resLabel');
+  const bt = document.getElementById('resswitchbutton');
+  if (lb) lb.textContent = RESOLUTIONS[resIdx].label;
+  if (bt) bt.textContent = 'Chuyển sang ' + RESOLUTIONS[1 - resIdx].label;
+}
+
+/* Lật giữa hai khổ tấm.
+ *
+ * Gửi lệnh INIT kèm mã driver — đúng phần mà setDriver() vẫn gửi cho model,
+ * chỉ khác là KHÔNG đụng tới chân cắm (khách không có việc gì phải đổi chân).
+ * Chưa kết nối thì vẫn đổi ở phía trang để xem trước cho đúng khổ, và nói rõ
+ * là chưa gửi được. */
+async function switchResolution() {
+  const target = 1 - resIdx;
+  const sel = document.getElementById('epddriver');
+  if (sel) sel.value = RESOLUTIONS[target].drv;
+  updateDitcherOptions();   // cập nhật resIdx, dựng lại thẻ + khung thiết kế
+  updateResUI();
+  if (!epdCharacteristic) {
+    addLog('Đã đổi khổ xem trước sang ' + RESOLUTIONS[target].label +
+           ' — chưa kết nối nên chưa gửi xuống máy.');
+    return;
+  }
+  if (await write(EpdCmd.INIT, RESOLUTIONS[target].drv)) {
+    addLog('Đã chuyển máy sang khổ ' + RESOLUTIONS[target].label +
+           '. Chờ màn hình vẽ lại.');
+  }
+}
 
 async function setHourlyFull() {
   const chk = document.getElementById('hourlyFullCHK');
@@ -1074,6 +1109,7 @@ function updateDitcherOptions() {
     addLog('Chuyển sang khổ màn ' + RESOLUTIONS[idx].label + '.');
     if (window.rebuildModeGallery) window.rebuildModeGallery();
   }
+  updateResUI();  // nhãn + chữ trên nút bám theo khổ, kể cả khi máy tự báo lên
   /* Khung dựng «Tự thiết kế» ĐỒNG BỘ MỖI LƯỢT, không chỉ khi đổi khổ: thẻ
    * <canvas> trong mảnh giao diện thừa kế cỡ 400x300 của máy 4.2", mà lúc mở
    * trang thì chỉ số khổ chưa đổi nên nhánh trên không chạy — khung sẽ giữ

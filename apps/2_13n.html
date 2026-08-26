@@ -65,6 +65,21 @@
 		<fieldset>
 			<legend>Cài đặt thiết bị</legend>
 			<div class="flex-container">
+				<!-- ĐỘ PHÂN GIẢI. Máy 2.13" có hai loại tấm khác khổ thật, chọn sai
+				     là màn hiện lệch hẳn — nên đây là lựa chọn BẮT BUỘC của khách,
+				     không phải tùy chọn nâng cao. Trước đây đời máy này không có nút
+				     nào cả: cách duy nhất là ô «Driver» trong khung chế độ dev, mà
+				     khung đó còn chứa cả ô CHÂN CẮM nên không mở cho khách được.
+				     Nút này chỉ làm một việc — lật giữa hai khổ — và nó điều khiển
+				     lại chính ô Driver đang ẩn, nên mọi chỗ khác trong trang (bộ
+				     dựng ảnh, thẻ xem trước, khung «Tự thiết kế») vẫn đọc một nguồn
+				     duy nhất như cũ. -->
+				<div class="flex-group" style="flex:1 1 100%" id="resRow">
+					<label>Độ phân giải màn hình:</label>
+					<span id="resLabel" class="system-time">212×104</span>
+					<button id="resswitchbutton" type="button" class="primary" onclick="switchResolution()">Chuyển sang 250×122</button>
+					<span class="mode-gallery-hint" style="margin:0">Chọn đúng loại tấm của máy: <b>212×104</b> (HINK-E0213A41/A55) hoặc <b>250×122</b> (OPM021B1). Chọn sai thì hình hiện lệch. Lựa chọn được lưu trong máy.</span>
+				</div>
 				<div class="flex-group" style="flex:1 1 100%" id="hourlyFullRow">
 					<label style="display:flex;align-items:center;gap:6px;cursor:pointer">
 						<input type="checkbox" id="hourlyFullCHK" checked onchange="setHourlyFull()">
