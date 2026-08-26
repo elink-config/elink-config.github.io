@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  const VER = '20260827d'; // cache-buster, keep in sync with index.html
+  const VER = '20260827e'; // cache-buster, keep in sync with index.html
 
   const EPD42_SERVICE = '62750001-d828-918d-fb46-b6c11c675aec';
   const HM213_SERVICE = '0000ff00-0000-1000-8000-00805f9b34fb';
@@ -129,10 +129,7 @@
       label: '7.5"',
       sub: 'Màn 7.5" 640×384 (DIY-7_5, DA14585): kết nối, cấu hình và truyền hình ảnh',
       fragment: 'apps/7_5.html',
-      // 'DIY-7_5V-' = TÊN CŨ của chính dòng máy này (firmware trước v1.0).
-      // Chưa bán máy 7.5" nào nên tên này chỉ còn trên máy test nội bộ —
-      // giữ lại cho tiện, không hiện ra trong các câu nhật ký cho khách.
-      prefixes: ['DIY-7_5-', 'DIY-7_5V-'],
+      prefixes: ['DIY-7_5-'],
       scripts: ['js/app_common.js', 'js/family_epd.js', 'js/dithering.js', 'js/paint.js', 'js/crop.js',
         // profile.gen.js + modes.gen.js sinh từ tools/profile/7_5.json bên kho
         // firmware — phải nạp TRƯỚC mode_preview.js vì nó đọc window.EPD_MODES
@@ -191,7 +188,6 @@
   //   DIY-7_3-xxxx   → 7.3" SÁU MÀU         DIY-7_5-xxxx   → 7.5" (640×384)
   //   DIY-7_5B-xxxx  → 7.5" CHỮ LỚN         DIY-7_5R-xxxx  → máy đọc sách 7.5"
   //   DIY-10_2-xxxx  → 10.2"
-  // DIY-7_5V-xxxx = TÊN CŨ của 7.5" (firmware trước v1.0) — vẫn nhận.
   // DIY-xxxx trơ = board 4.2" đời cũ chưa có phần tên kích thước.
   // Loại người dùng vừa bấm ở hàng «kết nối tới một thiết bị cụ thể» — bấm nút
   // nào thì lọc đúng dòng máy đó cho nhanh, khỏi phải lội danh sách.
@@ -222,7 +218,6 @@
     if (name.startsWith('DIY-7_3-')) return '7_3';
     if (name.startsWith('DIY-7_5B-')) return '7_5b';
     if (name.startsWith('DIY-7_5R-')) return 'reader_7_5';
-    if (name.startsWith('DIY-7_5V-')) return '7_5';  // tên cũ của 7.5"
     if (name.startsWith('DIY-7_5-')) return '7_5';
     if (name.startsWith('DIY-10_2-')) return '10_2';
     if (name.startsWith('DIY-')) return '4_2';
@@ -565,13 +560,11 @@
   // Dựng hàng nút «Hoặc kết nối tới một thiết bị cụ thể» từ chính bảng APPS,
   // nên thêm/bớt dòng máy ở APPS là hàng nút tự khớp theo.
   // Danh sách tên máy đang hỗ trợ, dựng từ chính bảng APPS -> thêm/bớt dòng
-  // máy khỏi phải sửa các câu nhật ký ở dưới. Bỏ tên cũ DIY-7_5V- cho gọn
-  // (chỉ còn trên máy test nội bộ, vẫn kết nối được bình thường).
+  // máy khỏi phải sửa các câu nhật ký ở dưới.
   function knownNames() {
     const seen = [];
     for (const cfg of Object.values(APPS)) {
       for (const p of cfg.prefixes) {
-        if (p === 'DIY-7_5V-') continue;
         if (!seen.includes(p)) seen.push(p);
       }
     }

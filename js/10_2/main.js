@@ -157,7 +157,7 @@ const EpdCmd = {
 const EPD_SERVICE = '62750001-d828-918d-fb46-b6c11c675aec';
 // Chỉ liệt kê đúng máy 10.2" (DIY-10_2-xxxx, firmware epd_10_2inch): các
 // board 2.13"/2.9" quảng bá DIY-2_13-/DIY-2_9- dùng giao thức khác (service
-// 0xff00), các loại DIY-4_2/DIY-7_5V/DIY-7_3 dùng app riêng — hiện trong hộp
+// 0xff00), các loại DIY-4_2/DIY-7_5/DIY-7_3 dùng app riêng — hiện trong hộp
 // chọn chỉ gây nhầm. Kết nối máy khác được bằng chế độ dev (?debug=true).
 const BLE_REQUEST_FILTERS = [
   { namePrefix: 'DIY-10_2' },

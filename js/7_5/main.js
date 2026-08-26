@@ -70,7 +70,7 @@ async function showImgSlot(slot) {
  * v1.0 là bản ĐẦU TIÊN của máy 7.5" và máy chưa bán, nên không có firmware nào
  * cũ hơn ngoài thị trường để mà giấu tính năng. Phép so phiên bản ở đây không
  * chặn được gì, chỉ thêm một đường hỏng — và nó đã hỏng thật hai lần:
- *   - tên BLE trong hồ sơ viết nhầm 'DIY-7_5V-' -> EpdProf.dongMay() không
+ *   - tên BLE trong hồ sơ viết nhầm (thừa một chữ) -> EpdProf.dongMay() không
  *     khớp -> MỌI cổng trả false, cả trang câm mà không báo gì;
  *   - EpdProf.co() cũng trả false khi máy CHƯA kịp khai «fw=» — đúng sự cố
  *     người dùng gặp trên máy 10.2" (mất một gói notify là trang trống trơn).
@@ -141,7 +141,7 @@ const EpdCmd = {
 
 const EPD_SERVICE = '62750001-d828-918d-fb46-b6c11c675aec';
 // Chỉ liệt kê đúng máy của app này: 4.2" (DIY-4_2-xxxx) và 7.5" (DIY-7_5-xxxx
-// DIY-7_5-xxxx = màn 7.5" 640×384 DA14585, tên cũ DIY-7_5V-xxxx). Các
+// DIY-7_5-xxxx = màn 7.5" 640×384 DA14585). Các
 // board 2.13"/2.9" quảng bá DIY-2_13-/DIY-2_9- dùng giao thức khác (service
 // 0xff00), hiện trong hộp chọn chỉ gây nhầm. Board 4.2" chạy firmware quá cũ
 // (tên chưa gắn cỡ màn) vẫn kết nối được bằng chế độ dev (?debug=true).
@@ -738,10 +738,9 @@ function handleNotify(value, idx) {
       // mode «Lịch dương + âm» (card 13, id 14) thay Đếm ngược: BWR cần fw
       // >= 2.0; bản BỐN MÀU (DIY-4_2C, đánh số 2.x riêng) cần >= 2.9
       const devNm = (bleDevice && bleDevice.name) || '';
-      // Màn 7.5" 640x384: tên MỚI 'DIY-7_5-' và tên CŨ 'DIY-7_5V-' là CÙNG
-      // một dòng máy (đổi tên ở firmware v1.0). Regex có 'V?' + gạch nối nên
-      // KHÔNG chạm DIY-7_5B / DIY-7_5R. Nhánh CC2640 cũ đã bỏ hẳn.
-      const is7_5 = /^DIY-7_5V?-/.test(devNm);
+      // Màn 7.5" 640x384 quảng bá 'DIY-7_5-'. Gạch nối ở cuối là quan trọng:
+      // nó giữ cho phép so KHÔNG chạm DIY-7_5B (chữ lớn) / DIY-7_5R (đọc sách).
+      const is7_5 = /^DIY-7_5-/.test(devNm);
       /* Máy 7.5" NAY CÓ «Lịch dương + âm» (mode 13) từ đợt chuyển sang nền
        * chung — trước đây dòng này ghi cứng false. */
       window.__fwCal = is7_5 ? true
@@ -795,9 +794,9 @@ async function connect() {
   if (bleDevice == null || epdCharacteristic != null) return;
   // đời cũ không tự khai coi như 1.3.1; kèm tên thiết bị để popup nhắc
   // tối đa 1 lần/ngày cho mỗi máy. Màn 7.5" (DIY-7_5- và tên cũ
-  // DIY-7_5V-) không so với bảng firmware 4.2" — khỏi nhắc
+  // DIY-7_5-) không so với bảng firmware 4.2" — khỏi nhắc
   // cập nhật nhầm (bảng «Danh sách firmware» hiện chỉ có file 4.2").
-  const is75 = bleDevice && bleDevice.name && /^DIY-7_5V?-/.test(bleDevice.name);
+  const is75 = bleDevice && bleDevice.name && /^DIY-7_5-/.test(bleDevice.name);
   if (!is75) FwCheck.reset('1.3.1', bleDevice && bleDevice.name);
 
   try {
