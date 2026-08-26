@@ -155,6 +155,7 @@ const EpdCmd = {
   DARK_BOOST: 0x28, // [0/1] chữ đậm cho màn lô in nhạt (ép 0°C khi làm mới toàn màn)
   BATT_STYLE: 0x29, // [0/1/2] hiển thị pin: chỉ icon / phần trăm / điện áp (fw >= 0.4)
   TIME_FMT: 0x2A, // [0/1] định dạng giờ: 24h / 12h
+  INFO: 0x2E, // xin máy gửi LẠI loạt thông tin mở màn (fw/mac/act/config)
 
   WRITE_IMG: 0x30, // v1.6
 
@@ -915,6 +916,39 @@ async function connect() {
   }
 
   await write(EpdCmd.INIT);
+
+  /* KHÔNG NHẬN ĐƯỢC «fw=» THÌ ĐÒI LẠI.
+   *
+   * Khổ 960x640 vẽ theo TRANG, mỗi trang là một lời gọi CHẶN. Máy tạm dừng
+   * lượt vẽ khi có kết nối, nhưng nếu Chrome dò dịch vụ lâu hơn khoảng dừng
+   * ấy thì loạt thông tin mở màn rơi đúng vào giữa lượt vẽ và mất. Mất «fw=»
+   * là MỌI cổng theo phiên bản đều đóng: thẻ «Hình ảnh», «Khôi phục cài đặt
+   * gốc», ba nấc chu kỳ phút... đều nằm im, còn người dùng thì thấy dòng
+   * «Máy không tự khai phiên bản (firmware đời cũ)» dù máy đang chạy bản mới.
+   *
+   * Bản 4.2"/2.13"/2.9" đã có vòng đòi lại này từ lâu; máy 10.2" thiếu — nay
+   * bổ sung y hệt. Lệnh 0x2E xin gửi lại thẳng (lúc này MTU đã thoả thuận
+   * xong nên cả gói config dài cũng lọt); không ăn thua thì ghi lại CCCD. */
+  (async () => {
+    for (let i = 0; i < 3; i++) {
+      await sleep(1200);
+      if (FwCheck.atLeast('0.0')) return;   // đã biết phiên bản
+      if (window.__imgSending) return;      // đang gửi ảnh: cấm ghi lại CCCD
+      if (!epdCharacteristic || !gattServer || !gattServer.connected) return;
+      addLog('(Chưa nhận phiên bản firmware — yêu cầu thiết bị gửi lại...)');
+      await write(EpdCmd.INFO);
+      await sleep(300);
+      if (FwCheck.atLeast('0.0')) return;
+      try {
+        await epdCharacteristic.stopNotifications();
+        msgIndex = 0;
+        await epdCharacteristic.startNotifications();
+      } catch (e) {
+        console.error(e);
+        return;
+      }
+    }
+  })();
 
   // firmware <= 1.3.1 không gửi 'fw=' — sau 3s vẫn nhắc nếu bảng có bản mới
   FwCheck.schedule(3000);
