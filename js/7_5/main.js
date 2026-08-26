@@ -10,8 +10,93 @@ let deviceMode = null;      // display mode reported by the device config
 // 3 khe ảnh (fw >= 1.5): mask bit0..2 = khe đã có ảnh trên thiết bị (đọc từ
 // config blob byte 214); cần >= 2 khe mới bật được «Tự động đổi ảnh»
 let imgSlotMask = 0;
+/* Số khe ảnh và khe đang hiện — hồ sơ máy (profile.gen.js) là nguồn duy nhất,
+ * đổi chip flash thì sửa ở tools/profile/7_5.json rồi sinh lại. */
+const IMG_SLOTS = (window.EPD_PROFILE && window.EPD_PROFILE.soKhe) || 3;
+let imgCurrent = 0;
 let timeSynced = false;     // device clock is valid (reported or just synced);
                             // gates the mode gallery in [Điều khiển thiết bị]
+
+async function factoryReset() {
+  if (!epdCharacteristic) { alert('Chưa kết nối thiết bị.'); return; }
+  // KHÔNG nhắc gì tới mã kích hoạt ở đây: khách không cần biết máy có cơ chế
+  // đó. Với họ chỉ có một ý — bấm reset là máy về như mới và chạy bình thường.
+  // (Firmware vẫn giữ chữ ký kích hoạt; xem EPD_CMD_FACTORY_RESET.)
+  if (!confirm('Khôi phục cài đặt gốc?\n\n' +
+               'Máy sẽ về như lúc mới và XOÁ HẾT:\n' +
+               '  • cấu hình (chế độ, kiểu pin, 12/24h, chữ đậm...)\n' +
+               '  • giao diện «Tự thiết kế» + icon\n' +
+               '  • thời khoá biểu\n' +
+               '  • tất cả ảnh đã gửi vào khe\n\n' +
+               'Không hoàn tác được.')) return;
+  addLog('Gửi lệnh khôi phục cài đặt gốc...', '⇑');
+  // 4 byte magic 'R','S','T',0x5A — firmware bo qua goi thieu magic
+  await write(EpdCmd.FACTORY_RESET, [0x52, 0x53, 0x54, 0x5A]);
+  addLog('Máy sẽ khởi động lại và tự ngắt kết nối. Kết nối lại sau vài giây.');
+}
+
+/* HIEN LAI mot khe anh da luu (lenh 0x27 05).
+ *
+ * Vi sao can: truoc lenh nay, anh trong khe chi hien ra qua VONG TU DOI ANH,
+ * ma vong do lai nam sau cua «may dang o che do ANH». Lo chon mot giao dien
+ * lich la vua mat vong tu doi, vua khong con duong nao quay lai anh — phai gui
+ * lai ca tam anh du no dang nam san trong flash. Lenh nay cung vá luon ca «chi
+ * luu MOT khe»: vong tu doi doi tu hai khe tro len. */
+function fwHasShowSlot() { return EpdProf.co('hien_khe_anh'); }
+
+async function showImgSlot(slot) {
+  if (!epdCharacteristic) { alert('Chưa kết nối thiết bị.'); return; }
+  if (!(imgSlotMask & (1 << slot))) {
+    alert('Khe ' + (slot + 1) + ' chưa có ảnh.');
+    return;
+  }
+  addLog('Hiện lại ảnh ở khe ' + (slot + 1) + '...', '⇑');
+  await write(EpdCmd.IMG_SLOT, [0x05, slot]);
+  // may tu chuyen ve che do ANH -> bo to sang the giao dien dang chon
+  deviceMode = 0;
+  if (typeof highlightMode === 'function') highlightMode(0);
+}
+
+/* CHU KY DOI ANH TINH BANG PHUT (15/30/45) — chi co tu BWR v2.9.
+ *
+ * Vi sao phai gate: firmware cu NHAN byte do binh thuong roi img_interval_ok()
+ * tu choi va am tham roi ve 24 GIO. Khach chon «15 phut», ca ngay anh khong
+ * doi, va khong co mot dong bao nao. Dung loai loi ma webtool nay da gate can
+ * than o moi tinh nang khac.
+ *
+ * (v2.8 tung co nac 40 phut; v2.9 doi thanh 45 cho lien mach 15/30/45. May
+ * dang cai 40 se duoc firmware v2.9 tu chuyen sang 45 luc khoi dong.) */
+function fwHasMinInterval() { return EpdProf.co('chu_ky_phut'); }
+
+function updateIntervalUI() {
+  const ok = fwHasMinInterval();
+  document.querySelectorAll('.imgIntervalMin').forEach(e => { e.style.display = ok ? '' : 'none'; });
+  // may cu dang giu mot nac PHUT (vd 40 tu v2.8) thi khong con radio nao khop
+  // -> keo ve 24 gio cho khoi hien thi trong khong
+  if (!ok && !document.querySelector('input[name="imgInterval"]:checked')) {
+    const r = document.querySelector('input[name="imgInterval"][value="24"]');
+    if (r) r.checked = true;
+  }
+}
+
+/* Bat/tat hang nut «Hien lai anh»: chi hien voi firmware hieu lenh, va tung
+ * nut chi bat khi khe do THAT SU co anh (doc tu mask trong config). */
+function updateShowImgUI() {
+  const row = document.getElementById('imgShowRow');
+  if (!row) return;
+  const ok = fwHasShowSlot();
+  row.style.display = ok ? '' : 'none';
+  if (!ok) return;
+  for (let i = 0; i < 5; i++) {
+    const b = document.getElementById('showimgbutton' + (i + 1));
+    if (!b) continue;
+    b.style.display = (i < IMG_SLOTS) ? '' : 'none';
+    b.disabled = !(imgSlotMask & (1 << i));
+    // khe may dang hien: danh dau de nguoi dung biet dang o dau
+    b.classList.toggle('primary', i === imgCurrent && !b.disabled);
+    b.classList.toggle('secondary', !(i === imgCurrent && !b.disabled));
+  }
+}
 
 const EpdCmd = {
   SET_PINS: 0x00,
@@ -28,6 +113,9 @@ const EpdCmd = {
   SET_LAYOUT: 0x24, // MODE_CUSTOM (mode 20) widget layout from the designer
   SET_ICON: 0x25, // MODE_CUSTOM 1-bit icon, chunked: [0x00,w,h,data...] then [0x01,data...]
   IMG_SLOT: 0x27, // 3 khe ảnh (fw >= 1.5): [01 slot] mở khe / [02] chốt / [03 auto interval]
+  TIMETABLE: 0x2D, // bảng thời khoá biểu, chia mảnh (xem js/7_5/timetable.js)
+  INFO: 0x2E, // xin máy gửi LẠI loạt thông tin mở màn (fw/mac/act/config)
+  FACTORY_RESET: 0x2F, // [2F 'R' 'S' 'T' 5A] khôi phục cài đặt gốc
   DARK_BOOST: 0x28, // [0/1] chữ đậm cho màn lô in nhạt (ép 0°C khi làm mới toàn màn)
   BATT_STYLE: 0x29, // [0/1/2] hiển thị pin: chỉ icon / phần trăm / điện áp (fw >= 1.9)
   CUSTOM_BG: 0x2B, // [0..3] ảnh nền «Tự thiết kế»: 0 tắt, 1-3 = khe ảnh (4.2 >= 2.3)
@@ -568,6 +656,16 @@ function handleNotify(value, idx) {
       const rb = document.querySelector(`input[name="battStyle"][value="${data[217]}"]`);
       if (rb) rb.checked = true;
     }
+    /* «Định dạng giờ» tại offset 218 — ĐÃ DỊCH MỘT BYTE từ đợt chuyển sang nền
+     * chung (trước ở 217 vì máy này chưa có batt_style). Số này ĐO bằng
+     * tools/render/offset.c chứ không đếm tay: nay epd_config_t của 7.5" trùng
+     * khít bản 4.2" (224 byte, batt_style 217, time_fmt 218). */
+    if (data.length > 218 && data[218] <= 1) {
+      const rb = document.querySelector(`input[name="timeFmt"][value="${data[218]}"]`);
+      if (rb) rb.checked = true;
+    }
+    // khe đang hiện (offset 215) — dùng để tô đậm nút «Khe N» tương ứng
+    if (data.length > 215 && data[215] < IMG_SLOTS) imgCurrent = data[215];
   } else {
     if (textDecoder == null) textDecoder = new TextDecoder();
     const msg = textDecoder.decode(data);
@@ -615,16 +713,30 @@ function handleNotify(value, idx) {
       // một dòng máy (đổi tên ở firmware v1.0). Regex có 'V?' + gạch nối nên
       // KHÔNG chạm DIY-7_5B / DIY-7_5R. Nhánh CC2640 cũ đã bỏ hẳn.
       const is7_5 = /^DIY-7_5V?-/.test(devNm);
-      window.__fwCal = is7_5 ? false   // 7.5" chua co mode nay
+      /* Máy 7.5" NAY CÓ «Lịch dương + âm» (mode 13) từ đợt chuyển sang nền
+       * chung — trước đây dòng này ghi cứng false. */
+      window.__fwCal = is7_5 ? true
         : FwCheck.atLeast(devNm.indexOf('DIY-4_2C') === 0 ? '2.9' : '2.0');
       // «Định dạng giờ» 12h/24h: BWR >= 2.1, 4 màu >= 3.0, 7.5" >= 0.3
       window.__fwTimeOk = FwCheck.atLeast(devNm.indexOf('DIY-4_2C') === 0 ? '3.0'
         : is7_5 ? '0.3' : '2.1');
       // icon «Tự thiết kế» 2 mặt (đen + ĐỎ): chỉ màn BA MÀU — 4.2" BWR >= 2.3,
       // 7.5" >= 0.5. Bản 4 MÀU (DIY-4_2C) chưa có.
-      // ẢNH NỀN toàn màn cho «Tự thiết kế»: chỉ 4.2" ba màu từ v2.3 (dùng
-      // lại khe ảnh 32KB; bản 7.5"/4 màu không có khe nên không hỗ trợ)
-      window.__fwBg = !/^DIY-(7_5|4_2C)/.test(devNm) && FwCheck.atLeast('2.3');
+      /* ẢNH NỀN toàn màn cho «Tự thiết kế». Máy 7.5" nay CÓ: khe nền riêng ở
+       * vùng mở rộng của chip 512KB (epd_flashmap.h), không ăn vào ba khe ảnh.
+       * Trước đây bị chặn cứng vì bản cũ gỡ hẳn khe ảnh. */
+      window.__fwBg = is7_5 ? EpdProf.co('anh_nen_thiet_ke')
+        : (!/^DIY-4_2C/.test(devNm) && FwCheck.atLeast('2.3'));
+
+      /* Các khu chỉ hiện khi firmware CÓ tính năng — cổng lấy từ hồ sơ máy
+       * (js/7_5/profile.gen.js), sinh cùng lượt với GUI_modes.h nên không lệch. */
+      {
+        const bat = (id, co) => { const e = document.getElementById(id); if (e) e.style.display = co ? '' : 'none'; };
+        bat('dsBgRow', EpdProf.co('anh_nen_thiet_ke'));
+        bat('factoryResetRow', EpdProf.co('khoi_phuc_goc'));
+        bat('tkbFieldset', EpdProf.co('thoi_khoa_bieu'));
+        if (typeof updateShowImgUI === 'function') updateShowImgUI();
+      }
       if (window.refreshModeGallery) window.refreshModeGallery();
       window.__fwIconRed = is7_5 ? FwCheck.atLeast('0.5')
         : (devNm.indexOf('DIY-4_2C') === 0) ? false
@@ -735,6 +847,11 @@ async function connect() {
       if (window.__imgSending) return;     // đang gửi ảnh: cấm ghi lại CCCD
       if (!epdCharacteristic || !gattServer || !gattServer.connected) return;
       addLog('(Chưa nhận phiên bản firmware — yêu cầu thiết bị gửi lại...)');
+      // Lệnh 0x2E xin gửi lại thẳng; lúc này MTU đã thoả thuận xong nên cả gói
+      // config dài cũng lọt. Firmware cũ bỏ qua lệnh lạ nên vô hại.
+      await write(EpdCmd.INFO);
+      await sleep(300);
+      if (FwCheck.atLeast('0.0')) return;
       try {
         await epdCharacteristic.stopNotifications();
         msgIndex = 0;  // loạt gửi lại bắt đầu bằng config (idx 0)

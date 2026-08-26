@@ -864,32 +864,29 @@
   window.__pv = { font, center, multi, seg7, segStr, battery, analogClock, monthGrid, pad2, lunarish,
                   RED, BK, WH, WD_SHORT, WD_FULL };
 
-  const MODE_LIST = [
-    { mode: 1, name: 'Lịch tháng', tick: 'Cập nhật lúc 0h', id: 'calendarmodebutton', draw: m1 },
-    { mode: 2, name: 'Đồng hồ', tick: 'Làm mới mỗi phút', id: 'clockmodebutton', draw: m2 },
-    { mode: 3, name: 'Đồng hồ + Lịch', tick: 'Làm mới mỗi phút', id: 'combomodebutton', draw: m3 },
-    { mode: 4, name: 'Lịch để bàn (đỏ)', tick: 'Làm mới mỗi phút', id: 'redcombomodebutton', draw: m4 },
-    { mode: 5, name: 'Lịch VN (Can Chi)', tick: 'Cập nhật lúc 0h', id: 'vncalendarmodebutton', draw: m5 },
-    { mode: 6, name: 'Đồng hồ số', tick: 'Làm mới mỗi phút', id: 'digitalmodebutton', draw: m6 },
-    { mode: 7, name: 'Đồng hồ kim', tick: 'Làm mới mỗi phút', id: 'analogmodebutton', draw: m7 },
-    { mode: 8, name: 'Lịch bloc', tick: 'Cập nhật lúc 0h', id: 'dayblocmodebutton', draw: m8 },
-    { mode: 9, name: 'Lịch tuần', tick: 'Làm mới mỗi phút', id: 'weekmodebutton', draw: m9 },
-    { mode: 10, name: 'Giờ + lịch tháng', tick: 'Làm mới mỗi phút', id: 'digitalcalmodebutton', draw: m10 },
-    { mode: 11, name: 'Kim + thẻ ngày', tick: 'Làm mới mỗi phút', id: 'analogdaymodebutton', draw: m11 },
-    { mode: 12, name: 'Tối giản', tick: 'Cập nhật lúc 0h', id: 'minimalmodebutton', draw: m12 },
-    { mode: 13, name: 'Lịch vạn niên', tick: 'Cập nhật lúc 0h', id: 'vanniemodebutton', draw: m13 },
-    { mode: 14, name: 'Đếm ngược sự kiện', nameNew: 'Lịch dương + âm', tick: 'Cập nhật lúc 0h', tickNew: 'Làm mới mỗi phút', id: 'countdownmodebutton', draw: m14 },
-    { mode: 15, name: 'Hai tháng', tick: 'Cập nhật lúc 0h', id: 'twomonthmodebutton', draw: m15 },
-    { mode: 16, name: 'Lịch cả năm', tick: 'Cập nhật lúc 0h', id: 'yearmodebutton', draw: m16 },
-    { mode: 17, name: 'Nhiệt kế', tick: 'Làm mới mỗi phút', id: 'thermomodebutton', draw: m17 },
-    { mode: 18, name: 'Trăng', tick: 'Cập nhật lúc 0h', id: 'moonmodebutton', draw: m18 },
-    { mode: 19, name: 'Ghi chú', tick: 'Làm mới mỗi phút', id: 'notemodebutton', draw: m19 },
-    { mode: 20, name: 'Tự thiết kế', tick: 'Làm mới mỗi phút', id: 'custommodebutton', draw: m20 },
-    { mode: 21, name: 'Núi tuyết 8-bit', tick: 'Cập nhật lúc 0h', id: 'retromtnmodebutton', draw: m21 },
-    { mode: 22, name: 'Hoàng hôn 8-bit', tick: 'Làm mới mỗi phút', id: 'retrosunsetmodebutton', draw: m22 },
-    { mode: 23, name: 'Khủng long 8-bit', tick: 'Cập nhật lúc 0h', id: 'retrowinmodebutton', draw: m23 },
-    { mode: 24, name: 'Thành phố pixel', tick: 'Làm mới mỗi phút', id: 'retrocitymodebutton', draw: m24 },
-  ];
+  /* BẢNG THẺ SINH RA — xem js/7_5/modes.gen.js (window.EPD_MODES), nguồn là
+   * tools/profile/7_5.json bên kho firmware.
+   *
+   * VÌ SAO: trước đây danh sách này phải giữ KHỚP BẰNG TAY với enum
+   * display_mode_t của firmware. Với hơn hai chục dòng thì đó là chỗ CHẮC CHẮN
+   * sẽ trôi, và khi trôi thì triệu chứng là «bấm thẻ này ra chế độ khác».
+   * Nay cả hai đều sinh từ một hồ sơ. Hồ sơ chỉ mang KHOÁ của hàm vẽ; bảng
+   * DRAW dưới đây nối khoá vào hàm thật (các hàm ấy dùng helper cục bộ của
+   * IIFE nên không đưa ra ngoài được). */
+  const DRAW = {
+    m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15, m16, m17,
+    m18, m19, m20, m21, m22, m23, m24,
+    // thẻ «Thời khoá biểu» vẽ bằng CHÍNH hàm dựng bảng của js/7_5/timetable.js
+    // nên thẻ luôn khớp bảng người dùng đang gõ (chưa có bảng thì vẽ màn
+    // hướng dẫn y như trên máy)
+    timetable: (x, n) => { if (window.ttRenderPreview) window.ttRenderPreview(x, n, false); },
+  };
+
+  const MODE_LIST = (window.EPD_MODES || []).map(e => {
+    const d = DRAW[e.draw];
+    if (!d) console.error('mode ' + e.mode + ': khong co ham ve cho khoa "' + e.draw + '"');
+    return Object.assign({}, e, { draw: d || (() => {}) });
+  });
 
   // highlight the mode the device reports (config byte 11) or was just set to
   window.highlightMode = function (mode) {
@@ -912,10 +909,11 @@
         '<div class="mode-tick">' + ((m.tickNew && fwTime()) ? m.tickNew : m.tick) + '</div>' +
         '<button id="' + m.id + '" type="button" class="primary" onclick="syncTime(' + m.mode + ')">Áp dụng</button>';
       gallery.appendChild(card);
-      // mode 2 + 18 đã bỏ ở firmware v1.7: ẩn card khi thiết bị khai fw >= 1.7
-      // mode 2+18 bỏ ở v1.7; 21+22 (Núi tuyết, Hoàng hôn) bỏ ở v2.4 lấy RAM
-      if ((v17() && (m.mode === 2 || m.mode === 18)) ||
-          (window.__fwBg && (m.mode === 21 || m.mode === 22))) card.style.display = 'none';
+      /* KHÔNG còn thẻ nào phải ẩn. Từ v1.0 (đợt chuyển sang nền chung) số mode
+       * được đánh lại LIỀN MẠCH 1..23 nên mọi thẻ trong danh sách đều là một
+       * chế độ CÓ THẬT. Luật ẩn cũ gác theo số 2/18/21/22 — với cách đánh số
+       * mới, đúng những số ấy lại là «Đồng hồ + Lịch», «Hoàng hôn», «Khủng
+       * long», «Thành phố», tức giữ lại là ẩn nhầm bốn thẻ chạy được. */
       try { m.draw(ctx2d(card.querySelector('canvas')), now); }
       catch (e) { console.error('preview mode ' + m.mode, e); }
     }
@@ -929,10 +927,6 @@
     const t = new Date();
     document.querySelectorAll('.mode-card').forEach((card, i) => {
       if (MODE_LIST[i]) {
-        // mode 2 + 18 đã bỏ ở firmware v1.7 — ẩn/hiện lại theo cờ fw hiện tại
-        const gone = MODE_LIST[i].mode === 2 || MODE_LIST[i].mode === 18;
-        const gone24 = MODE_LIST[i].mode === 21 || MODE_LIST[i].mode === 22;
-        card.style.display = ((v17() && gone) || (window.__fwBg && gone24)) ? 'none' : '';
         // tên card đổi theo firmware (vd card 13: Đếm ngược -> Lịch dương + âm)
         const nEl = card.querySelector('.mode-name');
         const nTxt = (MODE_LIST[i].nameNew && fwCal()) ? MODE_LIST[i].nameNew : MODE_LIST[i].name;

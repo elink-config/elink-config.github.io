@@ -45,6 +45,35 @@
 				</div>
 			</div>
 		</fieldset>
+		<fieldset id="tkbFieldset" style="display:none">
+			<legend>Thời khóa biểu</legend>
+			<p class="mode-gallery-hint">Gõ tên môn vào bảng bên dưới (tiếng Việt có dấu), để trống những tiết không có môn, rồi bấm «Gửi lên thiết bị» — máy tự chuyển sang màn hình «Thời khóa biểu» và vẽ đúng bảng này. Bảng được lưu lại theo từng thiết bị nên lần sau mở webtool không phải nhập lại.</p>
+			<div class="flex-container">
+				<div class="flex-group" style="flex:1 1 100%">
+					<label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+						<input type="checkbox" id="tkbSixDay" onchange="ttOptChanged()"> Chỉ từ Thứ 2 đến Thứ 7 (bỏ cột Chủ nhật)
+					</label>
+					<label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+						<input type="checkbox" id="tkbHeader" checked onchange="ttOptChanged()"> Hiện thanh tiêu đề (tên bảng + ngày + pin)
+					</label>
+				</div>
+			</div>
+			<div id="tkbGridMount"></div>
+			<div class="flex-container">
+				<div class="flex-group" style="flex:1 1 100%">
+					<button id="tkbSendbutton" type="button" class="primary" onclick="ttSend()">Gửi lên thiết bị</button>
+					<button type="button" class="secondary" onclick="ttSample()">Điền mẫu</button>
+					<button type="button" class="secondary" onclick="ttClear()">Xóa hết</button>
+				</div>
+				<div class="flex-group" style="flex:1 1 100%">
+					<span class="mode-gallery-hint" style="margin:0" id="tkbHint"></span>
+				</div>
+			</div>
+			<div class="tkb-preview">
+				<div class="mode-gallery-hint">Xem trước đúng như trên màn hình (640 × 384):</div>
+				<canvas id="tkbPreview" width="640" height="384"></canvas>
+			</div>
+		</fieldset>
 		<fieldset>
 			<legend>Cài đặt thiết bị</legend>
 			<div class="flex-container">
@@ -207,6 +236,14 @@
 					<button type="button" class="secondary" onclick="dsIconFromCanvas()">Thêm ảnh vào thiết kế</button>
 				</div>
 			</div>
+			<!-- Ảnh NỀN của «Tự thiết kế» — hàng riêng cho khỏi lẫn với khe ảnh.
+			     Khe nền có riêng (epd_flashmap.h), không ăn vào ba khe ảnh. -->
+			<div class="flex-container">
+				<div class="flex-group btn-row">
+					<span id="dsBgRow" style="display:none"><button type="button" class="secondary" onclick="dsBgToDesign(0)">Làm nền thiết kế</button></span>
+					<button type="button" class="secondary" onclick="dsClearBackground()">Bỏ ảnh nền</button>
+				</div>
+			</div>
 			<!-- Tự đổi ảnh (fw >= 1.5): bật được khi đã có >= 2 khe ảnh trên thiết bị -->
 			<div class="flex-container" id="imgAutoRow" style="display:none">
 				<div class="flex-group">
@@ -218,6 +255,16 @@
 					<label><input type="radio" name="imgInterval" value="12" onchange="setImgAuto()"> 12 giờ</label>
 					<label><input type="radio" name="imgInterval" value="24" checked onchange="setImgAuto()"> 24 giờ</label>
 					<span class="mode-gallery-hint" style="margin:0" id="imgAutoHint">Cần gửi ảnh vào ít nhất 2 khe để bật tự đổi ảnh (khe 1 → 2 → 3 → 1).</span>
+				</div>
+			</div>
+			<!-- HIỆN LẠI ảnh đã lưu (lệnh 0x27 05). Chọn một giao diện lịch là mất
+			     ảnh đang hiện; đây là đường quay lại mà không phải gửi lại cả tấm. -->
+			<div class="flex-container" id="imgShowRow" style="display:none">
+				<div class="flex-group btn-row">
+					<span class="mode-gallery-hint" style="margin:0 8px 0 0">Hiện lại ảnh đã lưu trong máy:</span>
+					<button id="showimgbutton1" type="button" class="secondary" onclick="showImgSlot(0)">Khe 1</button>
+					<button id="showimgbutton2" type="button" class="secondary" onclick="showImgSlot(1)">Khe 2</button>
+					<button id="showimgbutton3" type="button" class="secondary" onclick="showImgSlot(2)">Khe 3</button>
 				</div>
 			</div>
 			<div class="flex-container">
@@ -312,6 +359,15 @@
 					<input type="file" id="otaFile" accept=".bin">
 					<button id="otabutton" type="button" class="secondary" onclick="otaUpdate()">Cập nhật firmware</button>
 					<span id="otaProgress" class="system-time"></span>
+				</div>
+			</div>
+			<!-- Khôi phục cài đặt gốc (lệnh 0x2F): đường cứu khi máy
+			     dùng không được vì cấu hình/giao diện hỏng. Ẩn với firmware chưa
+			     hiểu lệnh — cổng «khoi_phuc_goc» trong hồ sơ máy. -->
+			<div class="flex-container" id="factoryResetRow" style="display:none">
+				<div class="flex-group">
+					<button id="factoryResetBtn" type="button" class="secondary" onclick="factoryReset()">Khôi phục cài đặt gốc</button>
+					<span class="mode-gallery-hint" style="margin:0">Đưa máy về như lúc mới: xoá cấu hình, giao diện «Tự thiết kế», ảnh nền, icon, thời khoá biểu và <b>ảnh trong khe</b>. Dùng khi máy hiển thị sai hoặc không dùng được.</span>
 				</div>
 			</div>
 			<p class="mode-gallery-hint">Nạp file <b>.bin</b> tải về từ mục «Danh sách firmware» bên dưới. Không tắt nguồn thiết bị khi đang cập nhật — nếu lỗi giữa chừng, thiết bị vẫn chạy firmware cũ.</p>

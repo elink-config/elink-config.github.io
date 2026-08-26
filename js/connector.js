@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  const VER = '20260826s'; // cache-buster, keep in sync with index.html
+  const VER = '20260827a'; // cache-buster, keep in sync with index.html
 
   const EPD42_SERVICE = '62750001-d828-918d-fb46-b6c11c675aec';
   const HM213_SERVICE = '0000ff00-0000-1000-8000-00805f9b34fb';
@@ -134,7 +134,10 @@
       // giữ lại cho tiện, không hiện ra trong các câu nhật ký cho khách.
       prefixes: ['DIY-7_5-', 'DIY-7_5V-'],
       scripts: ['js/app_common.js', 'js/family_epd.js', 'js/dithering.js', 'js/paint.js', 'js/crop.js',
-        'js/7_5/mode_preview.js', 'js/7_5/designer.js', 'js/diy_store.js', 'js/7_5/main.js'],
+        // profile.gen.js + modes.gen.js sinh từ tools/profile/7_5.json bên kho
+        // firmware — phải nạp TRƯỚC mode_preview.js vì nó đọc window.EPD_MODES
+        'js/7_5/profile.gen.js', 'js/7_5/modes.gen.js',
+        'js/7_5/mode_preview.js', 'js/7_5/designer.js', 'js/diy_store.js', 'js/7_5/timetable.js', 'js/7_5/main.js'],
     },
     '7_5b': {
       label: '7.5" CHỮ LỚN',

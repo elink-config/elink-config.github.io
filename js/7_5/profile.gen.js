@@ -5,7 +5,7 @@ window.EPD_PROFILE = {
   may: '7_5',
   rong: 640, cao: 384,
   dongMay: {
-    bwr: { tenBle: 'DIY-7_5V-', soMau: 3 },
+    bwr: { tenBle: 'DIY-7_5-', soMau: 3 },
   },
   cong: {
     'danh_lai_so_mode': { bwr: '1.0' },  // may nay CHUA BAN nen khong co ban cu ngoai thi truong
