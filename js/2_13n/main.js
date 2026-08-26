@@ -474,6 +474,17 @@ async function setBattStyle() {
  * setRefreshMode() cho khỏi tưởng là còn dùng được.
  */
 
+/* Chờ máy gửi lại gói CẤU HÌNH rồi lấy ra driver nó đang lưu (byte 7).
+ * Trả null nếu quá hạn. Cùng khuôn với waitImgRdy: một chỗ hẹn dùng một lần,
+ * handleNotify gọi lại khi gói cấu hình tới. */
+let cfgDrvResolve = null;
+function waitCfgDriver(ms) {
+  return new Promise(r => {
+    cfgDrvResolve = r;
+    setTimeout(() => { if (cfgDrvResolve === r) { cfgDrvResolve = null; r(null); } }, ms);
+  });
+}
+
 /* Đồng bộ nhãn + chữ trên nút theo khổ đang chọn. */
 function updateResUI() {
   const lb = document.getElementById('resLabel');
@@ -499,7 +510,31 @@ async function switchResolution() {
            ' — chưa kết nối nên chưa gửi xuống máy.');
     return;
   }
-  if (!await write(EpdCmd.INIT, RESOLUTIONS[target].drv)) return;
+  const want = RESOLUTIONS[target].drv;
+  if (!await write(EpdCmd.INIT, want)) return;
+
+  /* ĐỐI CHIẾU LẠI VỚI MÁY, đừng tin là đã xong.
+   *
+   * Lệnh ghi BLE trả về "thành công" chỉ có nghĩa gói đã tới nơi, KHÔNG có
+   * nghĩa máy đã đổi. Mà biểu hiện khi máy không đổi lại rất dễ gây hiểu lầm:
+   * màn vẫn nháy (vì lượt vẽ lại phía dưới vẫn chạy) nhưng khổ giữ nguyên,
+   * nhìn y như nút hỏng.
+   *
+   * 0x2E bảo máy gửi lại loạt thông tin mở màn, trong đó byte 7 của gói cấu
+   * hình là driver ĐANG LƯU. So byte đó với cái vừa gửi là biết ngay lỗi nằm
+   * ở webtool hay ở firmware. */
+  const kq = waitCfgDriver(3000);
+  await write(EpdCmd.INFO);
+  const got = await kq;
+  if (got === null) {
+    addLog('⚠ Máy không gửi lại cấu hình sau 3 giây — chưa xác nhận được là đã đổi khổ.');
+  } else if (got !== want) {
+    addLog(`⚠ ĐỔI KHÔNG ĂN: đã gửi driver "${want}" nhưng máy vẫn báo đang lưu "${got}". ` +
+           `Lỗi nằm ở phía firmware chứ không phải trang này — hãy báo lại nguyên dòng này.`);
+    return;
+  } else {
+    addLog(`Máy xác nhận đã lưu driver "${got}".`);
+  }
 
   /* ⚠ PHẢI VẼ LẠI, nếu không nút này trông y như hỏng.
    *
@@ -858,6 +893,8 @@ function handleNotify(value, idx) {
     // cu, gia tri do KHONG co trong select nen gan thang se lam select mat
     // lua chon (selectedIndex -1) va moi thao tac doc option sau do nem loi.
     const drvHex = bytes2hex(data.slice(7, 8));
+    // ai đang đợi đối chiếu driver (nút đổi khổ màn) thì trả lời họ trước
+    if (cfgDrvResolve) { const f = cfgDrvResolve; cfgDrvResolve = null; f(drvHex); }
     if ([...epddriver.options].some(o => o.value === drvHex)) {
       epddriver.value = drvHex;
     } else {
