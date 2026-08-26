@@ -641,7 +641,12 @@ function handleNotify(value, idx) {
     // u32 activation ở 208 — struct căn 4 byte)
     if (data.length >= 216) {
       const auto = data[212], itv = data[213];
-      imgSlotMask = (data[214] <= 7) ? data[214] : 0;
+      /* ⚠ TRẦN 0x7F, KHÔNG PHẢI 7. Mask có một bit cho MỖI khe, kể cả khe NỀN
+       * của «Tự thiết kế» (bit 3 ở máy này: 3 khe ảnh + 1 khe nền). Để trần 7
+       * thì hễ thiết kế có ảnh nền là mask ≥ 8 và cả mask bị XOÁ SẠCH — webtool
+       * tưởng không khe nào có ảnh, tắt luôn hàng «Hiện lại ảnh» và vòng tự đổi
+       * ảnh. Bản 4.2" và 10.2" đều dùng 0x7F. */
+      imgSlotMask = (data[214] <= 0x7F) ? data[214] : 0;
       document.getElementById('imgAutoCHK').checked = auto === 1;
       const r = document.querySelector(`input[name="imgInterval"][value="${itv}"]`);
       if (r) r.checked = true;
