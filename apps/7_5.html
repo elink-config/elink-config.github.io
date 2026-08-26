@@ -251,6 +251,12 @@
 						<input type="checkbox" id="imgAutoCHK" onchange="setImgAuto()">
 						Tự động đổi ảnh đã tải
 					</label>
+					<!-- Xếp TĂNG DẦN: phút trước, giờ sau. Ba nấc PHÚT bọc trong
+					     .imgIntervalMin để ẩn với firmware chưa hiểu (nó nhận byte
+					     rồi âm thầm rơi về 24 giờ — đúng loại lỗi câm). -->
+					<label class="imgIntervalMin"><input type="radio" name="imgInterval" value="15" onchange="setImgAuto()"> 15 phút</label>
+					<label class="imgIntervalMin"><input type="radio" name="imgInterval" value="30" onchange="setImgAuto()"> 30 phút</label>
+					<label class="imgIntervalMin"><input type="radio" name="imgInterval" value="45" onchange="setImgAuto()"> 45 phút</label>
 					<label><input type="radio" name="imgInterval" value="1" onchange="setImgAuto()"> 1 giờ</label>
 					<label><input type="radio" name="imgInterval" value="12" onchange="setImgAuto()"> 12 giờ</label>
 					<label><input type="radio" name="imgInterval" value="24" checked onchange="setImgAuto()"> 24 giờ</label>

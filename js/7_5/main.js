@@ -741,6 +741,8 @@ function handleNotify(value, idx) {
         bat('factoryResetRow', EpdProf.co('khoi_phuc_goc'));
         bat('tkbFieldset', EpdProf.co('thoi_khoa_bieu'));
         if (typeof updateShowImgUI === 'function') updateShowImgUI();
+        // ba nấc chu kỳ PHÚT chỉ hiện khi firmware hiểu (cổng «chu_ky_phut»)
+        if (typeof updateIntervalUI === 'function') updateIntervalUI();
       }
       if (window.refreshModeGallery) window.refreshModeGallery();
       window.__fwIconRed = is7_5 ? FwCheck.atLeast('0.5')
