@@ -115,6 +115,13 @@
     const maxD = new Date(year, mon + 1, 0).getDate();
     const rows = Math.ceil((first + maxD) / 7);
     const cw = gw / 7, rh = gh / rows;
+    if (opt.gridLines) {  // kẻ chấm ĐÚNG BIÊN ô như firmware v2.0
+      x.fillStyle = '#999';
+      for (let r = 1; r < rows; r++)
+        for (let px = gx; px < gx + gw; px += 4) x.fillRect(px, gy + r * rh, 1, 1);
+      for (let c = 1; c < 7; c++)
+        for (let py = gy; py < gy + gh; py += 4) x.fillRect(gx + c * cw, py, 1, 1);
+    }
     for (let d = 1; d <= maxD; d++) {
       const idx = first + d - 1, col = idx % 7, row = (idx - col) / 7;
       const cx = gx + col * cw + cw / 2, cy = gy + row * rh + rh / 2;
@@ -123,7 +130,12 @@
       // BWRY: đĩa đen «hôm nay» (mode Combo) thành đĩa VÀNG chữ đen; đĩa đỏ
       // thêm viền vàng — đúng firmware
       const comboYellow = is4c() && (opt.todayCol || RED) === BK;
-      if (d === today) {
+      if (d === today && opt.todaySquare) {
+        /* Màn 10.2" từ v2.0: «hôm nay» là Ô VUÔNG tô đỏ lấp đúng ô lưới, không
+         * còn vòng tròn — số ngày nay to nên đường tròn cắt vào góc chữ. */
+        x.fillStyle = opt.todayCol || RED;
+        x.fillRect(gx + col * cw + 2, gy + row * rh + 2, cw - 4, rh - 4);
+      } else if (d === today) {
         // opt.rPlus: mode 10 v1.7 nới vòng «hôm nay» thêm 2px, giữ tâm
         const rr = Math.min(cw, rh) / 2 - 1 + (opt.rPlus || 0), ty = cy - (opt.lunar ? 2 : 0);
         x.fillStyle = comboYellow ? YE : (opt.todayCol || RED); x.beginPath();
@@ -137,7 +149,7 @@
       center(x, d, cx, cy + (opt.lunar ? 2 : 5),
              d === today ? (comboYellow ? BK : '#fff') : (weekend && !opt.noWeekendRed ? RED : BK));
       if (opt.lunar) {
-        font(x, 9, 0);
+        font(x, opt.lunarPx || 9, 0);
         center(x, lunarish(d), cx, cy + rh / 2 - 3, d === today ? '#fff' : '#555');
       }
     }
@@ -169,8 +181,11 @@
     multi(x, [['Tháng ', BK], [String(now.getMonth() + 1), RED], [' - ', BK], [String(now.getFullYear()), RED],
               ['   ÂL 21/5 Bính Ngọ ', BK], ['[Tuần 27]', RED]], 165, 24);
     battery(x, 366, 8, BK, '3.2V');
-    weekBar(x, 10, 32, 380, 24, WD_SHORT, 13, true);  // v1.7: vạch | như mode 5
-    monthGrid(x, 10, 64, 380, 226, now, { lunar: true, dayPx: 15 });
+    /* v2.0: dải thứ cao 60/640 (~28 trên khung 300) với chữ 48px (~22), số
+     * ngày 44px (~20) và âm lịch 30px (~14); «hôm nay» là ô vuông đỏ. */
+    weekBar(x, 10, 34, 380, 28, WD_SHORT, 17, true);
+    monthGrid(x, 10, 66, 380, 226, now,
+              { lunar: true, dayPx: 20, lunarPx: 12, todaySquare: true, gridLines: true });
   }
   function m2(x, now) { // Đồng hồ
     font(x, 15, 0);
@@ -232,14 +247,13 @@
     line(x, 88, 212, 88, 272, '#fff', 2);
     font(x, 14, 0); x.fillStyle = '#fff'; x.fillText('Năm Ngựa', 96, 234);
     battery(x, 96, 240, '#fff'); font(x, 11, 0); x.fillStyle = '#fff';
-    x.fillText('3.2V', 124, 262); x.fillText('21/5 AL', 96, 276);
+    // v2.0: «ÂL» viết tắt tách thành hai dòng «Âm Lịch» / «21/5»
+    x.fillText('3.2V', 124, 262); x.fillText('Âm Lịch', 96, 272); x.fillText('21/5', 96, 285);
     x.fillStyle = '#fff'; x.beginPath(); x.roundRect(168, 10, 224, 280, 14); x.fill();
-    // BWRY: trăng lưỡi liềm VÀNG viền đen
-    x.fillStyle = is4c() ? YE : BK; x.beginPath(); x.arc(196, 38, 13, 0, 7); x.fill();
-    if (is4c()) { x.strokeStyle = BK; x.lineWidth = 1.5; x.beginPath(); x.arc(196, 38, 13, 0, 7); x.stroke(); }
-    x.fillStyle = '#fff'; x.beginPath(); x.arc(203, 33, 11, 0, 7); x.fill();
-    font(x, 17, 1); x.fillStyle = BK; x.textAlign = 'right';
-    x.fillText(now.getFullYear() + '-' + pad2(now.getMonth() + 1), 384, 48); x.textAlign = 'left';
+    // v2.0: trăng lưỡi liềm cố định -> icon ĐỔI THEO BUỔI trong ngày
+    dayPartIcon(x, 198, 36, now.getHours());
+    font(x, 22, 1); x.fillStyle = BK; x.textAlign = 'right';   // v2.0: to gấp đôi
+    x.fillText(now.getFullYear() + '-' + pad2(now.getMonth() + 1), 384, 45); x.textAlign = 'left';
     x.fillRect(178, 58, 206, 5);
     // v1.7: hàng thứ T7/CN đỏ, còn lại ĐEN (trước toàn đỏ), tuần bắt đầu T2
     font(x, 11, 1);
@@ -529,22 +543,25 @@
       line(x, 200, 58, 200, 262, BK, 2);
       // cột TRÁI — DƯƠNG LỊCH (đen)
       font(x, 16, 1); center(x, 'DƯƠNG LỊCH', 100, 79, BK);
-      font(x, 104, 1); center(x, String(now.getDate()), 100, 186, BK);
-      font(x, 24, 1); center(x, 'Tháng ' + (now.getMonth() + 1), 100, 227, BK);
-      font(x, 17, 1); center(x, 'Năm ' + now.getFullYear(), 100, 255, BK);
+      font(x, 100, 1); center(x, String(now.getDate()), 100, 178, BK);
+      font(x, 24, 1); center(x, 'Tháng ' + (now.getMonth() + 1), 100, 216, BK);
+      font(x, 24, 1); center(x, 'Năm ' + now.getFullYear(), 100, 246, BK);  // v2.0: bằng dòng tháng
       // cột PHẢI — ÂM LỊCH (đỏ)
       font(x, 16, 1); center(x, 'ÂM LỊCH', 300, 79, RED);
-      font(x, 104, 1); center(x, String(lu.day), 300, 186, RED);
-      font(x, 24, 1); center(x, 'Tháng ' + lu.month + (lu.leap ? ' nhuận' : ''), 300, 227, RED);
-      font(x, 17, 1); center(x, 'Năm ' + yName, 300, 255, BK);
+      font(x, 100, 1); center(x, String(lu.day), 300, 178, RED);
+      font(x, 24, 1); center(x, 'Tháng ' + lu.month + (lu.leap ? ' nhuận' : ''), 300, 216, RED);
+      font(x, 24, 1); center(x, 'Năm ' + yName, 300, 246, BK);  // v2.0: bằng dòng tháng
       // chân trang: đếm ngược sự kiện kế tiếp
-      font(x, 13, 1);
+      /* v2.0: chân trang lên CỠ THÂN nên phải xuống HAI DÒNG — vế «Còn N ngày
+       * nữa đến » cộng tên sự kiện ở cỡ đó không lọt một dòng ngang màn. */
+      font(x, 20, 1);
       const nf = nextSolarFest(now);
       if (nf.days === 0) {
-        multi(x, [['Hôm nay: ', BK], [nf.name, RED]], 200, 288);
+        center(x, 'Hôm nay:', 200, 272, BK);
+        center(x, nf.name, 200, 294, RED);
       } else {
-        multi(x, [['Còn ' + nf.days + ' ngày nữa đến ', BK],
-                  [nf.name + ' (' + pad2(nf.dt.getDate()) + '/' + pad2(nf.dt.getMonth() + 1) + ')', RED]], 200, 288);
+        center(x, 'Còn ' + nf.days + ' ngày nữa đến', 200, 272, BK);
+        center(x, nf.name + ' (' + pad2(nf.dt.getDate()) + '/' + pad2(nf.dt.getMonth() + 1) + ')', 200, 294, RED);
       }
       return;
     }
@@ -684,13 +701,53 @@
     for (let yy = 0; yy < h; yy += s)
       for (let xx = ((yy / s) & 1) * s; xx < w; xx += 2 * s) x.fillRect(X + xx, Y + yy, s, s);
   }
-  function pxHearts(x, X, Y, s, n, line) {
+  /* Icon BUỔI TRONG NGÀY — khớp icon_daypart() của firmware v2.0: mặt trời
+   * ĐỎ, mây ĐEN vẽ đè lên sau, ban đêm là trăng lưỡi liềm. */
+  function dayPartIcon(x, cx, cy, hour) {
+    const sun = (sx, sy, r, rays) => {
+      x.fillStyle = RED;
+      if (rays) {
+        const o = r + 3;
+        x.fillRect(sx - 1, sy - o - 4, 2, 4); x.fillRect(sx - 1, sy + o, 2, 4);
+        x.fillRect(sx - o - 4, sy - 1, 4, 2); x.fillRect(sx + o, sy - 1, 4, 2);
+        const d = (r + 2) * 0.7;
+        [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(q =>
+          x.fillRect(sx + q[0] * d - 1.5, sy + q[1] * d - 1.5, 3, 3));
+      }
+      x.beginPath(); x.arc(sx, sy, r, 0, 7); x.fill();
+    };
+    const cloud = (ccx, ccy, s) => {
+      x.fillStyle = BK;
+      x.beginPath(); x.arc(ccx - s, ccy, s, 0, 7); x.fill();
+      x.beginPath(); x.arc(ccx, ccy - s / 2, s * 4 / 3, 0, 7); x.fill();
+      x.beginPath(); x.arc(ccx + s, ccy, s, 0, 7); x.fill();
+      x.fillRect(ccx - 2 * s, ccy, 4 * s, s);
+    };
+    if (hour < 5 || hour >= 19) {
+      x.fillStyle = BK; x.beginPath(); x.arc(cx, cy, 12, 0, 7); x.fill();
+      x.fillStyle = '#fff'; x.beginPath(); x.arc(cx + 6, cy - 4, 9, 0, 7); x.fill();
+    } else if (hour < 10) { sun(cx + 3, cy - 3, 7, false); cloud(cx, cy + 4, 5);
+    } else if (hour < 13) { sun(cx - 1, cy - 2, 8, true); cloud(cx + 6, cy + 6, 4);
+    } else if (hour < 16) { sun(cx, cy, 9, true);
+    } else { sun(cx, cy - 2, 8, true); cloud(cx, cy + 7, 4); }
+  }
+
+  function pxHearts(x, X, Y, s, n, line, val) {
     const F = [0x36, 0x7F, 0x7F, 0x3E, 0x1C, 0x08], E = [0x36, 0x49, 0x41, 0x22, 0x14, 0x08];
     for (let i = 0; i < 3; i++) {
       const rows = i < n ? F : E;
       x.fillStyle = i < n ? RED : (line || BK);
       for (let r = 0; r < 6; r++) for (let c = 0; c < 7; c++)
         if (rows[r] & (0x40 >> c)) x.fillRect(X + i * 9 * s + c * s, Y + r * s, s, s);
+    }
+    /* v2.0: các chế độ 8-bit trước đây chỉ có ba trái tim, không nói vôn cũng
+     * chẳng nói phần trăm — lệch hẳn với các chế độ còn lại. Nay kèm số ngay
+     * bên phải cụm tim, đúng như retro_hearts(side = +1) của firmware. */
+    if (val) {
+      font(x, 10, 0);
+      x.fillStyle = line || BK;
+      x.textAlign = 'left';
+      x.fillText(val, X + 25 * s + 5, Y + 4 * s + 1);
     }
   }
   function m21(x, now) { // Núi tuyết 8-bit
@@ -711,13 +768,15 @@
     for (let yy = 278; yy < 300; yy += 12) x.fillRect(0, yy, 400, 1);
     for (let xx = 0; xx < 400; xx += 40) { x.fillRect(xx + 8, 266, 1, 12); x.fillRect(xx + 28, 278, 1, 12); }
     x.fillStyle = '#fff'; for (let xx = 12; xx < 400; xx += 56) x.fillRect(xx, 260, 24, 8);
-    x.fillStyle = '#fff'; x.fillRect(104, 22, 192, 100);
-    x.strokeStyle = BK; x.lineWidth = 1; x.strokeRect(104.5, 22.5, 192, 100); x.strokeRect(108.5, 26.5, 184, 92);
-    font(x, 13, v17() ? 1 : 0); center(x, WD_FULL[now.getDay()], 200, 50, RED);
-    pxDate.col = BK; pxDate.dot = RED; pxDate(x, 200 - 68, 56, now, 8);
+    /* v2.0: hộp nới rộng ra hai bên và lên trên (chữ cũ đè lên viền trong),
+     * mép dưới giữ nguyên vì chóp núi bắt đầu ngay dưới. */
+    x.fillStyle = '#fff'; x.fillRect(92, 14, 216, 110);
+    x.strokeStyle = BK; x.lineWidth = 1; x.strokeRect(92.5, 14.5, 216, 110); x.strokeRect(96.5, 18.5, 208, 102);
+    font(x, 13, v17() ? 1 : 0); center(x, WD_FULL[now.getDay()], 200, 46, RED);
+    pxDate.col = BK; pxDate.dot = RED; pxDate(x, 200 - 68, 54, now, 8);
     font(x, 12, v17() ? 1 : 0); center(x, now.getFullYear() + ' - ÂL 15/6', 200, 114, BK);
-    pxHearts(x, 8, 20, 3, 2);
-    font(x, 12, v17() ? 1 : 0); x.textAlign = 'right'; x.fillStyle = BK; x.fillText('32°C', 390, 34); x.textAlign = 'left';
+    pxHearts(x, 8, 20, 3, 2, BK, '3.2V');
+    font(x, 12, v17() ? 1 : 0); x.textAlign = 'right'; x.fillStyle = BK; x.fillText('32°C', 390, 42); x.textAlign = 'left';  // v2.0: hạ thấp
   }
   function m22(x, now) { // Hoàng hôn 8-bit
     x.fillStyle = BK; x.fillRect(0, 0, 400, 156);
@@ -742,7 +801,7 @@
     for (let xx = 0; xx < 400; xx += 24) { x.fillRect(xx, 262, 12, 8); x.fillRect(xx + 12, 266, 12, 8); }
     x.fillRect(0, 274, 400, 6);
     pxDither(x, 0, 284, 400, 8, 4, '#fff');
-    pxHearts(x, 8, 8, 3, 2, '#fff');
+    pxHearts(x, 8, 8, 3, 2, '#fff', '3.2V');
   }
   function m23(x, now) { // Khủng long 8-bit (Chrome "No internet")
     const DINO = [0x00FE, 0x017F, 0x01FF, 0x01FF, 0x01F8, 0x81E0, 0xC3E0, 0xE7E0,
@@ -759,7 +818,7 @@
       x.fillStyle = BK;
       seg.forEach(g => { if (g[3]) x.fillRect(cx + g[0], cy + g[1], 1, g[2]); else x.fillRect(cx + g[0], cy + g[1], g[2], 1); });
     };
-    pxHearts(x, 8, 8, 3, 2);
+    pxHearts(x, 8, 8, 3, 2, BK, '3.2V');
     // "HI DD.MM.YYYY" chữ số pixel góc phải
     {
       const s = 3, dw = 12, X0 = 400 - 10 - (8 * dw + 12), Y0 = 10, yr = now.getFullYear();
@@ -783,10 +842,10 @@
     for (let r = 0; r < 5; r++) for (let c = 0; c < 8; c++)
       if (PT[r] & (0x80 >> c)) x.fillRect(248 + c * 4, 180 + r * 4, 4, 4);
     // màn "game over": thứ giãn cách ký tự — v1.7 nhấc thứ + ngày lên 6px
-    const dy23 = v17() ? -6 : 0;
+    const dy23 = v17() ? -28 : 0;  // v2.0: nhấc cả cụm chữ lên (yêu cầu)
     font(x, 22, 1); center(x, WD_FULL[now.getDay()].split('').join(' '), 200, 116 + dy23, BK);
     font(x, 12, 0); center(x, 'Tháng ' + (now.getMonth() + 1) + ' - ' + now.getFullYear() + ' · ÂL 15/6', 200, 140 + dy23, BK);
-    font(x, 10, 0); center(x, 'ERR_NO_INTERNET - 32*C', 230, 162, BK);
+    font(x, 10, 0); center(x, 'ERR_NO_INTERNET - 32*C', 230, 162 + dy23, BK);  // theo hai dòng trên
     // T-Rex
     x.fillStyle = BK;
     for (let r = 0; r < 16; r++) for (let c = 0; c < 16; c++)
@@ -800,17 +859,20 @@
   }
   function m24(x, now) { // Thành phố pixel — v1.7: bold + 2 đĩa bay đèn đỏ
     pxTime(x, 200 - 102, 24, now, 12, BK);
-    x.fillStyle = '#fff'; x.fillRect(116, 102, 168, 40);
-    x.strokeStyle = BK; x.strokeRect(116.5, 102.5, 168, 40); x.strokeRect(119.5, 105.5, 162, 34);
-    font(x, 13, v17() ? 1 : 0); center(x, pad2(now.getDate()) + '-' + pad2(now.getMonth() + 1) + '-' + now.getFullYear(), 200, 128, BK);
-    font(x, 12, v17() ? 1 : 0); center(x, 'Âm lịch 15/6', 200, 162, BK);
+    /* v2.0: khung bao CẢ ngày dương LẪN âm lịch (trước dòng âm lịch nằm ngoài
+     * khung, rơi lên nóc toà nhà) và cả cụm dịch lên cho khỏi chạm skyline. */
+    x.fillStyle = '#fff'; x.fillRect(112, 84, 176, 82);
+    x.strokeStyle = BK; x.strokeRect(112.5, 84.5, 176, 82); x.strokeRect(115.5, 87.5, 170, 76);
+    font(x, 15, 1); center(x, pad2(now.getDate()) + '-' + pad2(now.getMonth() + 1) + '-' + now.getFullYear(), 200, 114, BK);
+    font(x, 15, 1); center(x, 'Âm lịch 15/6', 200, 150, BK);
     if (v17()) {  // 2 đĩa bay đen + 3 đèn đỏ dưới bụng (khớp firmware retro_ufo)
       const ufo = (X, Y, s) => {
         x.fillStyle = BK;
         x.fillRect(X + 2 * s, Y, 4 * s, s); x.fillRect(X + s, Y + s, 6 * s, s);
         x.fillRect(X, Y + 2 * s, 8 * s, s); x.fillRect(X + s, Y + 3 * s, 6 * s, s);
+        /* v2.0: ba chấm lửa dịch phải nửa ô cho cân giữa bụng đĩa */
         x.fillStyle = RED;
-        for (let i = 0; i < 3; i++) x.fillRect(X + s + i * 2 * s, Y + 4 * s, s, s);
+        for (let i = 0; i < 3; i++) x.fillRect(X + s + i * 2 * s + s / 2, Y + 4 * s, s, s);
       };
       ufo(36, 48, 4); ufo(324, 56, 3);
     }
@@ -836,12 +898,17 @@
       x.fillStyle = '#fff';
       for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++)
         if (body[r] & (0x80 >> c)) x.fillRect(px + c * 3, py + r * 3, 3, 3);
-      // bong bóng thoại: trái = nhiệt độ, phải = điện áp
-      x.fillRect(px + 20, py - 26, 34, 22); x.strokeStyle = BK; x.strokeRect(px + 20.5, py - 25.5, 34, 22);
-      font(x, 10, 0); x.fillStyle = BK; x.textAlign = 'center';
-      x.fillText(i === 0 ? '32°C' : '3.2V', px + 37, py - 11);
+      // v2.0: hai chấm ĐEN làm mắt người ngoài hành tinh
+      x.fillStyle = BK;
+      x.fillRect(px + 6.5, py + 3.5, 2, 2); x.fillRect(px + 15.5, py + 3.5, 2, 2);
+      // bong bóng thoại to hơn, chữ cỡ đôi: trái = nhiệt độ, phải = điện áp
+      x.fillStyle = '#fff';
+      x.fillRect(px + 20, py - 34, 46, 28); x.strokeStyle = BK; x.strokeRect(px + 20.5, py - 33.5, 46, 28);
+      font(x, 14, 1); x.fillStyle = BK; x.textAlign = 'center';
+      x.fillText(i === 0 ? '32°C' : '3.2V', px + 43, py - 14);
       x.textAlign = 'left';
     });
+    // không lặp số ở cụm tim: điện áp đã nằm trong bong bóng thoại bên phải
     pxHearts(x, 400 - 8 - 81, 8, 3, 2);
   }
 
@@ -877,10 +944,53 @@
     });
   };
 
+  /* ---- THẺ «Hình ảnh» (mode 0) ------------------------------------------
+   * Gallery trước đây chỉ có các giao diện lịch/đồng hồ. Đường quay lại ảnh đã
+   * lưu nằm tận mục «Truyền hình ảnh» phía dưới, nên người dùng chọn một giao
+   * diện lịch là coi như mất ảnh — không có nút nào ngay chỗ chọn chế độ để
+   * bật khe ảnh lên. Nay thẻ này đứng đầu gallery, mỗi khe một nút.
+   *
+   * Nút gọi thẳng showImgSlot() nên dùng chung mọi phép kiểm tra đã có (đã kết
+   * nối chưa, firmware có hiểu lệnh 0x27 05 không, khe đó có ảnh không) —
+   * updateShowImgUI() trong main.js bật/tắt từng nút và ẩn cả thẻ. */
+  function drawImgThumb(x) {
+    x.fillStyle = WH; x.fillRect(0, 0, 400, 300);
+    x.strokeStyle = BK; x.lineWidth = 6; x.strokeRect(30, 40, 340, 220);
+    x.fillStyle = RED; x.beginPath(); x.arc(120, 110, 30, 0, 6.2832); x.fill();
+    x.fillStyle = BK;
+    x.beginPath(); x.moveTo(60, 250); x.lineTo(180, 130); x.lineTo(300, 250); x.closePath(); x.fill();
+    x.beginPath(); x.moveTo(210, 250); x.lineTo(290, 165); x.lineTo(360, 250); x.closePath(); x.fill();
+  }
+
+  function buildImageCard(gallery) {
+    const P = window.EPD_PROFILE || {};
+    /* Máy có SỐ KHE cố định (10.2" = 1) thì hồ sơ khai soKhe; máy 4.2" đổi
+     * số khe theo firmware (3 hay 5) nên hồ sơ không khai — dựng đủ 5 nút rồi
+     * để updateShowImgUI() ẩn bớt theo IMG_SLOTS lúc chạy. */
+    const n = (typeof P.soKhe === 'number') ? P.soKhe : 5;
+    const card = document.createElement('div');
+    card.className = 'mode-card';
+    card.id = 'imgModeCard';
+    card.dataset.mode = 0;
+    card.style.display = 'none';  // updateShowImgUI() mở khi firmware có lệnh
+    let btns = '';
+    for (let i = 0; i < n; i++)
+      btns += '<button id="galimgbutton' + (i + 1) + '" type="button" class="primary" ' +
+              'onclick="showImgSlot(' + i + ')">' + (n > 1 ? ('Khe ' + (i + 1)) : 'Hiện ảnh') + '</button>';
+    card.innerHTML =
+      '<canvas width="400" height="300"></canvas>' +
+      '<div class="mode-name">Hình ảnh</div>' +
+      '<div class="mode-tick">' + (n > 1 ? (n + ' khe ảnh trong máy') : 'Ảnh đã lưu trong máy') + '</div>' +
+      '<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center">' + btns + '</div>';
+    gallery.appendChild(card);
+    drawImgThumb(ctx2d(card.querySelector('canvas')));
+  }
+
   function build() {
     const gallery = document.getElementById('modeGallery');
     if (!gallery) return;
     const now = new Date();
+    buildImageCard(gallery);
     for (const m of MODE_LIST) {
       const card = document.createElement('div');
       card.className = 'mode-card';
@@ -904,11 +1014,13 @@
   // driver để bật/tắt các điểm nhấn VÀNG của màn 4 màu (driver 05/06)
   window.refreshModeGallery = function () {
     const t = new Date();
-    document.querySelectorAll('.mode-card').forEach((card, i) => {
-      if (MODE_LIST[i]) {
-        try { MODE_LIST[i].draw(ctx2d(card.querySelector('canvas')), t); }
-        catch (e) { console.error('preview mode ' + MODE_LIST[i].mode, e); }
-      }
+    /* Tra theo data-mode chứ KHÔNG theo chỉ số thẻ: gallery nay có thêm thẻ
+     * «Hình ảnh» đứng đầu nên chỉ số thẻ lệch một bậc so với MODE_LIST. */
+    document.querySelectorAll('.mode-card').forEach(card => {
+      const m = MODE_LIST.find(e => e.mode === Number(card.dataset.mode));
+      if (!m) return;
+      try { m.draw(ctx2d(card.querySelector('canvas')), t); }
+      catch (e) { console.error('preview mode ' + m.mode, e); }
     });
   };
 

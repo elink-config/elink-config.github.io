@@ -169,6 +169,9 @@ function disconnect() {
   // vào chỉ nhận được hộp thoại «Chưa kết nối thiết bị»
   const showRow = document.getElementById('imgShowRow');
   if (showRow) showRow.style.display = 'none';
+  // thẻ «Hình ảnh» đầu gallery cũng vậy — cùng lệnh, cùng điều kiện
+  const imgCard = document.getElementById('imgModeCard');
+  if (imgCard) imgCard.style.display = 'none';
   imgSlotMask = 0;
 }
 

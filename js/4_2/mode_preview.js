@@ -896,10 +896,53 @@
     });
   };
 
+  /* ---- THẺ «Hình ảnh» (mode 0) ------------------------------------------
+   * Gallery trước đây chỉ có các giao diện lịch/đồng hồ. Đường quay lại ảnh đã
+   * lưu nằm tận mục «Truyền hình ảnh» phía dưới, nên người dùng chọn một giao
+   * diện lịch là coi như mất ảnh — không có nút nào ngay chỗ chọn chế độ để
+   * bật khe ảnh lên. Nay thẻ này đứng đầu gallery, mỗi khe một nút.
+   *
+   * Nút gọi thẳng showImgSlot() nên dùng chung mọi phép kiểm tra đã có (đã kết
+   * nối chưa, firmware có hiểu lệnh 0x27 05 không, khe đó có ảnh không) —
+   * updateShowImgUI() trong main.js bật/tắt từng nút và ẩn cả thẻ. */
+  function drawImgThumb(x) {
+    x.fillStyle = WH; x.fillRect(0, 0, 400, 300);
+    x.strokeStyle = BK; x.lineWidth = 6; x.strokeRect(30, 40, 340, 220);
+    x.fillStyle = RED; x.beginPath(); x.arc(120, 110, 30, 0, 6.2832); x.fill();
+    x.fillStyle = BK;
+    x.beginPath(); x.moveTo(60, 250); x.lineTo(180, 130); x.lineTo(300, 250); x.closePath(); x.fill();
+    x.beginPath(); x.moveTo(210, 250); x.lineTo(290, 165); x.lineTo(360, 250); x.closePath(); x.fill();
+  }
+
+  function buildImageCard(gallery) {
+    const P = window.EPD_PROFILE || {};
+    /* Máy có SỐ KHE cố định (10.2" = 1) thì hồ sơ khai soKhe; máy 4.2" đổi
+     * số khe theo firmware (3 hay 5) nên hồ sơ không khai — dựng đủ 5 nút rồi
+     * để updateShowImgUI() ẩn bớt theo IMG_SLOTS lúc chạy. */
+    const n = (typeof P.soKhe === 'number') ? P.soKhe : 5;
+    const card = document.createElement('div');
+    card.className = 'mode-card';
+    card.id = 'imgModeCard';
+    card.dataset.mode = 0;
+    card.style.display = 'none';  // updateShowImgUI() mở khi firmware có lệnh
+    let btns = '';
+    for (let i = 0; i < n; i++)
+      btns += '<button id="galimgbutton' + (i + 1) + '" type="button" class="primary" ' +
+              'onclick="showImgSlot(' + i + ')">' + (n > 1 ? ('Khe ' + (i + 1)) : 'Hiện ảnh') + '</button>';
+    card.innerHTML =
+      '<canvas width="400" height="300"></canvas>' +
+      '<div class="mode-name">Hình ảnh</div>' +
+      '<div class="mode-tick">' + (n > 1 ? (n + ' khe ảnh trong máy') : 'Ảnh đã lưu trong máy') + '</div>' +
+      '<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center">' + btns + '</div>';
+    gallery.appendChild(card);
+    drawImgThumb(ctx2d(card.querySelector('canvas')));
+  }
+
   function build() {
     const gallery = document.getElementById('modeGallery');
     if (!gallery) return;
     const now = new Date();
+    buildImageCard(gallery);
     for (const m of MODE_LIST) {
       const card = document.createElement('div');
       card.className = 'mode-card';
@@ -943,18 +986,22 @@
 
   window.refreshModeGallery = function () {
     const t = new Date();
-    document.querySelectorAll('.mode-card').forEach((card, i) => {
-      if (MODE_LIST[i]) {
-        card.style.display = cardHidden(MODE_LIST[i].mode) ? 'none' : '';
+    /* Tra theo data-mode chứ KHÔNG theo chỉ số thẻ: gallery nay có thêm thẻ
+     * «Hình ảnh» đứng đầu nên chỉ số thẻ lệch một bậc so với MODE_LIST. Thẻ
+     * ảnh không có trong MODE_LIST nên vòng này bỏ qua nó (updateShowImgUI lo). */
+    document.querySelectorAll('.mode-card').forEach(card => {
+      const m = MODE_LIST.find(e => e.mode === Number(card.dataset.mode));
+      if (m) {
+        card.style.display = cardHidden(m.mode) ? 'none' : '';
         // tên card đổi theo firmware (vd card 13: Đếm ngược -> Lịch dương + âm)
         const nEl = card.querySelector('.mode-name');
-        const nTxt = (MODE_LIST[i].nameNew && fwCal()) ? MODE_LIST[i].nameNew : MODE_LIST[i].name;
+        const nTxt = (m.nameNew && fwCal()) ? m.nameNew : m.name;
         if (nEl && nEl.textContent !== nTxt) nEl.textContent = nTxt;
         const tEl = card.querySelector('.mode-tick');
-        const tTxt = (MODE_LIST[i].tickNew && fwTime()) ? MODE_LIST[i].tickNew : MODE_LIST[i].tick;
+        const tTxt = (m.tickNew && fwTime()) ? m.tickNew : m.tick;
         if (tEl && tEl.textContent !== tTxt) tEl.textContent = tTxt;
-        try { MODE_LIST[i].draw(ctx2d(card.querySelector('canvas')), t); }
-        catch (e) { console.error('preview mode ' + MODE_LIST[i].mode, e); }
+        try { m.draw(ctx2d(card.querySelector('canvas')), t); }
+        catch (e) { console.error('preview mode ' + m.mode, e); }
       }
     });
   };
