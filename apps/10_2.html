@@ -61,6 +61,14 @@
 					<label><input type="radio" name="timeFmt" value="1" onchange="setTimeFmt()"> 12 giờ</label>
 					<span class="mode-gallery-hint" style="margin:0" id="timeFmtHint">Cần firmware ≥ 0.1.</span>
 				</div>
+				<!-- «Chữ đậm»: từ v2.0 máy chạy lõi chung nên byte dark_boost MỚI có
+				     tác dụng thật (một lượt refresh thứ hai cho mực đen đậm hơn).  -->
+				<div class="flex-group" style="flex:1 1 100%; display:none" id="darkBoostRow">
+					<label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+						<input type="checkbox" id="darkBoostCHK" onchange="setDarkBoost()">
+						Chữ đậm hơn — dành cho màn in mực đen nhạt (chữ đen xám mờ); làm mới toàn màn sẽ chậm hơn
+					</label>
+				</div>
 					<div class="flex-group" style="flex:1 1 100%; display:none" id="fourColorHint">
 						<span class="mode-gallery-hint" style="margin:0">Màn 10.2" (SSD1677), firmware ≥ 0.3: các chế độ đồng hồ <b>nhảy từng phút không chớp màn</b> (cập nhật cục bộ như bản 4.2"); firmware 0.1/0.2 cũ làm mới mỗi giờ. Các chế độ lịch làm mới lúc 00:00. Ảnh dùng chế độ màu «3 màu (đen trắng đỏ)».</span>
 					</div>
@@ -254,7 +262,7 @@
 					     mở rộng của chip flash (xem epd_flashmap.h). Ảnh vừa hiện lên màn
 					     vừa được ghi vào khe, nên gửi một lần là dùng mãi. -->
 					<button id="sendimgbutton" type="button" class="primary" onclick="sendimg(0)">Gửi ảnh</button>
-					<button type="button" class="secondary" onclick="dsIconFromCanvas()">Icon từ ảnh</button>
+					<span id="dsBgOldRow" style="display:none"><button type="button" class="secondary" onclick="dsIconFromCanvas()">Icon từ ảnh</button></span>
 				</div>
 			</div>
 			<!-- Ảnh NỀN của «Tự thiết kế» — hàng riêng cho khỏi lẫn với khe ảnh.
@@ -389,6 +397,15 @@
 					<input type="file" id="otaFile" accept=".bin">
 					<button id="otabutton" type="button" class="secondary" onclick="otaUpdate()">Cập nhật firmware</button>
 					<span id="otaProgress" class="system-time"></span>
+				</div>
+			</div>
+			<!-- Khôi phục cài đặt gốc (fw >= 2.0, lệnh 0x2F): đường cứu khi máy
+			     dùng không được vì cấu hình/giao diện hỏng. Ẩn với firmware chưa
+			     hiểu lệnh — cổng «khoi_phuc_goc» trong hồ sơ máy. -->
+			<div class="flex-container" id="factoryResetRow" style="display:none">
+				<div class="flex-group">
+					<button id="factoryResetBtn" type="button" class="secondary" onclick="factoryReset()">Khôi phục cài đặt gốc</button>
+					<span class="mode-gallery-hint" style="margin:0">Đưa máy về như lúc mới: xoá cấu hình, giao diện «Tự thiết kế», ảnh nền, icon và <b>ảnh trong khe</b>. Dùng khi máy hiển thị sai hoặc không dùng được.</span>
 				</div>
 			</div>
 			<!-- Cập nhật OTA chỉ ghi bank firmware, KHÔNG mang bộ chữ theo. Máy

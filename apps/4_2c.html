@@ -448,6 +448,18 @@
 					<span id="otaProgress" class="system-time"></span>
 				</div>
 			</div>
+			<!-- Khôi phục cài đặt gốc (bản 4 màu: từ v4.0, lệnh 0x2F): đường cứu
+			     khi máy dùng không được vì cấu hình/giao diện hỏng. Ẩn với
+			     firmware chưa hiểu lệnh — cổng «khoi_phuc_goc» trong hồ sơ máy.
+			     ⚠ Khối này TỪNG BỊ QUÊN ở đợt phát hành v4.0: bảng firmware có
+			     ghi tính năng nhưng trang không có nút, nên nó không bao giờ
+			     hiện ra. main.js dùng chung với bản 3 màu nên chỉ thiếu HTML. -->
+			<div class="flex-container" id="factoryResetRow" style="display:none">
+				<div class="flex-group">
+					<button id="factoryResetBtn" type="button" class="secondary" onclick="factoryReset()">Khôi phục cài đặt gốc</button>
+					<span class="mode-gallery-hint" style="margin:0">Đưa máy về như lúc mới: xoá cấu hình, hai giao diện «Tự thiết kế», icon, thời khoá biểu và <b>tất cả ảnh trong khe</b>. Dùng khi máy hiển thị sai hoặc không dùng được.</span>
+				</div>
+			</div>
 			<p class="mode-gallery-hint">Nạp file <b>.bin</b> tải về từ mục «Danh sách firmware» bên dưới. Không tắt nguồn thiết bị khi đang cập nhật — nếu lỗi giữa chừng, thiết bị vẫn chạy firmware cũ.</p>
 		</fieldset>
 		<fieldset>

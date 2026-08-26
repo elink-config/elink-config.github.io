@@ -47,6 +47,29 @@ function modeFromWire(m) {
   return MODE_OLD2NEW[m] !== undefined ? MODE_OLD2NEW[m] : m;
 }
 
+/* KHÔI PHỤC CÀI ĐẶT GỐC (lệnh 0x2F).
+ *
+ * Đây là đường CỨU HỘ duy nhất cho khách: máy bán ra không có nút bấm tay
+ * (pad TX chỉ để trên bàn thợ), nên khi cấu hình hoặc bố cục «Tự thiết kế»
+ * hỏng tới mức máy hiển thị sai, không có cách nào khác để đưa nó về như mới.
+ * Chữ ký kích hoạt được firmware giữ lại — không nhắc tới ở đây vì khách
+ * không cần biết máy có cơ chế đó. */
+async function factoryReset() {
+  if (!epdCharacteristic) { alert('Chưa kết nối thiết bị.'); return; }
+  if (!confirm('Khôi phục cài đặt gốc?\n\n' +
+               'Máy sẽ về như lúc mới và XOÁ HẾT:\n' +
+               '  • cấu hình (chế độ, kiểu pin, 12/24h...)\n' +
+               '  • giao diện «Tự thiết kế» + ảnh nền + icon\n' +
+               '  • ảnh đã gửi vào khe\n\n' +
+               'Không hoàn tác được.')) return;
+  addLog('Gửi lệnh khôi phục cài đặt gốc...', '⇑');
+  // 4 byte magic 'R','S','T',0x5A — firmware bỏ qua gói thiếu magic
+  await write(EpdCmd.FACTORY_RESET, [0x52, 0x53, 0x54, 0x5A]);
+  imgSlotMask = 0;
+  updateShowImgUI();
+  addLog('Máy sẽ khởi động lại và tự ngắt kết nối. Kết nối lại sau vài giây.');
+}
+
 /* HIỆN LẠI một khe ảnh đã lưu (lệnh 0x27 05).
  *
  * Vì sao cần: ảnh trong khe chỉ hiện ra qua VÒNG TỰ ĐỔI ẢNH, mà vòng đó lại
@@ -113,6 +136,7 @@ const EpdCmd = {
   SET_LAYOUT: 0x24, // MODE_CUSTOM (mode 20) widget layout from the designer
   SET_ICON: 0x25, // MODE_CUSTOM 1-bit icon, chunked: [0x00,w,h,data...] then [0x01,data...]
   ASSET: 0x2C, // nạp blob dữ liệu vào flash: [00 len_u16] mở / [01 data] / [02 crc32_u32] chốt
+  FACTORY_RESET: 0x2F, // [2F 'R' 'S' 'T' 5A] khôi phục cài đặt gốc (fw >= 2.0)
   IMG_SLOT: 0x27, // 3 khe ảnh (fw >= 1.5): [01 slot] mở khe / [02] chốt / [03 auto interval]
   DARK_BOOST: 0x28, // [0/1] chữ đậm cho màn lô in nhạt (ép 0°C khi làm mới toàn màn)
   BATT_STYLE: 0x29, // [0/1/2] hiển thị pin: chỉ icon / phần trăm / điện áp (fw >= 0.4)
@@ -223,12 +247,19 @@ async function writeImage(data, step = 'bw') {
   for (let i = 0; i < data.length; i += chunkSize) {
     const currentTime = (new Date().getTime() - startTime) / 1000.0;
     const pct = ((100 * i) / data.length) >> 0;
-    setStatus(`Khối ${step == 'bw' ? 'đen trắng' : 'màu'}: ${chunkIdx + 1}/${count} (${pct}%), thời gian: ${currentTime}s`);
+    const stepName = step == 'bw' ? 'đen trắng' : 'màu';
+    setStatus(`Khối ${stepName}: ${chunkIdx + 1}/${count} (${pct}%), thời gian: ${currentTime}s`);
+    syncOverlayStep(`Đang truyền ảnh — lớp ${stepName}`,
+      `Gói ${chunkIdx + 1}/${count}. Ảnh được chẻ nhỏ theo MTU rồi ghi thẳng vào khe ảnh trên thiết bị.`);
+    syncOverlayProgress(i, data.length);
     const payload = [
       (step == 'bw' ? 0x0F : 0x00) | (i == 0 ? 0x00 : 0xF0),
       ...data.slice(i, i + chunkSize),
     ];
-    const useReply = noReplyCount <= 0;
+    /* TÁM GÓI ĐẦU ép có xác nhận: ngay sau lệnh mở khe, thiết bị có thể còn
+     * bận (xoá flash / huỷ lượt render dở) nên gói không-xác-nhận rơi im lặng
+     * và ảnh hỏng mà không ai biết. Vào nhịp rồi mới thả cho nhanh. */
+    const useReply = chunkIdx < 8 || noReplyCount <= 0;
     // gói lỗi: thử lại MỘT lần bằng gói có xác nhận rồi mới bỏ cuộc — trước
     // đây một gói rơi là ảnh hỏng trong im lặng
     let ok = await write(EpdCmd.WRITE_IMG, payload, useReply);
@@ -266,6 +297,24 @@ async function setTimeFmt() {
   const v = sel ? parseInt(sel.value) : 0;
   if (await write(EpdCmd.TIME_FMT, [v])) {
     addLog('Đã đặt định dạng giờ: ' + (v === 1 ? '12 giờ' : '24 giờ') + '.');
+  }
+}
+
+/* «Chữ đậm» — lệnh 0x28. Firmware làm MỘT LƯỢT REFRESH THỨ HAI với cùng dữ
+ * liệu RAM: lượt hai drive lại toàn bộ pixel bằng waveform đúng nhiệt độ nên
+ * mực đen đậm lên mà không loá. Đổi lại là lên hình lâu gấp đôi.
+ *
+ * Máy này TRƯỚC ĐÂY nhận byte đó rồi bỏ qua (bản dịch vụ riêng không dùng) nên
+ * ô này bị ẩn; từ v2.0 nó chạy lõi chung nên tính năng có thật — xem khối
+ * dark_boost trong epd_common/epd/EPD_engine.c. */
+async function setDarkBoost() {
+  const chk = document.getElementById('darkBoostCHK');
+  if (await write(EpdCmd.DARK_BOOST, [chk.checked ? 1 : 0])) {
+    addLog(chk.checked
+      ? 'Đã bật chữ đậm: máy làm mới hai lượt nên chữ đen đậm hơn, đổi lại lên hình lâu gấp đôi.'
+      : 'Đã tắt chữ đậm: máy làm mới một lượt như bình thường.');
+  } else {
+    chk.checked = !chk.checked;  // gửi thất bại: trả checkbox về trạng thái cũ
   }
 }
 
@@ -398,7 +447,23 @@ async function sendimg(slot = 0) {
     if (!confirm("Cảnh báo: chế độ màu không khớp driver, tiếp tục?")) return;
   }
 
+  /* Đang nạp bộ chữ thì HOÃN: hai luồng cùng bắn hàng trăm gói trên một
+   * characteristic là chèn nhau, và người dùng chỉ thấy «Đang chuẩn bị khe…»
+   * rất lâu như bị treo. */
+  if (assetBusy) {
+    setStatus('Đang nạp bộ chữ cho máy — chờ xong rồi gửi ảnh…');
+    addLog('Hoãn gửi ảnh: đang nạp bộ chữ (font + âm lịch) cho máy.');
+    while (assetBusy) await new Promise(r => setTimeout(r, 300));
+  }
+
   startTime = new Date().getTime();
+  window.__imgSending = true;  // chặn retry fw= ghi lại CCCD giữa phiên gửi
+  /* Lớp phủ chặn thao tác suốt lượt gửi: một tấm ảnh 960x640 hai mặt là
+   * 153.600 byte = hàng trăm gói BLE, bấm nút khác giữa chừng là lệnh chen
+   * vào luồng và máy nhận nhầm. */
+  syncOverlayShow('Đang chuẩn bị gửi ảnh…',
+    'Đang dựng dữ liệu ảnh cho khe ' + (slot + 1) + '. Vui lòng không tắt máy và không đóng trang.');
+  try {
   const status = document.getElementById("status");
   status.parentElement.style.display = "block";
 
@@ -417,6 +482,8 @@ async function sendimg(slot = 0) {
   // trong lúc erase là gói dồn đống cạn MSG heap BLE -> thiết bị reset (v1.5)
   if (slotCapable) {
     setStatus(`Đang chuẩn bị khe ${slot + 1} (xóa flash)…`);
+    syncOverlayStep(`Đang chuẩn bị khe ${slot + 1}…`,
+      'Thiết bị đang xóa vùng nhớ của khe này. Mất một hai giây, chưa truyền ảnh.');
     // Máy này chỉ có khe từ v2.0, và bản đó luôn báo 'img=rdy' sau khi xoá
     // xong — không có đời nào vừa có khe vừa không báo.
     const rdyWait = waitImgRdy(8000);
@@ -486,6 +553,8 @@ async function sendimg(slot = 0) {
     }
   }
 
+  syncOverlayStep('Đang làm mới màn hình…',
+    'Đã nhận đủ ảnh. Màn hình e-ink 10.2" vẽ lại mất khoảng 30 giây — đừng tắt nguồn lúc này.');
   await write(EpdCmd.REFRESH);
   updateButtonStatus();
 
@@ -496,6 +565,16 @@ async function sendimg(slot = 0) {
   setTimeout(() => {
     status.parentElement.style.display = "none";
   }, 5000);
+  } catch (e) {
+    /* Trước đây hàm này KHÔNG có khối bắt lỗi: một lỗi giữa lượt gửi làm cả
+     * lượt chết IM LẶNG — thanh trạng thái đứng nguyên ở bước dở dang, nút thì
+     * khoá luôn, không một dòng nhật ký nào. */
+    console.error(e);
+    const m = (e && e.message) ? e.message : String(e);
+    addLog('Lỗi khi gửi ảnh: ' + m);
+    setStatus('Gửi ảnh lỗi: ' + m + ' — hãy tải lại trang rồi thử lại.');
+    updateButtonStatus();
+  } finally { window.__imgSending = false; syncOverlayHide(); }
 }
 
 
@@ -623,6 +702,10 @@ function handleNotify(value, idx) {
     if (data.length >= 216) {
       const auto = data[212], itv = data[213];
       // bit0..(IMG_SLOTS-1) = khe ẢNH, bit tiếp theo = khe NỀN «Tự thiết kế»
+      {  // «Chữ đậm» — byte 216 của config, cùng offset với bản 4.2"
+        const db = document.getElementById('darkBoostCHK');
+        if (db && data.length > 216) db.checked = data[216] === 1;
+      }
       imgSlotMask = (data[214] <= 0x7F) ? data[214] : 0;
       imgCurrent = (data[215] < IMG_SLOTS) ? data[215] : 0;
       updateShowImgUI();
@@ -700,6 +783,16 @@ function handleNotify(value, idx) {
       {
         const six = EpdProf.co('6_o_chu');
         document.querySelectorAll('.dsTextExtra').forEach(e => { e.style.display = six ? '' : 'none'; });
+      }
+      // «Chữ đậm»: byte dark_boost chỉ có tác dụng thật từ v2.0 (lõi chung)
+      {
+        const dbRow = document.getElementById('darkBoostRow');
+        if (dbRow) dbRow.style.display = EpdProf.co('khoi_phuc_goc') ? '' : 'none';
+      }
+      // «Khôi phục cài đặt gốc» (lệnh 0x2F): chỉ hiện với máy hiểu lệnh
+      {
+        const fr = document.getElementById('factoryResetRow');
+        if (fr) fr.style.display = EpdProf.co('khoi_phuc_goc') ? '' : 'none';
       }
       // «Làm nền thiết kế» — khe nền riêng, ảnh được NÉN lúc ghi vào máy
       {
@@ -923,6 +1016,8 @@ async function otaUpdate(preBuf) {
 
   const otaStatus = document.getElementById('otaProgress');
   const show = (t) => { if (otaStatus) otaStatus.textContent = t; };
+  syncOverlayShow('Đang chuẩn bị nâng cấp firmware…',
+    'TUYỆT ĐỐI không tắt nguồn thiết bị và không đóng trang trong suốt quá trình.');
   const btn = document.getElementById('otabutton');
   btn.disabled = 'disabled';
   try {
@@ -932,6 +1027,8 @@ async function otaUpdate(preBuf) {
     buf[0] = 0xa0; buf[1] = 0x00;
     dv.setUint32(2, firmSize, true);
     show('Đang xoá flash…');
+    syncOverlayStep('Đang xóa vùng nhớ firmware…',
+      'Thiết bị xóa bank firmware dự phòng trước khi nhận bản mới. Mất vài giây.');
     if (!await write(buf[0], buf.subarray(1, 6), true)) throw new Error('lệnh 0xA0 thất bại');
 
     // gửi từng trang 256 byte, chia đôi 128+128 (0xA2 nửa đầu, 0xA3 nửa sau)
@@ -963,11 +1060,16 @@ async function otaUpdate(preBuf) {
       if (!await write(buf[0], buf.subarray(1), true)) throw new Error('gửi dữ liệu thất bại');
       p += 128;
       show('Tiến độ: ' + ((100 * p / (firmSize + 64)) >> 0) + '%');
+      syncOverlayStep('Đang gửi firmware…',
+        'Bản mới được ghi vào bank dự phòng. Máy vẫn chạy firmware cũ cho tới bước cuối.');
+      syncOverlayProgress(p, firmSize + 64);
     }
 
     // 0xA4: kết thúc — thiết bị tự khởi động lại vào firmware mới
     buf.fill(0x00); buf[0] = 0xa4;
     await write(buf[0], buf.subarray(1, 4), true);
+    syncOverlayStep('Đang chốt bản mới…',
+      'Thiết bị ghi trang đầu rồi tự khởi động lại. Chờ máy hiện lại rồi hãy kết nối.');
     show('Hoàn tất — thiết bị đang khởi động lại.');
     addLog('Cập nhật xong! Thiết bị khởi động lại với firmware mới.');
   } catch (e) {
@@ -976,6 +1078,7 @@ async function otaUpdate(preBuf) {
     addLog('OTA thất bại: ' + (e.message || e));
   } finally {
     btn.disabled = null;
+    syncOverlayHide();
     updateButtonStatus();
   }
 }
