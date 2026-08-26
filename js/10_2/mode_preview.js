@@ -220,7 +220,8 @@
       center(x, WD_SHORT[day], 206 + i * 26 + 13, 72, (v17() && (day === 0 || day === 6)) ? RED : BK);
     }
     // v1.7: vòng «hôm nay» ĐỎ (trước là đen)
-    monthGrid(x, 206, 80, 182, 144, now, { todayCol: v17() ? RED : BK, dayPx: 11, noWeekendRed: true });
+    // v2.0: số trong lưới to gấp đôi (22 -> 44px trên máy)
+    monthGrid(x, 206, 80, 182, 144, now, { todayCol: v17() ? RED : BK, dayPx: 18, noWeekendRed: true });
     line(x, 7, 230, 393, 230, BK, 2);
     if (is4c()) line(x, 7, 232, 393, 232, YE, 1.5);
     // v1.7: năm Can Chi + âm lịch + lễ + số ngày còn lại đều ĐỎ
@@ -280,7 +281,8 @@
     battery(x, 362, 14, BK, '3.2V');
     line(x, 10, 46, 390, 46, BK, 2);
     if (is4c()) line(x, 10, 48, 390, 48, YE, 1.5);  // BWRY: mép vàng
-    segStr(x, 104, 92, 8, pad2(now.getHours()) + ':' + pad2(now.getMinutes()), BK, RED);
+    // v2.0: cụm 7 đoạn nới từ ~410x184 lên ~500x224 trên khổ 960 (cS 9 -> 11)
+    segStr(x, 92, 88, 9.6, pad2(now.getHours()) + ':' + pad2(now.getMinutes()), BK, RED);
     font(x, 14, v17() ? 1 : 0);
     multi(x, [['Âm Lịch 21/5', RED], [' - Ngày Canh Thìn - Năm Bính Ngọ', BK]], 200, 216);
     line(x, 10, 250, 390, 250);
@@ -354,7 +356,7 @@
       const day = (i + (v17() ? 1 : 0)) % 7;  // v1.7: tuần bắt đầu T2
       center(x, WD_SHORT[day], 11 + i * 54 + 27, 102, (day === 0 || day === 6) ? RED : BK);
     }
-    monthGrid(x, 11, 110, 378, 186, now, { lunar: true, dayPx: 13, rPlus: v17() ? 2 : 0 });
+    monthGrid(x, 11, 110, 378, 186, now, { lunar: true, dayPx: 13, rPlus: v17() ? 3 : 0 });  // v2.0: vòng to thêm
   }
   function m11(x, now) { // Kim + thẻ ngày
     analogClock(x, 112, 150, 96, now, true);
@@ -394,7 +396,7 @@
     }
     return best;
   }
-  function miniMonth(x, bx, by, w, rh, y0, mo, today, dayPx) {
+  function miniMonth(x, bx, by, w, rh, y0, mo, today, dayPx, opt) {
     const off = v17() ? 1 : 0;  // v1.7: tuần bắt đầu THỨ HAI
     const first0 = new Date(y0, mo, 1).getDay();
     const first = (first0 + 7 - off) % 7, maxD = new Date(y0, mo + 1, 0).getDate(), cw = w / 7;
@@ -408,12 +410,21 @@
       const cx = bx + col * cw + cw / 2, cy = by + 8 + row * rh + rh / 2;
       const wd = (first0 + d - 1) % 7;
       if (d === today) {
-        const rr = Math.min(cw, rh) / 2 - 1;
-        x.fillStyle = RED; x.beginPath(); x.arc(cx, cy - 3, rr, 0, 7); x.fill();
+        // v2.0: vòng ÔM CẢ số dương lẫn số âm bên dưới nên to hơn hẳn
+        const rr = Math.min(cw, rh) / 2 - 1 + (opt && opt.lunar ? 2 : 0);
+        x.fillStyle = RED; x.beginPath(); x.arc(cx, cy - (opt && opt.lunar ? 1 : 3), rr, 0, 7); x.fill();
         if (is4c()) { x.strokeStyle = YE; x.lineWidth = 1.5; x.beginPath(); x.arc(cx, cy - 3, rr, 0, 7); x.stroke(); }
       }
       font(x, dayPx, 1);
-      center(x, d, cx, cy + 1, d === today ? '#fff' : ((wd === 0 || wd === 6) ? RED : BK));
+      /* v2.0: MÙNG 1 âm lịch tô ĐỎ để nhìn ra ranh giới tháng âm. */
+      const al = opt && opt.lunar ? lunarish(d) : null;
+      const mung1 = al === '1' || (al && al.indexOf('/') > 0);
+      center(x, d, cx, cy + 1,
+             d === today ? '#fff' : (mung1 ? RED : ((wd === 0 || wd === 6) ? RED : BK)));
+      if (al) {
+        font(x, Math.max(6, dayPx - 5), 0);
+        center(x, al, cx, cy + rh / 2 + 1, d === today ? '#fff' : (mung1 ? RED : '#555'));
+      }
     }
   }
   function m13(x, now) { // Lịch vạn niên
@@ -586,8 +597,9 @@
     battery(x, 362, 10, BK);
     const y = now.getFullYear(), mo = now.getMonth();
     font(x, 14, 1); center(x, 'Tháng ' + (mo + 1), 105, 56, RED); center(x, 'Tháng ' + ((mo + 1) % 12 + 1), 295, 56, BK);
-    miniMonth(x, 15, 80, 180, 29, y, mo, now.getDate(), 12);
-    miniMonth(x, 205, 80, 180, 29, mo === 11 ? y + 1 : y, (mo + 1) % 12, 0, 12);
+    // v2.0: mỗi ô có thêm số âm lịch bên dưới; mùng 1 tô đỏ
+    miniMonth(x, 15, 80, 180, 29, y, mo, now.getDate(), 12, { lunar: true });
+    miniMonth(x, 205, 80, 180, 29, mo === 11 ? y + 1 : y, (mo + 1) % 12, 0, 12, { lunar: true });
     line(x, 200, 44, 200, 280, BK, 1);
     font(x, 12, 0); multi(x, [['8. Tiểu Thử  24. Đại Thử', BK], ['  -  Lễ Vu Lan còn 52 ngày', RED]], 200, 294);
   }
@@ -599,7 +611,8 @@
       const bx = 10 + (m % 4) * 97, by = 44 + ((m - m % 4) / 4) * 85, cur = m === now.getMonth();
       if (cur) {
         // khung 1px đều bốn cạnh (bản 2px phải/đáy đã bị user yêu cầu hoàn lại)
-        x.strokeStyle = RED; x.lineWidth = 2; x.beginPath(); x.roundRect(bx - 3, by - 10, 94, 82, 4); x.stroke();
+        // v2.0: khung nới rộng ra hai bên và cao thêm, không còn chạm số
+        x.strokeStyle = RED; x.lineWidth = 2; x.beginPath(); x.roundRect(bx - 6, by - 13, 100, 88, 4); x.stroke();
         if (is4c()) { x.strokeStyle = YE; x.lineWidth = 1.5; x.beginPath(); x.roundRect(bx - 1, by - 8, 90, 78, 3); x.stroke(); }
       }
       font(x, 10, 1); center(x, 'Tháng ' + (m + 1), bx + 44, by, cur ? RED : BK);
