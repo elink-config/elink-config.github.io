@@ -31,6 +31,9 @@ function fwHasNewSlots() { return EpdProf.co('khe_anh'); }
  * vẫn hiểu bảng số CŨ, nên phải quy đổi lúc gửi và lúc đọc config về. Bảng
  * sinh ra từ hồ sơ (mode_new2old) — bỏ nó đi khi không còn máy nào chạy v1.0.
  * family_epd.js tự gọi modeToWire() nếu app có khai. */
+// số mode THÔ máy báo lên, giữ nguyên chưa quy đổi (gói config tới trước
+// gói 'fw=' nên lúc đó chưa biết máy dùng bảng số nào)
+let deviceModeWire = null;
 const MODE_NEW2OLD = (window.EPD_PROFILE && window.EPD_PROFILE.modeNew2Old) || {};
 const MODE_OLD2NEW = Object.fromEntries(
   Object.entries(MODE_NEW2OLD).map(([nw, od]) => [od, +nw]));
@@ -687,7 +690,8 @@ function handleNotify(value, idx) {
     updateDitcherOptions();
     // config byte 11 = current display mode: highlight it in the gallery
     if (data.length > 11) {
-      deviceMode = modeFromWire(data[11]);
+      deviceModeWire = data[11];   // giữ số THÔ để quy đổi lại khi biết fw
+      deviceMode = modeFromWire(deviceModeWire);
       if (typeof highlightMode === 'function') highlightMode(deviceMode);
     }
     // clock cleanup cadence (1 = full refresh hourly; 0xFF -> enabled):
@@ -765,6 +769,18 @@ function handleNotify(value, idx) {
       const f = imgRdyResolve; imgRdyResolve = null; f(msg);
     } else if (msg.startsWith('fw=') && msg.length > 3) {
       FwCheck.report(msg.substring(3));
+      window.__fwStr = msg.substring(3);
+      // đặt LẠI tên máy trước mọi lời gọi EpdProf.co() bên dưới (xem ghi chú
+      // ở connect): thiếu nó là mọi cổng dưới đây đều false
+      window.__devNm = (bleDevice && bleDevice.name) || '';
+      window.bleDeviceName = window.__devNm;
+      /* Biết firmware rồi thì QUY ĐỔI LẠI số mode: gói config tới TRƯỚC gói
+       * «fw=» nên lần quy đổi đầu dùng nhầm bảng số đời cũ, và thẻ đang sáng
+       * trên webtool chỉ sai một nấc — rất khó nhận ra. */
+      if (deviceModeWire !== null) {
+        deviceMode = modeFromWire(deviceModeWire);
+        if (typeof highlightMode === 'function') highlightMode(deviceMode);
+      }
       // khu «Tự động đổi ảnh» chỉ hiện khi firmware CÓ khe ảnh (>= 2.0)
       if (EpdProf.co('khe_anh')) {
         document.getElementById('imgAutoRow').style.display = '';
@@ -820,6 +836,13 @@ async function connect() {
   // đời cũ không tự khai coi như 1.3.1; kèm tên thiết bị để popup nhắc
   // tối đa 1 lần/ngày cho mỗi máy
   FwCheck.reset('1.3.1', bleDevice && bleDevice.name);
+  /* ⚠ DÒNG NÀY TỪNG BỊ THIẾU và làm hỏng TOÀN BỘ hệ thống cổng tính năng.
+   * EpdProf.co() tra cứu dòng máy qua window.bleDeviceName; để trống thì
+   * không khớp tiền tố 'DIY-10_2-' nên MỌI cổng trả về false — kể cả khi máy
+   * báo đúng phiên bản. Triệu chứng dễ thấy nhất: số mode bị lệch một nấc vì
+   * modeToWire() tưởng máy là đời cũ rồi áp bảng quy đổi. */
+  window.__devNm = (bleDevice && bleDevice.name) || '';
+  window.bleDeviceName = window.__devNm;
 
   try {
     addLog("Đang kết nối: " + bleDevice.name);
