@@ -66,7 +66,17 @@ async function showImgSlot(slot) {
  *
  * (v2.8 tung co nac 40 phut; v2.9 doi thanh 45 cho lien mach 15/30/45. May
  * dang cai 40 se duoc firmware v2.9 tu chuyen sang 45 luc khoi dong.) */
-function fwHasMinInterval() { return EpdProf.co('chu_ky_phut'); }
+/* ---- KHÔNG GÁC THEO PHIÊN BẢN Ở MÁY NÀY -----------------------------------
+ * v1.0 là bản ĐẦU TIÊN của máy 7.5" và máy chưa bán, nên không có firmware nào
+ * cũ hơn ngoài thị trường để mà giấu tính năng. Phép so phiên bản ở đây không
+ * chặn được gì, chỉ thêm một đường hỏng — và nó đã hỏng thật hai lần:
+ *   - tên BLE trong hồ sơ viết nhầm 'DIY-7_5V-' -> EpdProf.dongMay() không
+ *     khớp -> MỌI cổng trả false, cả trang câm mà không báo gì;
+ *   - EpdProf.co() cũng trả false khi máy CHƯA kịp khai «fw=» — đúng sự cố
+ *     người dùng gặp trên máy 10.2" (mất một gói notify là trang trống trơn).
+ * Nay các khu chỉ hiện/ẩn theo CÓ ĐANG KẾT NỐI hay không.
+ * Máy nào về sau có nhiều đời firmware thì mới cần gác lại. */
+function fwHasMinInterval() { return true; }
 
 function updateIntervalUI() {
   const ok = fwHasMinInterval();
@@ -84,7 +94,7 @@ function updateIntervalUI() {
 function updateShowImgUI() {
   const row = document.getElementById('imgShowRow');
   if (!row) return;
-  const ok = fwHasShowSlot();
+  const ok = true;  // xem ghi chú ở fwHasMinInterval — máy này chỉ có một đời firmware
   row.style.display = ok ? '' : 'none';
   if (!ok) return;
   for (let i = 0; i < 5; i++) {
@@ -671,6 +681,20 @@ function handleNotify(value, idx) {
     }
     // khe đang hiện (offset 215) — dùng để tô đậm nút «Khe N» tương ứng
     if (data.length > 215 && data[215] < IMG_SLOTS) imgCurrent = data[215];
+
+    /* MỞ CÁC KHU CẦN THIẾT BỊ ngay tại gói CẤU HÌNH.
+     *
+     * Gói này luôn tới khi đã kết nối, còn «fw=» thì có thể rơi (gói ngắn đi
+     * trước, nhưng máy đang vẽ vẫn làm rớt được). Trước đây các khu treo vào
+     * «fw=» nên mất gói đó là mất luôn nút — đúng sự cố của máy 10.2".
+     * disconnect() trong family_epd.js ẩn lại khi rút máy. */
+    ['dsBgRow', 'factoryResetRow', 'tkbFieldset'].forEach(id => {
+      const e = document.getElementById(id);
+      if (e) e.style.display = '';
+    });
+    if (typeof updateShowImgUI === 'function') updateShowImgUI();
+    if (typeof updateIntervalUI === 'function') updateIntervalUI();
+
   } else {
     if (textDecoder == null) textDecoder = new TextDecoder();
     const msg = textDecoder.decode(data);
@@ -733,17 +757,6 @@ function handleNotify(value, idx) {
       window.__fwBg = is7_5 ? EpdProf.co('anh_nen_thiet_ke')
         : (!/^DIY-4_2C/.test(devNm) && FwCheck.atLeast('2.3'));
 
-      /* Các khu chỉ hiện khi firmware CÓ tính năng — cổng lấy từ hồ sơ máy
-       * (js/7_5/profile.gen.js), sinh cùng lượt với GUI_modes.h nên không lệch. */
-      {
-        const bat = (id, co) => { const e = document.getElementById(id); if (e) e.style.display = co ? '' : 'none'; };
-        bat('dsBgRow', EpdProf.co('anh_nen_thiet_ke'));
-        bat('factoryResetRow', EpdProf.co('khoi_phuc_goc'));
-        bat('tkbFieldset', EpdProf.co('thoi_khoa_bieu'));
-        if (typeof updateShowImgUI === 'function') updateShowImgUI();
-        // ba nấc chu kỳ PHÚT chỉ hiện khi firmware hiểu (cổng «chu_ky_phut»)
-        if (typeof updateIntervalUI === 'function') updateIntervalUI();
-      }
       if (window.refreshModeGallery) window.refreshModeGallery();
       window.__fwIconRed = is7_5 ? FwCheck.atLeast('0.5')
         : (devNm.indexOf('DIY-4_2C') === 0) ? false
