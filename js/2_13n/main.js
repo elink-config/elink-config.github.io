@@ -501,6 +501,24 @@ function updateResUI() {
  * là chưa gửi được. */
 async function switchResolution() {
   const target = 1 - resIdx;
+
+  /* HỎI LẠI TRƯỚC KHI ĐỔI.
+   *
+   * Đây là nút SẮC nhất trang: chọn khổ không khớp tấm đang gắn thì màn ra
+   * RÁC, không đọc được gì — mà đường về lại chính là cái nút vừa gây ra, nên
+   * người dùng rất dễ tưởng máy hỏng. Đã gặp thật.
+   *
+   * Nói luôn ba điều người ta cần biết lúc đó: chọn sai thì thấy gì, cách quay
+   * lại, và rằng máy KHÔNG hỏng. */
+  if (!confirm(
+      'Chuyển sang khổ ' + RESOLUTIONS[target].label + '?\n\n' +
+      'Chỉ chọn đúng loại tấm đang gắn trên máy:\n' +
+      '  • 212×104 — HINK-E0213A41 / A55\n' +
+      '  • 250×122 — OPM021B1\n\n' +
+      'Chọn sai thì màn hiện RÁC, không đọc được gì. Máy KHÔNG hỏng: cứ kết ' +
+      'nối lại rồi bấm nút này thêm lần nữa là về như cũ (Bluetooth vẫn chạy ' +
+      'bình thường kể cả khi màn đang rác).')) return;
+
   const sel = document.getElementById('epddriver');
   if (sel) sel.value = RESOLUTIONS[target].drv;
   updateDitcherOptions();   // cập nhật resIdx, dựng lại thẻ + khung thiết kế
