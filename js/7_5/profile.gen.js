@@ -18,7 +18,7 @@ window.EPD_PROFILE = {
     'khoi_phuc_goc': { bwr: '1.0' },  // lenh 0x2F
     'hien_khe_anh': { bwr: '1.0' },  // lenh 0x27 05
     'chu_ky_phut': { bwr: '1.0' },  // 15/30/45 phut
-    'thoi_khoa_bieu': { bwr: '1.0' },  // lenh 0x2D
+    'thoi_khoa_bieu': { bwr: '1.0' },  // che do rieng + lenh 0x2D + sector 0x3B000
   },
   anTheTrongKhoang: {
   },

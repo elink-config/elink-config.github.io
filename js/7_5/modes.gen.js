@@ -28,4 +28,5 @@ window.EPD_MODES = [
   { mode: 20, name: 'Thành phố 8-bit', tick: 'Làm mới mỗi giờ', id: 'retrocitymodebutton', draw: 'm24' },
   { mode: 21, name: 'Ghi chú', tick: 'Làm mới mỗi giờ', id: 'notemodebutton', draw: 'm19' },
   { mode: 22, name: 'Tự thiết kế', tick: 'Làm mới mỗi giờ', id: 'custommodebutton', draw: 'm20' },
+  { mode: 23, name: 'Thời khóa biểu', tick: 'Cập nhật lúc 0h', id: 'timetablemodebutton', draw: 'timetable' },
 ];
