@@ -99,8 +99,6 @@ function updateShowImgUI() {
   if (!row) return;
   const ok = EpdProf.co('hien_khe_anh');
   row.style.display = ok ? '' : 'none';
-  const card0 = document.getElementById('imgModeCard');
-  if (card0) card0.style.display = ok ? '' : 'none';  // phải đặt TRƯỚC return
   if (!ok) return;
   for (let i = 0; i < 5; i++) {
     const b = document.getElementById('showimgbutton' + (i + 1));
@@ -109,15 +107,6 @@ function updateShowImgUI() {
     b.disabled = !(imgSlotMask & (1 << i));
     b.classList.toggle('primary', i === imgCurrent && !b.disabled);
     b.classList.toggle('secondary', !(i === imgCurrent && !b.disabled));
-  }
-  /* Thẻ «Hình ảnh» đầu gallery dùng CHUNG mask khe với hàng nút ở mục «Truyền
-   * hình ảnh» — cùng một lệnh, cùng một điều kiện, chỉ khác chỗ đứng. */
-  for (let i = 0; i < 5; i++) {
-    const g = document.getElementById('galimgbutton' + (i + 1));
-    if (!g) continue;
-    g.style.display = (i < IMG_SLOTS) ? '' : 'none';
-    g.disabled = !(imgSlotMask & (1 << i));
-    g.title = g.disabled ? ('Khe ' + (i + 1) + ' chưa có ảnh — gửi ảnh ở mục «Truyền hình ảnh».') : '';
   }
 }
 
@@ -611,12 +600,7 @@ function updateButtonStatus(forceDisabled = false) {
   set("reconnectbutton", (gattServer == null || gattServer.connected) ? 'disabled' : null);
   ["synctimebutton", "sendcmdbutton", "uploadlayoutbutton", "sendnotebutton", "clearscreenbutton", "sendimgbutton", "setDriverbutton", "otabutton"]
     .forEach(id => set(id, status));
-  /* Trừ thẻ «Hình ảnh»: hiện lại ảnh đã lưu không cần đồng hồ đúng giờ, mà
-   * khóa nó theo trạng thái đồng bộ thì đúng lúc máy mất giờ lại không còn
-   * đường nào đưa ảnh ra màn. updateShowImgUI() mới là chỗ quyết định. */
-  document.querySelectorAll('#modeGallery .mode-card:not(#imgModeCard) button')
-    .forEach(b => { b.disabled = modeStatus; });
-  if (typeof updateShowImgUI === 'function') updateShowImgUI();
+  document.querySelectorAll('#modeGallery button').forEach(b => { b.disabled = modeStatus; });
 }
 
 setInterval(tickSystemTime, 1000);
