@@ -38,10 +38,10 @@
         rh: FREE(s) ? pxOf(s, 26, 12, 120) : [26, 32, 38][s],
       };
       case 10: return { k: FREE(s) ? mulOf(s, 1, 6) : s + 1 };
-      // CHỮ: bộ font của máy này đã 28px sẵn nên chỉ nhân 1..3 (28..84px);
-      // bộ cũ là 16px nên mới nhân tới 6. ICON (case 10) vẫn 1..6 vì nó là
-      // ảnh người dùng gửi lên, không liên quan tới font.
-      default: return { k: FREE(s) ? mulOf(s, 1, 3) : (s ? 2 : 1) };  // chữ
+      // CHỮ: bộ font của máy này đã 24px sẵn nên nhân 1..4 (24..96px) — đúng
+      // bằng trần của bộ cũ (unifont 16px nhân 1..6). ICON (case 10) vẫn 1..6
+      // vì nó là ảnh người dùng gửi lên, không liên quan tới font.
+      default: return { k: FREE(s) ? mulOf(s, 1, 4) : (s ? 2 : 1) };  // chữ
     }
   }
 
@@ -59,10 +59,10 @@
      * Giữ nguyên số đó ở đây thì dòng «Thứ Năm, 26/08/2026» phóng 4 lần vẫn
      * chỉ đo ra 396px trong khi máy vẽ ra 608px — kéo sát mép phải là tràn. */
     dims: {
-      // Chiều cao một dòng của bộ font mới là 26px (ascent 21 + descent 5),
+      // Chiều cao một dòng của bộ font mới là 22px (ascent 18 + descent 4),
       // không phải 16px của ô chữ unifont cũ.
-      5: s => { const k = parOf102(5, s).k; return [Math.min(952, 330 * k), 26 * k]; },
-      6: s => { const k = parOf102(6, s).k; return [Math.min(952, 330 * k), 26 * k]; },
+      5: s => { const k = parOf102(5, s).k; return [Math.min(952, 285 * k), 22 * k]; },
+      6: s => { const k = parOf102(6, s).k; return [Math.min(952, 285 * k), 22 * k]; },
     },
 
     /* Khoảng thanh kéo — TÍNH THEO KHỔ 960×640.
@@ -70,7 +70,7 @@
      *   2  r 12..300  -> mặt kim tới 600px, vừa chiều cao 640
      *   7  lịch: trần thật là CHIỀU CAO hàng (rh chạm 120 ở s≈74) chứ không
      *      phải bề ngang (gw mới tới 832 ở s=74) — nên chặn theo rh.
-     *   chữ: 1x..3x — bộ font 28px, nhân quá 3 là 112px, quá khổ mọi ô
+     *   chữ: 1x..4x — bộ font 24px, tức 24..96px
      *   icon: 1x..6x (ảnh người dùng, không dính font) */
     sizeRange(type) {
       switch (type) {
@@ -78,7 +78,7 @@
         case 2: return { min: 5, max: 120, step: 1 };
         case 7: return { min: 10, max: 74, step: 1 };
         case 10: return { min: 16, max: 96, step: 16 };   // icon
-        default: return { min: 16, max: 48, step: 16 };   // chữ: k = 1..3
+        default: return { min: 16, max: 64, step: 16 };   // chữ: k = 1..4
       }
     },
 
