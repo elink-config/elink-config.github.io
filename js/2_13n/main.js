@@ -499,10 +499,28 @@ async function switchResolution() {
            ' — chưa kết nối nên chưa gửi xuống máy.');
     return;
   }
-  if (await write(EpdCmd.INIT, RESOLUTIONS[target].drv)) {
-    addLog('Đã chuyển máy sang khổ ' + RESOLUTIONS[target].label +
-           '. Chờ màn hình vẽ lại.');
+  if (!await write(EpdCmd.INIT, RESOLUTIONS[target].drv)) return;
+
+  /* ⚠ PHẢI VẼ LẠI, nếu không nút này trông y như hỏng.
+   *
+   * EPD_CMD_INIT chỉ đổi model rồi ghi cấu hình — xem trình xử lý của nó
+   * trong epd_common/epd/EPD_service_core.c: huỷ lượt vẽ đang chạy, gọi
+   * epd_init, gửi lại mtu/time, HẾT. Không có lệnh vẽ nào. Nên máy đổi khổ
+   * xong vẫn treo nguyên hình cũ cho tới nhịp vẽ kế tiếp, và người dùng bấm
+   * nút xong thấy màn không nhúc nhích thì kết luận là nút chết.
+   *
+   * Đồng bộ giờ là đường vẽ lại sẵn có: nó gửi kèm số chế độ nên máy dựng
+   * lại toàn bộ giao diện theo khổ MỚI. */
+  let mode = deviceMode;
+  if (mode === 0) {
+    // chế độ ẢNH: tấm ảnh đang hiện được gói theo khổ CŨ nên đằng nào cũng
+    // hỏng sau khi đổi khổ — vẽ lịch tháng để màn còn nội dung đúng khổ.
+    addLog('Ảnh đang hiện gói theo khổ cũ nên không dùng lại được — máy sẽ vẽ lịch tháng.');
+    mode = 1;
   }
+  if (mode == null) mode = 1;
+  await sendTimeSync(mode);
+  addLog('Đã chuyển máy sang khổ ' + RESOLUTIONS[target].label + '. Chờ màn hình vẽ lại.');
 }
 
 async function setHourlyFull() {
