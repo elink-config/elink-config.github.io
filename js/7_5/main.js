@@ -14,6 +14,25 @@ let imgSlotMask = 0;
  * đổi chip flash thì sửa ở tools/profile/7_5.json rồi sinh lại. */
 const IMG_SLOTS = (window.EPD_PROFILE && window.EPD_PROFILE.soKhe) || 3;
 let imgCurrent = 0;
+
+/* Khe NỀN của thiết kế d nằm NGAY SAU các khe ảnh (máy này: 3 khe ảnh 0..2,
+ * khe nền là 3) — khớp IMG_BG_SLOT trong epd_flashmap.h của firmware.
+ * ⚠ js/common/designer.js có đường lui `5 + d` cho máy 4.2"; thiếu khai ở đây
+ * là ảnh nền bị gửi vào khe 5, mà máy này chỉ có 4 khe nên firmware lặng lẽ
+ * bỏ gói (nó kẹp p_data[2] < IMG_SLOT_TOTAL) — không lỗi, chỉ là không có nền. */
+const IMG_BG_SLOT = d => IMG_SLOTS + d;
+
+/* designer chung hỏi hàm này để biết máy có KHE NỀN RIÊNG hay không. Máy này
+ * có ngay từ v1.0 nên trả true — không gác theo phiên bản (xem ghi chú ở
+ * fwHasMinInterval). */
+function fwHasNewSlots() { return true; }
+
+/* designer chung hỏi hàm này để biết máy nhận được SÁU ô chữ + hai thành phần
+ * «Thứ» / «Ngày dương» hay chỉ hai ô chữ như bản 4.2" đời đầu.
+ * ⚠ KHÔNG KHAI là designer mặc định coi như KHÔNG có: bấm «Gửi lên thiết bị»
+ * sẽ bị chặn với câu «Máy này chỉ dùng được Chữ 1 và Chữ 2» dù firmware đã hỗ
+ * trợ đủ (custom_layout_t của máy này có CUSTOM_TEXT_SLOTS = 6). */
+function fwHasSixText() { return true; }
 let timeSynced = false;     // device clock is valid (reported or just synced);
                             // gates the mode gallery in [Điều khiển thiết bị]
 
@@ -760,18 +779,6 @@ function handleNotify(value, idx) {
       window.__fwIconRed = is7_5 ? FwCheck.atLeast('0.5')
         : (devNm.indexOf('DIY-4_2C') === 0) ? false
         : FwCheck.atLeast('2.3');
-      // «Nhịp làm mới»: BWR/7.5" vẫn dùng ô hourly_full cũ (có từ lâu); bản
-      // BỐN MÀU (DIY-4_2C) chỉ nghe ba giá trị của lệnh 0x23 từ v3.3 —
-      // firmware cũ hơn nhận byte nhưng bỏ qua, nên khóa 2 ô cho khỏi hiểu lầm
-      {
-        const ok4c = devNm.indexOf('DIY-4_2C') !== 0 || FwCheck.atLeast('3.3');
-        ['onlyHourlyCHK', 'onlyMidnightCHK'].forEach(id => {
-          const e = document.getElementById(id);
-          if (e) e.disabled = !ok4c;
-        });
-        const rh = document.getElementById('refreshModeHint');
-        if (rh && !ok4c) rh.textContent = 'Cần firmware màn 4 màu ≥ 3.3 — hãy cập nhật ở mục OTA bên dưới.';
-      }
       {
         document.querySelectorAll('input[name="timeFmt"]').forEach(r => { r.disabled = !window.__fwTimeOk; });
         const th = document.getElementById('timeFmtHint');
@@ -917,11 +924,14 @@ function updateDitcherOptions() {
   const hfRow = document.getElementById('hourlyFullRow');
   const dbRow = document.getElementById('darkBoostRow');
   const hint = document.getElementById('fourColorHint');
-  // màn 4 màu dùng hàng «Nhịp làm mới» 3 lựa chọn thay cho ô hourly_full 2
-  // trạng thái của bản BWR (mọi lượt của màn 4 màu đều là full refresh)
+  /* Máy 7.5" LUÔN dùng hàng «Nhịp làm mới» ba mức, không phụ thuộc driver:
+   * tấm này không partial được nên mọi lượt đều là quét toàn màn — đúng tình
+   * huống của bản 4 màu. Ô hourly_full hai trạng thái ẩn hẳn.
+   * (Dòng cũ chép từ app 4.2" gác theo `is4c`, mà máy này không bao giờ là 4
+   * màu nên hàng ba mức sẽ KHÔNG BAO GIỜ hiện.) */
   const rmRow = document.getElementById('refreshModeRow');
-  if (hfRow) hfRow.style.display = is4c ? 'none' : '';
-  if (rmRow) rmRow.style.display = is4c ? '' : 'none';
+  if (hfRow) hfRow.style.display = 'none';
+  if (rmRow) rmRow.style.display = '';
   if (dbRow) dbRow.style.display = is4c ? 'none' : '';
   if (hint) hint.style.display = is4c ? '' : 'none';
 

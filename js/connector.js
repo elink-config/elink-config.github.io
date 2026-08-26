@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  const VER = '20260827e'; // cache-buster, keep in sync with index.html
+  const VER = '20260827g'; // cache-buster, keep in sync with index.html
 
   const EPD42_SERVICE = '62750001-d828-918d-fb46-b6c11c675aec';
   const HM213_SERVICE = '0000ff00-0000-1000-8000-00805f9b34fb';
@@ -134,7 +134,13 @@
         // profile.gen.js + modes.gen.js sinh từ tools/profile/7_5.json bên kho
         // firmware — phải nạp TRƯỚC mode_preview.js vì nó đọc window.EPD_MODES
         'js/7_5/profile.gen.js', 'js/7_5/modes.gen.js',
-        'js/7_5/mode_preview.js', 'js/7_5/designer.js', 'js/diy_store.js', 'js/7_5/timetable.js', 'js/7_5/main.js'],
+        'js/7_5/mode_preview.js',
+        // BỘ DỰNG DÙNG CHUNG (kéo thả cỡ tự do, 6 ô chữ, «Thứ»/«Ngày dương»,
+        // ảnh nền). Trước đây máy này nạp js/7_5/designer.js — bản CŨ ba nấc
+        // cỡ. Không cần file móc riêng: hình học widget của máy này chép
+        // nguyên từ bản 4.2" nên đường mặc định của designer chung là đúng;
+        // khổ màn nó lấy từ js/7_5/profile.gen.js (640x384).
+        'js/common/designer.js', 'js/diy_store.js', 'js/7_5/timetable.js', 'js/7_5/main.js'],
     },
     '7_5b': {
       label: '7.5" CHỮ LỚN',
