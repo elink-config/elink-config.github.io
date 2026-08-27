@@ -443,6 +443,15 @@
 					<span id="otaProgress" class="system-time"></span>
 				</div>
 			</div>
+			<!-- Cập nhật OTA chỉ ghi bank firmware, KHÔNG mang bộ chữ theo. Máy
+			     tự báo «asset=none» lúc kết nối và webtool gửi lại ngay, nhưng
+			     vẫn để một nút bấm tay cho trường hợp cần gửi lại. -->
+			<div class="flex-container">
+				<div class="flex-group btn-row">
+					<button id="assetbutton" type="button" class="secondary" onclick="sendAsset()">Gửi lại bộ chữ</button>
+					<span class="mode-gallery-hint" style="margin:0">Dùng khi màn hiện đủ số và đường kẻ nhưng <b>mất chữ</b> — thường gặp ngay sau khi cập nhật firmware.</span>
+				</div>
+			</div>
 			<!-- Khôi phục cài đặt gốc (lệnh 0x2F): đường cứu khi máy
 			     dùng không được vì cấu hình/giao diện hỏng. Ẩn với firmware chưa
 			     hiểu lệnh — cổng «khoi_phuc_goc» trong hồ sơ máy. -->

@@ -127,6 +127,75 @@ function updateShowImgUI() {
   }
 }
 
+/* ── BỘ CHỮ + BẢNG ÂM LỊCH NẰM Ở FLASH, KHÔNG Ở TRONG FIRMWARE ──────────
+ *
+ * Máy 7.5" để font tiếng Việt và bốn bảng tra âm lịch ở vùng asset (0x39000)
+ * để trả RAM cho chương trình (panel_opts.h: EPD_FONT_IN_FLASH = 1).
+ *
+ * Máy nạp bằng DÂY đã có sẵn blob trong ảnh nạp. Máy cập nhật qua OTA thì
+ * CHƯA — OTA chỉ ghi bank firmware. Lúc đó máy báo 'asset=none' và hàm dưới
+ * tự gửi xuống.
+ *
+ * ⚠ THIẾU KHỐI NÀY LÀ MÁY MẤT HẾT CHỮ SAU KHI OTA: số, khung và đường kẻ vẫn
+ * vẽ bình thường (chúng không qua font) nên rất dễ tưởng là lỗi bố cục. */
+let assetResolve = null;
+let assetBusy = false;
+
+function waitAsset(timeoutMs) {
+  return new Promise(resolve => {
+    const t = setTimeout(() => { assetResolve = null; resolve(''); }, timeoutMs);
+    assetResolve = (m) => { clearTimeout(t); resolve(m); };
+  });
+}
+
+async function sendAsset() {
+  if (assetBusy) return;
+  { const nm = (bleDevice && bleDevice.name) || '';
+    if (nm.indexOf('DIY-7_5-') !== 0) return; }
+  assetBusy = true;
+  // phủ kín màn: luồng này vài trăm gói, bấm nút khác giữa chừng là lệnh chen
+  // vào và máy nhận nhầm (xem syncOverlayShow ở app_common.js)
+  syncOverlayShow('Đang chuẩn bị dữ liệu hiển thị…',
+    'Máy chưa có bộ chữ tiếng Việt và bảng âm lịch — webtool đang tải về để gửi xuống.');
+  try {
+    addLog('Máy chưa có dữ liệu hiển thị (font + âm lịch) — đang gửi xuống…');
+    const r = await fetch('OTA%20firmware/7_5/asset.bin?v=' + Date.now());
+    if (!r.ok) { addLog('Không tải được asset.bin'); return; }
+    const raw = new Uint8Array(await r.arrayBuffer());
+    if (raw.length < 16 || raw[0] !== 0x45 || raw[1] !== 0x50) { addLog('asset.bin hỏng'); return; }
+    const body = raw.subarray(16);              // bỏ header, máy tự dựng lại
+    const crc = crc32buf(body);
+
+    const rdy = waitAsset(8000);                // máy xóa sector rồi mới báo
+    if (!await write(EpdCmd.ASSET, [0x00, body.length & 0xFF, body.length >> 8])) return;
+    if (await rdy !== 'asset=rdy') { addLog('Máy không mở được vùng dữ liệu.'); return; }
+
+    const mtu = parseInt(document.getElementById('mtusize').value) || 20;
+    const step = Math.max(16, mtu - 4);
+    for (let off = 0; off < body.length; off += step) {
+      if (!await write(EpdCmd.ASSET, [0x01, ...body.subarray(off, off + step)])) {
+        addLog('Gửi dữ liệu hiển thị thất bại.');
+        return;
+      }
+      syncOverlayStep('Đang gửi dữ liệu hiển thị…',
+        'Bộ chữ tiếng Việt + bảng âm lịch (' + body.length + ' byte). Không tắt máy, không đóng trang.');
+      syncOverlayProgress(off + step, body.length);
+    }
+
+    const fin = waitAsset(5000);
+    await write(EpdCmd.ASSET, [0x02, crc & 0xFF, (crc >>> 8) & 0xFF, (crc >>> 16) & 0xFF, (crc >>> 24) & 0xFF]);
+    const m = await fin;
+    addLog(m.startsWith('asset=') && m !== 'asset=none' && m !== 'asset=err'
+      ? 'Đã gửi xong dữ liệu hiển thị (' + body.length + ' byte) — thiết bị đang vẽ lại toàn màn hình.'
+      : 'Máy không nhận được dữ liệu — thử kết nối lại.');
+  } catch (e) {
+    addLog('Gửi dữ liệu hiển thị lỗi: ' + e.message);
+  } finally {
+    assetBusy = false;
+    syncOverlayHide();
+  }
+}
+
 const EpdCmd = {
   SET_PINS: 0x00,
   INIT: 0x01,
@@ -142,6 +211,7 @@ const EpdCmd = {
   SET_LAYOUT: 0x24, // MODE_CUSTOM (mode 20) widget layout from the designer
   SET_ICON: 0x25, // MODE_CUSTOM 1-bit icon, chunked: [0x00,w,h,data...] then [0x01,data...]
   IMG_SLOT: 0x27, // 3 khe ảnh (fw >= 1.5): [01 slot] mở khe / [02] chốt / [03 auto interval]
+  ASSET: 0x2C, // nạp blob dữ liệu vào flash: [00 len_u16] mở / [01 data] / [02 crc32_u32] chốt
   TIMETABLE: 0x2D, // bảng thời khoá biểu, chia mảnh (xem js/7_5/timetable.js)
   INFO: 0x2E, // xin máy gửi LẠI loạt thông tin mở màn (fw/mac/act/config)
   FACTORY_RESET: 0x2F, // [2F 'R' 'S' 'T' 5A] khôi phục cài đặt gốc
@@ -260,7 +330,11 @@ async function writeImage(data, step = 'bw') {
   for (let i = 0; i < data.length; i += chunkSize) {
     const currentTime = (new Date().getTime() - startTime) / 1000.0;
     const pct = ((100 * i) / data.length) >> 0;
-    setStatus(`Khối ${step == 'bw' ? 'đen trắng' : 'màu'}: ${chunkIdx + 1}/${count} (${pct}%), thời gian: ${currentTime}s`);
+    const stepName = step == 'bw' ? 'đen trắng' : 'màu';
+    setStatus(`Khối ${stepName}: ${chunkIdx + 1}/${count} (${pct}%), thời gian: ${currentTime}s`);
+    syncOverlayStep(`Đang truyền ảnh — lớp ${stepName}`,
+      `Gói ${chunkIdx + 1}/${count}. Ảnh được chẻ nhỏ theo MTU rồi ghi thẳng vào khe ảnh trên thiết bị.`);
+    syncOverlayProgress(i, data.length);
     const payload = [
       (step == 'bw' ? 0x0F : 0x00) | (i == 0 ? 0x00 : 0xF0),
       ...data.slice(i, i + chunkSize),
@@ -423,11 +497,10 @@ async function sendimg(slot = 0) {
     return;
   }
 
-  // 3 khe ảnh cần firmware >= 1.5; đời cũ chỉ hiển thị được (không lưu khe)
-  const slotCapable = FwCheck.atLeast('1.5');
-  if (!slotCapable && slot > 0) {
-    if (!confirm('Firmware của thiết bị chưa hỗ trợ 3 khe ảnh (cần v1.5). Ảnh sẽ chỉ hiển thị, không lưu vào khe. Tiếp tục?')) return;
-  }
+  /* Máy này có KHE ẢNH ngay từ v1.0 — không gác theo phiên bản. Số 1.5/1.6
+   * dưới đây là mốc của bản 4.2", so ở máy này thì luôn SAI: ảnh sẽ chỉ hiện
+   * ra rồi mất, không vào khe nào (xem ghi chú ở fwHasMinInterval). */
+  const slotCapable = true;
 
   const canvasSize = document.getElementById('canvasSize').value;
   const ditherMode = document.getElementById('ditherMode').value;
@@ -446,8 +519,19 @@ async function sendimg(slot = 0) {
     if (!confirm("Cảnh báo: chế độ màu không khớp driver, tiếp tục?")) return;
   }
 
+  /* Đang nạp bộ chữ thì HOÃN: hai luồng cùng bắn hàng trăm gói trên một
+   * characteristic là chèn nhau, mà người dùng chỉ thấy «Đang chuẩn bị khe…»
+   * rất lâu như bị treo. */
+  if (assetBusy) {
+    setStatus('Đang nạp bộ chữ cho máy — chờ xong rồi gửi ảnh…');
+    addLog('Hoãn gửi ảnh: đang nạp bộ chữ (font + âm lịch) cho máy.');
+    while (assetBusy) await new Promise(r => setTimeout(r, 300));
+  }
+
   startTime = new Date().getTime();
   window.__imgSending = true;  // chặn retry fw= ghi lại CCCD giữa phiên gửi
+  syncOverlayShow('Đang chuẩn bị gửi ảnh…',
+    'Ảnh được chuyển sang dạng của màn rồi ghi vào khe trên thiết bị. Vui lòng không tắt máy và không đóng trang.');
   try {
   const status = document.getElementById("status");
   status.parentElement.style.display = "block";
@@ -467,7 +551,10 @@ async function sendimg(slot = 0) {
   // trong lúc erase là gói dồn đống cạn MSG heap BLE -> thiết bị reset (v1.5)
   if (slotCapable) {
     setStatus(`Đang chuẩn bị khe ${slot + 1} (xóa flash)…`);
-    const rdyWait = FwCheck.atLeast('1.6') ? waitImgRdy(8000) : null;
+    syncOverlayStep(`Đang chuẩn bị khe ${slot + 1}…`,
+      'Thiết bị xoá vùng flash của khe trước khi nhận ảnh — mất khoảng một giây.');
+    // máy này luôn báo 'img=rdy' khi xoá khe xong
+    const rdyWait = waitImgRdy(8000);
     if (!await write(EpdCmd.IMG_SLOT, [0x01, slot])) {
       imgRdyResolve = null;
       setStatus('Không mở được khe ảnh — thử lại.');
@@ -524,6 +611,8 @@ async function sendimg(slot = 0) {
     }
   }
 
+  syncOverlayStep('Đang làm mới màn hình…',
+    'Tấm 7.5" quét toàn màn nên mất khoảng 27 giây. Có thể đóng cửa sổ này, thiết bị vẫn vẽ tiếp.');
   await write(EpdCmd.REFRESH);
   updateButtonStatus();
 
@@ -543,7 +632,7 @@ async function sendimg(slot = 0) {
     addLog('Lỗi khi gửi ảnh: ' + m);
     setStatus('Gửi ảnh lỗi: ' + m + ' — hãy tải lại trang rồi thử lại.');
     updateButtonStatus();
-  } finally { window.__imgSending = false; }
+  } finally { window.__imgSending = false; syncOverlayHide(); }
 }
 
 
@@ -713,6 +802,18 @@ function handleNotify(value, idx) {
     });
     if (typeof updateShowImgUI === 'function') updateShowImgUI();
     if (typeof updateIntervalUI === 'function') updateIntervalUI();
+    /* «Tự động đổi ảnh theo thời gian» — MỞ Ở ĐÂY, KHÔNG GÁC PHIÊN BẢN.
+     *
+     * Trước đây khối này nằm trong nhánh «fw=» và bọc trong
+     * FwCheck.atLeast('1.5'). Số 1.5 là mốc của bản 4.2"; máy này là v1.0 nên
+     * phép so LUÔN SAI và cả khu tự đổi ảnh KHÔNG BAO GIỜ hiện ra — người dùng
+     * báo «chuyển ảnh theo thời gian chưa có». Đặt ở đây còn đúng thứ tự: phải
+     * đọc xong imgSlotMask thì updateImgAutoUI mới biết máy đang có mấy khe. */
+    const autoRow = document.getElementById('imgAutoRow');
+    if (autoRow) {
+      autoRow.style.display = '';
+      if (typeof updateImgAutoUI === 'function') updateImgAutoUI();
+    }
     /* «Hiển thị pin» và «Định dạng giờ» — MỞ, KHÔNG GÁC THEO PHIÊN BẢN.
      *
      * Hai khối cũ so với FwCheck.atLeast('1.9') và window.__fwTimeOk: số 1.9 là
@@ -751,6 +852,11 @@ function handleNotify(value, idx) {
         addLog("Đồng hồ thiết bị chưa được đồng bộ — bấm «Sync time», hoặc chọn thẳng một giao diện (lệnh chọn giao diện tự gửi kèm ngày giờ).");
       }
       updateButtonStatus();
+    } else if (msg.startsWith('asset=')) {
+      /* 'asset=<len>:<crc>' = máy đã có blob; 'asset=none' = chưa có (hay gặp
+       * ở máy vừa cập nhật qua OTA) thì tự gửi ngay, không đợi người dùng. */
+      if (assetResolve) { const f = assetResolve; assetResolve = null; f(msg); }
+      else if (msg === 'asset=none') sendAsset();
     } else if (msg.startsWith('img=') && imgRdyResolve) {
       // trả lời lệnh mở khe ảnh: 'img=rdy' (xóa flash xong) / 'img=err'
       const f = imgRdyResolve; imgRdyResolve = null; f(msg === 'img=rdy');
@@ -758,11 +864,6 @@ function handleNotify(value, idx) {
       FwCheck.report(msg.substring(3));
       window.__fwStr = msg.substring(3);   // để báo lỗi cho rõ ở nơi khác
       window.__devNm = (bleDevice && bleDevice.name) || '';
-      // khu «Tự động đổi ảnh» chỉ hiện khi firmware hỗ trợ 3 khe (>= 1.5)
-      if (FwCheck.atLeast('1.5')) {
-        document.getElementById('imgAutoRow').style.display = '';
-        updateImgAutoUI();
-      }
       // giao diện v1.7 (chữ đậm/đỏ, số 12-3-6-9 đỏ, bỏ mode 2 & 18, hắc đạo):
       // preview mới CHỈ hiện khi firmware thiết bị khớp — máy cũ giữ preview cũ
       window.__fw17 = FwCheck.atLeast('1.7');
@@ -1012,6 +1113,8 @@ async function otaUpdate(preBuf) {
 
   const otaStatus = document.getElementById('otaProgress');
   const show = (t) => { if (otaStatus) otaStatus.textContent = t; };
+  syncOverlayShow('Đang cập nhật firmware…',
+    'TUYỆT ĐỐI KHÔNG tắt nguồn thiết bị và không đóng trang cho tới khi xong. Mất điện giữa chừng thì phải nạp lại bằng dây.');
   const btn = document.getElementById('otabutton');
   btn.disabled = 'disabled';
   try {
@@ -1021,6 +1124,8 @@ async function otaUpdate(preBuf) {
     buf[0] = 0xa0; buf[1] = 0x00;
     dv.setUint32(2, firmSize, true);
     show('Đang xoá flash…');
+    syncOverlayStep('Đang xoá vùng firmware…',
+      'Thiết bị dọn bank dự phòng trước khi nhận dữ liệu — mất vài giây.');
     if (!await write(buf[0], buf.subarray(1, 6), true)) throw new Error('lệnh 0xA0 thất bại');
 
     // gửi từng trang 256 byte, chia đôi 128+128 (0xA2 nửa đầu, 0xA3 nửa sau)
@@ -1052,12 +1157,17 @@ async function otaUpdate(preBuf) {
       if (!await write(buf[0], buf.subarray(1), true)) throw new Error('gửi dữ liệu thất bại');
       p += 128;
       show('Tiến độ: ' + ((100 * p / (firmSize + 64)) >> 0) + '%');
+      syncOverlayStep('Đang gửi firmware…',
+        'Dữ liệu đi theo từng trang 256 byte qua BLE. Giữ máy tính gần thiết bị để đường truyền ổn định.');
+      syncOverlayProgress(p, firmSize + 64);
     }
 
     // 0xA4: kết thúc — thiết bị tự khởi động lại vào firmware mới
     buf.fill(0x00); buf[0] = 0xa4;
     await write(buf[0], buf.subarray(1, 4), true);
     show('Hoàn tất — thiết bị đang khởi động lại.');
+    syncOverlayStep('Xong — thiết bị đang khởi động lại',
+      'Máy tự vào firmware mới. Kết nối lại sau vài giây.');
     addLog('Cập nhật xong! Thiết bị khởi động lại với firmware mới.');
   } catch (e) {
     console.error(e);
@@ -1066,6 +1176,7 @@ async function otaUpdate(preBuf) {
   } finally {
     btn.disabled = null;
     updateButtonStatus();
+    syncOverlayHide();
   }
 }
 
