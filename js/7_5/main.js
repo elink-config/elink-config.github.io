@@ -713,6 +713,18 @@ function handleNotify(value, idx) {
     });
     if (typeof updateShowImgUI === 'function') updateShowImgUI();
     if (typeof updateIntervalUI === 'function') updateIntervalUI();
+    /* «Hiển thị pin» và «Định dạng giờ» — MỞ, KHÔNG GÁC THEO PHIÊN BẢN.
+     *
+     * Hai khối cũ so với FwCheck.atLeast('1.9') và window.__fwTimeOk: số 1.9 là
+     * mốc của bản 4.2", máy này đánh số riêng và có cả hai tính năng ngay từ
+     * v1.0 — nên phép so LUÔN SAI và cụm chọn pin bị mờ tịt (người dùng báo
+     * 27/08). Chúng còn nằm trong nhánh «fw=» nên rớt gói đó là cũng hỏng.
+     * Xem ghi chú ở fwHasMinInterval về việc bỏ gác phiên bản ở máy này. */
+    [['battStyle', 'battStyleHint'], ['timeFmt', 'timeFmtHint']].forEach(([ten, hid]) => {
+      document.querySelectorAll('input[name="' + ten + '"]').forEach(r => { r.disabled = false; });
+      const h = document.getElementById(hid);
+      if (h) h.textContent = 'Thiết bị vẽ lại ngay khi đổi.';
+    });
 
   } else {
     if (textDecoder == null) textDecoder = new TextDecoder();
@@ -779,19 +791,6 @@ function handleNotify(value, idx) {
       window.__fwIconRed = is7_5 ? FwCheck.atLeast('0.5')
         : (devNm.indexOf('DIY-4_2C') === 0) ? false
         : FwCheck.atLeast('2.3');
-      {
-        document.querySelectorAll('input[name="timeFmt"]').forEach(r => { r.disabled = !window.__fwTimeOk; });
-        const th = document.getElementById('timeFmtHint');
-        if (th && window.__fwTimeOk) th.textContent = 'Thiết bị vẽ lại ngay khi đổi.';
-      }
-      if (window.refreshModeGallery) window.refreshModeGallery();
-      // «Hiển thị pin» cần fw >= 1.9 — máy cũ mờ radio + giữ hint nhắc cập nhật
-      {
-        const ok19 = FwCheck.atLeast('1.9');
-        document.querySelectorAll('input[name="battStyle"]').forEach(r => { r.disabled = !ok19; });
-        const h = document.getElementById('battStyleHint');
-        if (h) h.textContent = ok19 ? 'Thiết bị vẽ lại ngay khi đổi.' : 'Cần firmware ≥ 1.9 — hãy cập nhật ở mục OTA bên dưới.';
-      }
     }
   }
 }
