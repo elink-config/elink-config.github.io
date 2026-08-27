@@ -568,22 +568,40 @@ async function sendimg(slot = 0) {
     }
   }
 
+  /* KHE NỀN đi đường KHÁC khe ảnh — HAI MẶT 1bpp, không ghép 4bpp.
+   *
+   * Khe ẢNH của máy này chứa luồng 4bpp mà panel UC8159 nuốt thẳng: nhanh,
+   * đúng, và «Hiện lại ảnh» chỉ việc phát lại. Nhưng ẢNH NỀN thì KHÔNG được
+   * phát thẳng — nó phải trộn với các thành phần của «Tự thiết kế», tức
+   * firmware đọc nó vào ĐỆM TRANG (epd_bg_page) rồi vẽ widget đè lên. Đệm
+   * trang là hai mặt 1bpp.
+   *
+   * Con số không chừa đường lách:
+   *     convertUC8159 sinh  30720 x 4 = 122.880 byte (4bpp)
+   *     khe nền chứa được  2 x IMG_PLANE_SIZE = 61.440 byte (hai mặt 1bpp)
+   * Gửi kiểu 4bpp vào khe nền là nhồi gấp đôi chỗ, rồi lúc vẽ lại đọc 4bpp
+   * như 1bpp — đó là lý do «ảnh nền không hiện, cả màn đỏ». */
+  const laKheNen = slot >= IMG_SLOTS;
+  const ghep4bpp = (drvId === '08' || drvId === '09') && !laKheNen;
+
   let ok = true;
   if (ditherMode === 'threeColor') {
     const halfLength = Math.floor(processedData.length / 2);
     const blackWhiteData = processedData.slice(0, halfLength);
     const redWhiteData = processedData.slice(halfLength);
-    if (drvId === '08' || drvId === '09') {
+    if (ghep4bpp) {
       ok = await writeImage(convertUC8159(blackWhiteData, redWhiteData), 'bw');
     } else {
       ok = await writeImage(blackWhiteData, 'bw');
       if (ok) ok = await writeImage(redWhiteData, 'red');
     }
   } else if (ditherMode === 'blackWhiteColor') {
-    if (drvId === '08' || drvId === '09') {
+    if (ghep4bpp) {
       const emptyData = new Uint8Array(processedData.length).fill(0xFF);
       ok = await writeImage(convertUC8159(processedData, emptyData), 'bw');
     } else {
+      // nền đen trắng: chỉ mặt đen. Mặt màu không có dải nào -> firmware tự
+      // đặt cả mặt màu về «không đỏ» (epd_bg_page, đã sửa cực tính 27/08).
       ok = await writeImage(processedData, 'bw');
     }
   } else if (ditherMode === 'fourColor' || ditherMode === 'sixColor') {
