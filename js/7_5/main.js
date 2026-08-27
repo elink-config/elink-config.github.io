@@ -583,6 +583,11 @@ async function sendimg(slot = 0) {
    * như 1bpp — đó là lý do «ảnh nền không hiện, cả màn đỏ». */
   const laKheNen = slot >= IMG_SLOTS;
   const ghep4bpp = (drvId === '08' || drvId === '09') && !laKheNen;
+  // Log ĐỦ để soi lại về sau mà không phải nối J-Link đọc chip: khe nào, kiểu
+  // dither nào, đi đường 4bpp hay hai mặt, và bao nhiêu byte thật sự lên dây.
+  addLog(`Gửi ảnh: khe ${slot}${laKheNen ? ' (KHE NỀN)' : ''}, driver ${drvId}, ` +
+    `dither ${ditherMode}, đường ${ghep4bpp ? '4bpp một luồng' : 'hai mặt 1bpp'}, ` +
+    `dữ liệu gốc ${processedData.length} byte.`);
 
   let ok = true;
   if (ditherMode === 'threeColor') {
