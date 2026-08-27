@@ -396,9 +396,9 @@ async function setBattStyle() {
   // KHÔNG chặn cứng theo atLeast: vài giây đầu sau kết nối thiết bị chưa kịp
   // khai 'fw=' — chặn sẽ từ chối nhầm cả máy mới (đã gặp trên v2.1). Firmware
   // cũ nhận lệnh lạ sẽ bỏ qua vô hại; radio vẫn bị mờ khi biết rõ máy quá cũ.
-  if (!FwCheck.atLeast('1.9')) {
-    addLog('(Chưa rõ phiên bản thiết bị — vẫn gửi lệnh; firmware cũ hơn v1.9 sẽ bỏ qua.)');
-  }
+  // KHÔNG so mốc phiên bản ở đây: 1.9 là số của bản 4.2", máy này đánh số
+  // riêng và có sẵn hiển thị pin từ v1.0 — so là luôn sai, chỉ tổ ghi vào log
+  // một dòng cảnh báo vô căn cứ sau mỗi lần đổi.
   if (await write(EpdCmd.BATT_STYLE, [style])) {
     addLog('Đã đặt hiển thị pin: ' + (style === 0 ? 'chỉ icon' : style === 1 ? 'phần trăm' : 'điện áp') + '.');
   }
@@ -864,15 +864,22 @@ function handleNotify(value, idx) {
       FwCheck.report(msg.substring(3));
       window.__fwStr = msg.substring(3);   // để báo lỗi cho rõ ở nơi khác
       window.__devNm = (bleDevice && bleDevice.name) || '';
-      // giao diện v1.7 (chữ đậm/đỏ, số 12-3-6-9 đỏ, bỏ mode 2 & 18, hắc đạo):
-      // preview mới CHỈ hiện khi firmware thiết bị khớp — máy cũ giữ preview cũ
-      window.__fw17 = FwCheck.atLeast('1.7');
       // mode «Lịch dương + âm» (card 13, id 14) thay Đếm ngược: BWR cần fw
       // >= 2.0; bản BỐN MÀU (DIY-4_2C, đánh số 2.x riêng) cần >= 2.9
       const devNm = (bleDevice && bleDevice.name) || '';
       // Màn 7.5" 640x384 quảng bá 'DIY-7_5-'. Gạch nối ở cuối là quan trọng:
       // nó giữ cho phép so KHÔNG chạm DIY-7_5B (chữ lớn) / DIY-7_5R (đọc sách).
       const is7_5 = /^DIY-7_5-/.test(devNm);
+      /* Giao diện đời mới (chữ đậm/đỏ, số 12-3-6-9 đỏ, TUẦN BẮT ĐẦU THỨ HAI):
+       * máy 7.5" có sẵn ngay từ v1.0 vì GUI.c dựng trên nền 4.2" v2.7 và ép
+       * cứng `data->week_start = 1` như mọi máy khác.
+       *
+       * Dòng cũ là FwCheck.atLeast('1.7') — mốc của bản 4.2", máy này v1.0 nên
+       * LUÔN SAI. Hậu quả không nhỏ: 27 chỗ trong mode_preview.js rơi về kiểu
+       * cũ, và bốn chỗ trong đó xếp nhãn thứ theo CHỦ NHẬT trước — tức là
+       * gallery và lưới tháng của designer (js/common/designer.js) lệch hẳn
+       * một cột so với những gì máy vẽ ra. */
+      window.__fw17 = is7_5 ? true : FwCheck.atLeast('1.7');
       /* Máy 7.5" NAY CÓ «Lịch dương + âm» (mode 13) từ đợt chuyển sang nền
        * chung — trước đây dòng này ghi cứng false. */
       window.__fwCal = is7_5 ? true
