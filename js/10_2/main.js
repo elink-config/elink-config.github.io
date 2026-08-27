@@ -26,6 +26,23 @@ const IMG_BG_SLOT = d => IMG_SLOTS + d;
  * riêng ngay từ v2.0 nên gắn thẳng vào cổng «khe_anh». */
 function fwHasNewSlots() { return EpdProf.co('khe_anh'); }
 
+/* «Chữ 1..6» + thành phần Thứ / Ngày dương của «Tự thiết kế».
+ *
+ * ⚠ THIẾU HÀM NÀY LÀ HỎNG CẢ MODE «TỰ THIẾT KẾ», mà hỏng câm. designer.js đọc
+ * bằng `typeof fwHasSixText === 'function' && fwHasSixText()`, nên không khai
+ * thì nó lặng lẽ coi máy là đời 2 ô chữ:
+ *   - gói bố cục chỉ còn 62 + 2*48 = 158 byte thay vì 62 + 6*48 = 350
+ *   - fwHasNewSlots() vẫn đúng nên webtool chèn thêm byte chỉ số thiết kế -> 159
+ *   - firmware nhận ra byte chỉ số bằng phép so `llen == CUSTOM_LAYOUT_WIRE + 1`
+ *     = 351; 159 không khớp nên nó đọc BYTE CHỈ SỐ thành byte đầu của bố cục
+ *   - byte đầu là `count` -> count = 0 -> máy vẽ «Chưa có giao diện tự thiết kế»
+ *     dù vừa gửi xong (user báo 27/08; chính khối chú thích ở
+ *     EPD_CMD_SET_LAYOUT trong firmware đã cảnh báo đúng cảnh này).
+ * Nó còn chặn nhầm các thành phần type > 10 kèm lời nhắn về firmware 4.2".
+ *
+ * Máy này có 6 ô chữ ngay từ v2.0 — đo bằng CUSTOM_TEXT_SLOTS trong GUI.h. */
+function fwHasSixText() { return EpdProf.co('6_o_chu'); }
+
 /* ---- Quy đổi SỐ MODE cho máy chạy firmware v1.0 ----------------------------
  * v2.0 đánh lại số mode cho liền mạch (số thẻ = số mode). Máy chưa cập nhật
  * vẫn hiểu bảng số CŨ, nên phải quy đổi lúc gửi và lúc đọc config về. Bảng
