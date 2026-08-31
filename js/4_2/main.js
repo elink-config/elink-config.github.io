@@ -166,7 +166,9 @@ const EPD_SERVICE = '62750001-d828-918d-fb46-b6c11c675aec';
 // (tên chưa gắn cỡ màn) vẫn kết nối được bằng chế độ dev (?debug=true).
 const BLE_REQUEST_FILTERS = [
   { namePrefix: 'DIY-4_2' },
-  { namePrefix: 'DIY-7_5' },
+  /* ĐÃ BỎ 'DIY-7_5': máy 7.5" có app riêng. Để lại thì hộp chọn của trang này
+   * bày cả máy 7.5", chọn vào là hub điều hướng đi nơi khác ngay — cùng một
+   * lỗi mà bản 7.5" gặp theo chiều ngược lại (khách báo 01/09). */
 ];
 
 

@@ -229,21 +229,27 @@ const EpdCmd = {
 };
 
 const EPD_SERVICE = '62750001-d828-918d-fb46-b6c11c675aec';
-// Chỉ liệt kê đúng máy của app này: 4.2" (DIY-4_2-xxxx) và 7.5" (DIY-7_5-xxxx
-// DIY-7_5-xxxx = màn 7.5" 640×384 DA14585). Các
-// board 2.13"/2.9" quảng bá DIY-2_13-/DIY-2_9- dùng giao thức khác (service
-// 0xff00), hiện trong hộp chọn chỉ gây nhầm. Board 4.2" chạy firmware quá cũ
-// (tên chưa gắn cỡ màn) vẫn kết nối được bằng chế độ dev (?debug=true).
+/* CHỈ máy của app này: DIY-7_5-xxxx (màn 7.5" 640×384, DA14585).
+ *
+ * ⚠ TRƯỚC ĐÂY LIỆT KÊ CẢ 'DIY-4_2' — chép từ app 4.2" và quên bỏ. Hậu quả
+ * khách báo 01/09: mở trang 7.5", bấm kết nối thì hộp chọn Bluetooth bày cả
+ * máy 4.2"; chọn nhầm một cái là hub đọc tên 'DIY-4_2-' rồi ĐIỀU HƯỚNG ĐÚNG
+ * LUẬT về trang 4.2" — nhìn ra ngoài y như «bản 7.5 lại tên 4_2».
+ *
+ * ⚠ GẠCH NỐI CUỐI LÀ BẮT BUỘC. 'DIY-7_5' trần còn nuốt cả DIY-7_5B (chữ lớn)
+ * và DIY-7_5R (máy đọc sách) — hai máy đó có app riêng.
+ *
+ * Board 2.13"/2.9" quảng bá DIY-2_13-/DIY-2_9- và dùng giao thức khác
+ * (service 0xff00) nên không liệt kê ở đây. */
 const BLE_REQUEST_FILTERS = [
-  { namePrefix: 'DIY-4_2' },
-  { namePrefix: 'DIY-7_5' },
+  { namePrefix: 'DIY-7_5-' },
 ];
 
 
 function logBleConnectHelp(error) {
   addLog(`connect: ${error.name} - ${error.message}`);
   addLog('Gợi ý xử lý khi kết nối thất bại:');
-  addLog('1. Đảm bảo thiết bị đã nạp firmware mới nhất, tên Bluetooth là DIY-4_2-xxxx / DIY-7_5-xxxx');
+  addLog('1. Đảm bảo thiết bị đã nạp firmware mới nhất, tên Bluetooth là DIY-7_5-xxxx');
   addLog('2. Đặt thiết bị gần máy tính, màn hình chưa vào chế độ ngủ');
   addLog('3. Windows: xóa ghép nối cũ trong cài đặt Bluetooth rồi thử lại');
   addLog('4. Ngắt kết nối thiết bị khỏi điện thoại/máy tính khác');
@@ -704,7 +710,7 @@ async function preConnect() {
     } catch (e) {
       console.error(e);
       if (e.name === 'NotFoundError') {
-        addLog("Không tìm thấy thiết bị E-Ink 4.2\" (tên DIY-4_2-xxxx)");
+        addLog("Không tìm thấy thiết bị E-Ink 7.5\" (tên DIY-7_5-xxxx)");
       } else if (e.message) {
         addLog("requestDevice: " + e.message);
       }
