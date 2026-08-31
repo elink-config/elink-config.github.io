@@ -732,6 +732,14 @@ function handleNotify(value, idx) {
       imgCurrent = (data[215] < IMG_SLOTS) ? data[215] : 0;
       updateShowImgUI();
       updateIntervalUI();
+      /* MỞ hàng «Tự đổi ảnh» NGAY Ở GÓI CẤU HÌNH.
+       *
+       * ⚠ Trước đây nó CHỈ được mở trong nhánh 'fw=', và gói khai phiên bản
+       * thì CÓ THỂ RỚT (máy đang vẽ làm rớt gói như chơi; gói cấu hình ~220
+       * byte cũng từng rớt khi MTU còn 23). Rớt là cả hàng biến mất mà không
+       * ai hiểu vì sao — đúng kiểu lỗi đã lặp lại nhiều lần ở kho này, xem
+       * tools/kiem_giao_dien.py. Gói CẤU HÌNH thì luôn tới khi đã kết nối. */
+      { const ar = document.getElementById('imgAutoRow'); if (ar) ar.style.display = ''; }
       document.getElementById('imgAutoCHK').checked = auto === 1;
       const r = document.querySelector(`input[name="imgInterval"][value="${itv}"]`);
       if (r) r.checked = true;

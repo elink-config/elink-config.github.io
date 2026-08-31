@@ -304,6 +304,19 @@
 				</div>
 			</div>
 			<!-- Tự đổi ảnh (fw >= 1.5): bật được khi đã có >= 2 khe ảnh trên thiết bị -->
+			<!-- HIỆN LẠI ảnh đã lưu (lệnh 0x27 05). Chọn một giao diện lịch là mất
+			     ảnh đang hiện; đây là đường quay lại mà không phải gửi lại cả tấm
+			     192.000 byte. Số nút hiện ra theo 'slots=N' máy báo về. -->
+			<div class="flex-container" id="imgShowRow" style="display:none">
+				<div class="flex-group btn-row">
+					<span class="mode-gallery-hint" style="margin:0 8px 0 0">Hiện lại ảnh đã lưu trong máy:</span>
+					<button id="showimgbutton1" type="button" class="secondary" onclick="showImgSlot(0)">Khe 1</button>
+					<button id="showimgbutton2" type="button" class="secondary" onclick="showImgSlot(1)">Khe 2</button>
+					<button id="showimgbutton3" type="button" class="secondary" onclick="showImgSlot(2)">Khe 3</button>
+					<button id="showimgbutton4" type="button" class="secondary" onclick="showImgSlot(3)">Khe 4</button>
+					<button id="showimgbutton5" type="button" class="secondary" onclick="showImgSlot(4)">Khe 5</button>
+				</div>
+			</div>
 			<div class="flex-container" id="imgAutoRow" style="display:none">
 				<div class="flex-group">
 					<label style="display:flex;align-items:center;gap:6px;cursor:pointer">

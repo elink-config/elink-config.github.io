@@ -19,6 +19,47 @@ let deviceModeWire = null;
 // 3 khe ảnh (fw >= 1.5): mask bit0..2 = khe đã có ảnh trên thiết bị (đọc từ
 // config blob byte 214); cần >= 2 khe mới bật được «Tự động đổi ảnh»
 let imgSlotMask = 0;
+let imgCurrent = 0;   // khe máy đang hiện (offset 215 của gói cấu hình)
+
+/* HIỆN LẠI ảnh đã lưu trong khe (lệnh 0x27 05).
+ *
+ * ⚠ MÁY 7.3" THIẾU HẲN TÍNH NĂNG NÀY TỪ ĐẦU — cả firmware lẫn webtool (user
+ * báo 01/09/2026). Không có nó thì epd_img_restore() chỉ được gọi từ nhánh TỰ
+ * ĐỔI ẢNH, mà nhánh đó đòi >= 2 khe và nằm sau cửa «mode == MODE_PICTURE».
+ * Nên board 512KB (một khe) không bao giờ nạp lại được ảnh, và hễ chọn một
+ * giao diện lịch là mất đường quay về ảnh — phải gửi lại cả 192.000 byte. */
+async function showImgSlot(slot) {
+  if (!epdCharacteristic) { alert('Chưa kết nối thiết bị.'); return; }
+  if (!(imgSlotMask & (1 << slot))) { alert('Khe ' + (slot + 1) + ' chưa có ảnh.'); return; }
+  addLog('Hiện lại ảnh ở khe ' + (slot + 1) + '...', '⇑');
+  await write(EpdCmd.IMG_SLOT, [0x05, slot]);
+  deviceMode = 0;  // máy tự chuyển về chế độ ẢNH
+  if (typeof highlightMode === 'function') highlightMode(0);
+  imgCurrent = slot;
+  updateShowImgUI();
+}
+
+/* Hàng nút «Hiện lại ảnh»: hiện đúng số khe MÁY BÁO VỀ, mờ khe chưa có ảnh,
+ * tô đậm khe đang hiện.
+ *
+ * ⚠ KHÔNG gác theo số phiên bản. Đây là lỗi lặp đi lặp lại của kho này (đã
+ * dính ở 7.5" với nút pin, khu tự đổi ảnh, và ở 10.2" với «Chữ 3-6»): gác một
+ * hàng giao diện sau FwCheck.atLeast(...) lấy mốc của DÒNG MÁY KHÁC thì phép
+ * so luôn sai và cả hàng biến mất, im lặng. Số khe là thứ máy TỰ BÁO
+ * ('slots=N'), cứ theo đó. */
+function updateShowImgUI() {
+  const row = document.getElementById('imgShowRow');
+  if (!row) return;
+  row.style.display = '';
+  for (let i = 0; i < 5; i++) {
+    const b = document.getElementById('showimgbutton' + (i + 1));
+    if (!b) continue;
+    b.style.display = (i < IMG_SLOTS) ? '' : 'none';
+    b.disabled = !(imgSlotMask & (1 << i));
+    b.classList.toggle('primary', i === imgCurrent && !b.disabled);
+    b.classList.toggle('secondary', !(i === imgCurrent && !b.disabled));
+  }
+}
 // Số KHE ẢNH của máy: 3 với firmware cũ, 5 từ BWR v2.7 / 4 màu v3.7 (khe 5 và
 // 6 là NỀN của hai «Tự thiết kế», không tính vào đây). fwSlots() gọi được sau
 // khi thiết bị báo 'fw=' — trước đó cứ coi là 3 cho an toàn.
@@ -568,6 +609,15 @@ async function sendimg(slot = 0) {
   if (slotCapable) {
     if (await write(EpdCmd.IMG_SLOT, [0x02])) {
       imgSlotMask |= (1 << slot);
+      updateShowImgUI();
+      /* MỞ hàng «Tự đổi ảnh» NGAY Ở GÓI CẤU HÌNH.
+       *
+       * ⚠ Trước đây nó CHỈ được mở trong nhánh 'fw=', và gói khai phiên bản
+       * thì CÓ THỂ RỚT (máy đang vẽ làm rớt gói như chơi; gói cấu hình ~220
+       * byte cũng từng rớt khi MTU còn 23). Rớt là cả hàng biến mất mà không
+       * ai hiểu vì sao — đúng kiểu lỗi đã lặp lại nhiều lần ở kho này, xem
+       * tools/kiem_giao_dien.py. Gói CẤU HÌNH thì luôn tới khi đã kết nối. */
+      { const ar = document.getElementById('imgAutoRow'); if (ar) ar.style.display = ''; }
       updateImgAutoUI();
       addLog(`Đã lưu ảnh vào khe ${slot + 1} trên thiết bị.`);
     }
@@ -730,6 +780,11 @@ function handleNotify(value, idx) {
       // 7 khe (5 ảnh + 2 nền «Tự thiết kế») nên mask hợp lệ tới 0x7F. Ngưỡng
       // cũ là 7: máy đã dùng từ khe 4 trở lên báo mask > 7 và bị coi là RỖNG.
       imgSlotMask = (data[214] <= 0x7F) ? data[214] : 0;
+      if (data.length > 215 && data[215] < 5) imgCurrent = data[215];
+      /* Mở hàng «Hiện lại ảnh» NGAY Ở GÓI CẤU HÌNH — gói này luôn tới khi đã
+       * kết nối, còn 'fw=' thì có thể rơi. Treo giao diện vào 'fw=' đã làm
+       * mất nút trên máy 10.2" một lần rồi. */
+      updateShowImgUI();
       document.getElementById('imgAutoCHK').checked = auto === 1;
       const r = document.querySelector(`input[name="imgInterval"][value="${itv}"]`);
       if (r) r.checked = true;
@@ -815,6 +870,7 @@ function handleNotify(value, idx) {
         }
         if (n < 2) addLog(`Bộ nhớ của máy chỉ đủ ${n} khe ảnh — cần ít nhất 2 khe mới bật được tự đổi ảnh.`);
         if (typeof updateImgAutoUI === 'function') updateImgAutoUI();
+        updateShowImgUI();
       }
     } else if (msg.startsWith('tkb=')) {
       // thời khóa biểu: 'tkb=rdy' (xóa sector xong, được bắn mảnh) / 'tkb=err'
