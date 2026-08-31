@@ -1,18 +1,18 @@
 <!-- Fragment giao diện thiết bị — được connector.js nạp vào #appMount.
      Sinh lần đầu bởi scratchpad/build_v2.py từ index.html gốc; sau đó SỬA TRỰC TIẾP file này. -->
-		<fieldset class="debug only-7_3">
+		<fieldset class="debug only-7_5">
 			<legend>Driver (chế độ dev)</legend>
 			<div class="flex-container">
-				<div class="flex-group right debug only-7_3">
+				<div class="flex-group right debug only-7_5">
 					<label for="epddriver">Driver</label>
 					<select id="epddriver" onchange="updateDitcherOptions()">
-					<!-- Firmware epd_7_3inch: màn 7.3" Spectra 6 SÁU MÀU 800x480
-					     (DKE DEPG0730RTE730F0HP / GDEP073E01). Driver 0A gửi ảnh 4bpp
-					     sixColor (processImageData trong dithering.js phát thẳng). -->
-					<option value="0A" data-color="sixColor" data-size="7.3E6_800_480" selected>7.3" Spectra 6 (Sáu màu, E6)</option>
+					<!-- 7.5" V1 640×384 (HINK-E075A01, DA14585): 08/09 gửi ảnh 4bpp thô
+					     qua convertUC8159 (main.js). -->
+					<option value="08" data-color="threeColor" data-size="7.5_640_384" selected>7.5" V1 640×384 (Ba màu, UC8159)</option>
+					<option value="09" data-color="blackWhiteColor" data-size="7.5_640_384">7.5" V1 640×384 (Đen trắng, UC8159)</option>
 					</select>
 				</div>
-				<div class="flex-group debug only-7_3">
+				<div class="flex-group debug only-7_5">
 					<label for="epdpins">Chân (pins)</label>
 					<!-- DA14585: high nibble = port, low nibble = pin.
 					     MOSI P0_6, SCLK P0_0, CS P2_1, DC P0_5, RST P0_7, BUSY P2_0, BS n/c, EN P2_3 -->
@@ -70,18 +70,35 @@
 				</div>
 			</div>
 			<div class="tkb-preview">
-				<div class="mode-gallery-hint">Xem trước đúng như trên màn hình (800 × 480):</div>
-				<canvas id="tkbPreview" width="800" height="480"></canvas>
+				<div class="mode-gallery-hint">Xem trước đúng như trên màn hình (640 × 384):</div>
+				<canvas id="tkbPreview" width="640" height="384"></canvas>
 			</div>
 		</fieldset>
 		<fieldset>
 			<legend>Cài đặt thiết bị</legend>
 			<div class="flex-container">
-				<div class="flex-group" style="flex:1 1 100%" id="hourlyFullRow">
+				<!-- Ô hai trạng thái CŨ. Tấm này nay dùng nhịp BA MỨC bên dưới nên
+				     ẩn hẳn; giữ thẻ lại để main.js khỏi phải rào getElementById. -->
+				<div class="flex-group" style="flex:1 1 100%; display:none" id="hourlyFullRow">
 					<label style="display:flex;align-items:center;gap:6px;cursor:pointer">
 						<input type="checkbox" id="hourlyFullCHK" checked onchange="setHourlyFull()">
-						Làm mới toàn màn hình mỗi giờ (chế độ đồng hồ) — nếu tắt, chỉ làm mới toàn màn lúc 00:00 (ít chớp hơn nhưng bóng mờ tích tụ nhiều hơn)
+						Làm mới toàn màn hình mỗi giờ (chế độ đồng hồ)
 					</label>
+				</div>
+				<!-- NHỊP LÀM MỚI BA MỨC. Tấm 7.5" V1 không partial được nên mọi lượt
+				     đều là quét toàn màn ~27 giây — người dùng phải tự cân giữa
+				     «đồng hồ chạy thật» và «đỡ chớp, đỡ tốn pin». -->
+				<div class="flex-group" style="flex:1 1 100%" id="refreshModeRow">
+					<span>Nhịp làm mới (chế độ có giờ):</span>
+					<label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+						<input type="checkbox" id="onlyHourlyCHK" onchange="setRefreshMode('hour')">
+						Chỉ làm mới mỗi giờ (đồng hồ hiện HH:00)
+					</label>
+					<label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+						<input type="checkbox" id="onlyMidnightCHK" onchange="setRefreshMode('day')">
+						Chỉ làm mới lúc 00:00
+					</label>
+					<span class="mode-gallery-hint" style="margin:0" id="refreshModeHint">Không tích ô nào = <b>mỗi phút</b>: đồng hồ chạy đúng từng phút, nhưng mỗi lượt là quét TOÀN MÀN khoảng 27 giây nên màn gần như chớp liên tục và tốn pin. Tích một ô để đỡ chớp.</span>
 				</div>
 				<div class="flex-group" style="flex:1 1 100%" id="darkBoostRow">
 					<label style="display:flex;align-items:center;gap:6px;cursor:pointer">
@@ -103,7 +120,7 @@
 					<span>Định dạng giờ:</span>
 					<label><input type="radio" name="timeFmt" value="0" checked onchange="setTimeFmt()"> 24 giờ</label>
 					<label><input type="radio" name="timeFmt" value="1" onchange="setTimeFmt()"> 12 giờ</label>
-					<span class="mode-gallery-hint" style="margin:0" id="timeFmtHint">Cần firmware ≥ 2.1.</span>
+					<span class="mode-gallery-hint" style="margin:0" id="timeFmtHint">Cần firmware ≥ 0.3.</span>
 				</div>
 			</div>
 		</fieldset>
@@ -138,7 +155,7 @@
 						<span class="mode-gallery-hint" style="margin:0">Hai thiết kế độc lập: bố cục, ảnh nền và icon riêng.</span>
 					</div>
 				</div>
-				<canvas id="designerCanvas" width="800" height="480" class="designer-canvas"></canvas>
+				<canvas id="designerCanvas" width="640" height="384" class="designer-canvas"></canvas>
 			<div class="flex-container">
 				<div class="flex-group" style="flex:1 1 100%">
 					<label for="dsSize">Cỡ:</label>
@@ -175,7 +192,7 @@
 						<li>Thành phần <b>Ngày tháng</b> hiện «Thứ Năm, 20/08/2026». Muốn tách rời thì dùng <b>Thứ</b> và <b>Ngày dương</b>.</li>
 						<li>Thành phần <b>Icon</b> lấy ảnh từ mục «Truyền hình ảnh» qua nút <b>Icon từ ảnh</b>, tối đa 176 px — phóng to hơn sẽ vỡ. Icon khác ảnh nền: icon nhỏ, đặt được ở bất cứ đâu.</li>
 						<li>Bố cục lưu trong <b>trình duyệt này</b>. Đổi máy tính hay xoá dữ liệu duyệt web là mất, phải xếp lại — máy vẫn giữ cái đã gửi.</li>
-						<li>Chữ 3-6, «Thứ» và «Ngày dương» cần firmware 4.2" ba màu từ <b>v2.8</b>, bốn màu từ <b>v3.8</b>. Máy cũ hơn thì các nút đó tự ẩn đi.</li>
+						<li>Chữ 3-6, «Thứ» và «Ngày dương» có sẵn trên máy 7.5" ngay từ <b>v1.0</b>.</li>
 					</ul>
 				</details>
 				<div class="flex-group" style="flex:1 1 100%">
@@ -230,11 +247,11 @@
 						<option value="3.7_280_480">3.7 (280x480)</option>
 						<option value="3.97_800_480">3.97 (800x480)</option>
 						<option value="3.98_768_552">3.98 (768x552)</option>
-						<option value="7.3E6_800_480" selected>7.3 (800x480)</option>
+						<option value="4.2_400_300">4.2 (400x300)</option>
 						<option value="5.79_792_272">5.79 (792x272)</option>
 						<option value="5.83_600_448">5.83 (600x448)</option>
 						<option value="5.83_648_480">5.83 (648x480)</option>
-						<option value="7.5_640_384">7.5 (640x384)</option>
+						<option value="7.5_640_384" selected>7.5 (640x384)</option>
 						<option value="7.5_800_480">7.5 (800x480)</option>
 						<option value="7.5_880_528">7.5 (880x528)</option>
 						<option value="10.2_960_640">10.2 (960x640)</option>
@@ -285,21 +302,21 @@
 			</div>
 			<div class="status-bar"><b>Trạng thái: </b><span id="status"></span></div>
 			<div class="flex-container">
-				<div class="flex-group btn-row">
+				<div class="flex-group">
 					<button type="button" class="secondary debug" onclick="rotateCanvas()">Xoay canvas</button>
 					<button type="button" class="secondary" onclick="clearCanvas()">Xóa canvas</button>
 					<button type="button" class="secondary debug" onclick="downloadDataArray()">Tải mảng dữ liệu</button>
 					<button id="sendimgbutton" type="button" class="primary" onclick="sendimg(0)">Gửi ảnh khe 1</button>
 					<button id="sendimgbutton2" type="button" class="primary" onclick="sendimg(1)">Gửi ảnh khe 2</button>
 					<button id="sendimgbutton3" type="button" class="primary" onclick="sendimg(2)">Gửi ảnh khe 3</button>
-					<button id="sendimgbutton4" type="button" class="primary" onclick="sendimg(3)" style="display:none">Gửi ảnh khe 4</button>
-					<button id="sendimgbutton5" type="button" class="primary" onclick="sendimg(4)" style="display:none">Gửi ảnh khe 5</button>
+					<button type="button" class="secondary" onclick="dsIconFromCanvas()">Thêm ảnh vào thiết kế</button>
 				</div>
 			</div>
-			<!-- Anh nen cua «Tu thiet ke» - hang rieng cho khoi lan voi khe anh -->
+			<!-- Ảnh NỀN của «Tự thiết kế» — hàng riêng cho khỏi lẫn với khe ảnh.
+			     Khe nền có riêng (epd_flashmap.h), không ăn vào ba khe ảnh. -->
 			<div class="flex-container">
 				<div class="flex-group btn-row">
-					<span id="dsBgRow" style="display:none"><button type="button" class="secondary" onclick="dsBgToDesign(0)">Làm nền Thiết kế 1</button><button type="button" class="secondary" onclick="dsBgToDesign(1)">Làm nền Thiết kế 2</button></span><span id="dsBgOldRow"><button type="button" class="secondary" onclick="dsIconFromCanvas()">Thêm ảnh vào thiết kế</button></span>
+					<span id="dsBgRow" style="display:none"><button type="button" class="secondary" onclick="dsBgToDesign(0)">Làm nền thiết kế</button></span>
 					<button type="button" class="secondary" onclick="dsClearBackground()">Bỏ ảnh nền</button>
 				</div>
 			</div>
@@ -310,20 +327,30 @@
 						<input type="checkbox" id="imgAutoCHK" onchange="setImgAuto()">
 						Tự động đổi ảnh đã tải
 					</label>
+					<!-- Xếp TĂNG DẦN: phút trước, giờ sau. Ba nấc PHÚT bọc trong
+					     .imgIntervalMin để ẩn với firmware chưa hiểu (nó nhận byte
+					     rồi âm thầm rơi về 24 giờ — đúng loại lỗi câm). -->
+					<label class="imgIntervalMin"><input type="radio" name="imgInterval" value="15" onchange="setImgAuto()"> 15 phút</label>
+					<label class="imgIntervalMin"><input type="radio" name="imgInterval" value="30" onchange="setImgAuto()"> 30 phút</label>
+					<label class="imgIntervalMin"><input type="radio" name="imgInterval" value="45" onchange="setImgAuto()"> 45 phút</label>
 					<label><input type="radio" name="imgInterval" value="1" onchange="setImgAuto()"> 1 giờ</label>
 					<label><input type="radio" name="imgInterval" value="12" onchange="setImgAuto()"> 12 giờ</label>
 					<label><input type="radio" name="imgInterval" value="24" checked onchange="setImgAuto()"> 24 giờ</label>
-					<!-- Chu kỳ tính bằng PHÚT: cùng một byte img_interval, firmware hiểu
-					     15/30/40 là phút vì không có chu kỳ 15/30/40 giờ. Đổi ảnh dày thì
-					     mỗi lần đều là một lượt làm mới toàn màn, hao pin hơn hẳn. -->
-					<label><input type="radio" name="imgInterval" value="15" onchange="setImgAuto()"> 15 phút</label>
-					<label><input type="radio" name="imgInterval" value="30" onchange="setImgAuto()"> 30 phút</label>
-					<label><input type="radio" name="imgInterval" value="40" onchange="setImgAuto()"> 40 phút</label>
 					<span class="mode-gallery-hint" style="margin:0" id="imgAutoHint">Cần gửi ảnh vào ít nhất 2 khe để bật tự đổi ảnh (khe 1 → 2 → 3 → 1).</span>
 				</div>
 			</div>
-			<div class="flex-container">
+			<!-- HIỆN LẠI ảnh đã lưu (lệnh 0x27 05). Chọn một giao diện lịch là mất
+			     ảnh đang hiện; đây là đường quay lại mà không phải gửi lại cả tấm. -->
+			<div class="flex-container" id="imgShowRow" style="display:none">
 				<div class="flex-group btn-row">
+					<span class="mode-gallery-hint" style="margin:0 8px 0 0">Hiện lại ảnh đã lưu trong máy:</span>
+					<button id="showimgbutton1" type="button" class="secondary" onclick="showImgSlot(0)">Khe 1</button>
+					<button id="showimgbutton2" type="button" class="secondary" onclick="showImgSlot(1)">Khe 2</button>
+					<button id="showimgbutton3" type="button" class="secondary" onclick="showImgSlot(2)">Khe 3</button>
+				</div>
+			</div>
+			<div class="flex-container">
+				<div class="flex-group">
 					<button type="button" class="secondary" onclick="reloadImage()">Tải lại</button>
 					<button type="button" class="secondary" onclick="stretchToScreen()">Kéo giãn đầy màn</button>
 					<button type="button" class="secondary" onclick="fitToScreen()">Vừa màn hình</button>
@@ -347,7 +374,7 @@
 			</div>
 			<div class="canvas-container">
 				<div class="canvas-title"></div>
-				<canvas id="canvas" width="800" height="480"></canvas>
+				<canvas id="canvas" width="400" height="300"></canvas>
 				<div class="flex-container canvas-tools">
 					<div class="flex-group tool-buttons">
 						<button id="brush-mode" title="Bút vẽ" class="tool-button">✏️</button>
@@ -415,15 +442,26 @@
 					<button id="otabutton" type="button" class="secondary" onclick="otaUpdate()">Cập nhật firmware</button>
 					<span id="otaProgress" class="system-time"></span>
 				</div>
-				<div class="flex-group">
-					<!-- Bộ chữ + bảng âm lịch nằm ở vùng riêng của bộ nhớ, KHÔNG đi kèm
-					     firmware, nên máy vừa cập nhật sẽ thiếu chữ cho tới khi được gửi
-					     xuống. Bình thường webtool tự gửi lúc kết nối; nút này để gửi tay
-					     khi máy vẫn thiếu chữ. -->
+			</div>
+			<!-- Cập nhật OTA chỉ ghi bank firmware, KHÔNG mang bộ chữ theo. Máy
+			     tự báo «asset=none» lúc kết nối và webtool gửi lại ngay, nhưng
+			     vẫn để một nút bấm tay cho trường hợp cần gửi lại. -->
+			<div class="flex-container">
+				<div class="flex-group btn-row">
 					<button id="assetbutton" type="button" class="secondary" onclick="sendAsset()">Gửi lại bộ chữ</button>
+					<span class="mode-gallery-hint" style="margin:0">Dùng khi màn hiện đủ số và đường kẻ nhưng <b>mất chữ</b> — thường gặp ngay sau khi cập nhật firmware.</span>
 				</div>
 			</div>
-			<p class="mode-gallery-hint">Nạp file <b>.bin</b> tải về từ mục «Danh sách firmware» bên dưới. Cập nhật xong hãy <b>kết nối lại</b> — máy tự nhận bộ chữ; nếu màn vẫn thiếu chữ thì bấm «Gửi lại bộ chữ». Không tắt nguồn thiết bị khi đang cập nhật — nếu lỗi giữa chừng, thiết bị vẫn chạy firmware cũ.</p>
+			<!-- Khôi phục cài đặt gốc (lệnh 0x2F): đường cứu khi máy
+			     dùng không được vì cấu hình/giao diện hỏng. Ẩn với firmware chưa
+			     hiểu lệnh — cổng «khoi_phuc_goc» trong hồ sơ máy. -->
+			<div class="flex-container" id="factoryResetRow" style="display:none">
+				<div class="flex-group">
+					<button id="factoryResetBtn" type="button" class="secondary" onclick="factoryReset()">Khôi phục cài đặt gốc</button>
+					<span class="mode-gallery-hint" style="margin:0">Đưa máy về như lúc mới: xoá cấu hình, giao diện «Tự thiết kế», ảnh nền, icon, thời khoá biểu và <b>ảnh trong khe</b>. Dùng khi máy hiển thị sai hoặc không dùng được.</span>
+				</div>
+			</div>
+			<p class="mode-gallery-hint">Nạp file <b>.bin</b> tải về từ mục «Danh sách firmware» bên dưới. Không tắt nguồn thiết bị khi đang cập nhật — nếu lỗi giữa chừng, thiết bị vẫn chạy firmware cũ.</p>
 		</fieldset>
 		<fieldset>
 			<legend>Danh sách firmware</legend>
@@ -445,45 +483,12 @@
 						<tr>
 							<td>1</td>
 							<td>1.0</td>
-							<td><b>CHỈ dành cho màn 7.3" SÁU MÀU (thiết bị DIY-7_3)</b> — KHÔNG nạp cho máy khác. <br>Bản phát hành đầu tiên: 22 giao diện lịch/đồng hồ vẽ đủ sáu màu, truyền hình ảnh, «Tự thiết kế», âm lịch Việt Nam</td>
-							<td>16/08/2026</td>
-							<td><a href="OTA firmware/7_3/fw_7_3inch_v1.0.bin" download>Tải về</a></td>
+							<td><b>CHỈ dành cho màn 7.5" 640×384 (thiết bị DIY-7_5)</b> — KHÔNG nạp cho máy khác. <br>Bản phát hành đầu tiên: 23 giao diện lịch/đồng hồ, 3 khe ảnh, «Tự thiết kế» (kéo giãn cỡ tự do, ảnh nền toàn màn), thời khoá biểu, âm lịch Việt Nam.
+								<br><b>⚠ Sau khi cập nhật, mở lại webtool và kết nối một lần.</b> Máy sẽ tự nhận bộ chữ tiếng Việt (khoảng 9 KB) — trong lúc chưa nhận xong, màn có thể hiện số và đường kẻ mà thiếu chữ.</td>
+							<td>27/08/2026</td>
+							<td><a href="OTA firmware/7_5/fw_7_5inch_v1.0.bin" download>Tải về</a></td>
 							<td><button type="button" class="primary" onclick="fwInstallRow(this)">Cài ngay</button></td>
 						</tr>
-						<tr>
-							<td>2</td>
-							<td>2.0</td>
-							<td>Đánh lại số giao diện, thêm «Lịch dương + âm», «Thời khóa biểu», «Tự thiết kế 2», 5 khe ảnh, kiểu hiển thị pin và giờ 12h. <b>Nạp xong hãy kết nối lại</b>: máy tự nhận bộ chữ, rồi chọn lại giao diện.</td>
-							<td>22/08/2026</td>
-							<td><a href="OTA firmware/7_3/fw_7_3inch_v2.0.bin" download>Tải về</a></td>
-							<td><button type="button" class="primary" onclick="fwInstallRow(this)">Cài ngay</button></td>
-						</tr>
-							<tr>
-								<td>3</td>
-								<td>2.1</td>
-								<td><b>Khe ảnh dùng được</b>: ảnh gửi lên máy nhớ được và sống sót qua cập nhật firmware, kèm «Tự động đổi ảnh» chu kỳ 15 / 30 / 40 phút hoặc 1 / 12 / 24 giờ. Ảnh nhiều mảng màu phẳng thì lưu được nhiều khe hơn ảnh chụp chi tiết.</td>
-								<td>23/08/2026</td>
-								<td><a href="OTA firmware/7_3/fw_7_3inch_v2.1.bin" download>Tải về</a></td>
-								<td><button type="button" class="primary" onclick="fwInstallRow(this)">Cài ngay</button></td>
-							</tr>
-							<tr>
-								<td>4</td>
-								<td>2.2</td>
-								<td>Sửa lỗi <b>màn ra nhiễu hạt màu</b> khi kết nối vào máy đúng lúc máy đang vẽ. Kết nối lúc máy đang bận cũng nhanh hơn.</td>
-								<td>23/08/2026</td>
-								<td><a href="OTA firmware/7_3/fw_7_3inch_v2.2.bin" download>Tải về</a></td>
-								<td><button type="button" class="primary" onclick="fwInstallRow(this)">Cài ngay</button></td>
-							</tr>
-							<tr>
-								<td>5</td>
-								<td>2.3</td>
-								<td>Ảnh lưu <b>nguyên, không nén</b> nên <b>mọi ảnh đều gửi được</b>.
-									<br>Board bộ nhớ lớn: <b>5 khe ảnh + 2 ảnh nền riêng</b> cho «Tự thiết kế». Board bộ nhớ thường: 1 khe, ảnh nền dùng chung tấm ảnh đó.
-									<br><b>⚠ Ảnh đang lưu trong máy sẽ mất một lần.</b> Cập nhật xong hãy gửi lại ảnh.</td>
-								<td>01/09/2026</td>
-								<td><a href="OTA firmware/7_3/fw_7_3inch_v2.3.bin" download>Tải về</a></td>
-								<td><button type="button" class="primary" onclick="fwInstallRow(this)">Cài ngay</button></td>
-							</tr>
 					</tbody>
 				</table>
 			</div>
