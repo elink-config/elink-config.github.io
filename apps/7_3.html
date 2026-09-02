@@ -10,6 +10,11 @@
 					     (DKE DEPG0730RTE730F0HP / GDEP073E01). Driver 0A gửi ảnh 4bpp
 					     sixColor (processImageData trong dithering.js phát thẳng). -->
 					<option value="0A" data-color="sixColor" data-size="7.3E6_800_480" selected>7.3" Spectra 6 (Sáu màu, E6)</option>
+					<!-- Tấm 7.3" ACeP BẢY MÀU (AC057TC1 — «Waveshare 7.3inch e-Paper (F)»),
+					     firmware epd_7_3inch từ v2.4. Cùng khổ 800x480 và cùng luồng 4bpp
+					     nhưng MÃ MÀU KHÁC HẲN tấm Spectra 6 (và có thêm CAM) — chọn nhầm
+					     là ảnh ra SAI MÀU HẾT, xem sevenColorPalette trong dithering.js. -->
+					<option value="11" data-color="sevenColor" data-size="7.3E6_800_480">7.3" ACeP (Bảy màu, có cam)</option>
 					</select>
 				</div>
 				<div class="flex-group debug only-7_3">
@@ -251,6 +256,7 @@
 						<option value="threeColor">3 màu (đen trắng đỏ)</option>
 						<option value="fourColor">4 màu (đen trắng đỏ vàng)</option>
 						<option value="sixColor">6 màu</option>
+						<option value="sevenColor">7 màu (có cam)</option>
 					</select>
 				</div>
 				<div class="flex-group">

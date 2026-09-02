@@ -123,7 +123,7 @@ function downloadDataArray() {
   const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
   const processedData = processImageData(imageData, mode);
 
-  if (mode === 'sixColor' && processedData.length !== canvas.width * canvas.height) {
+  if ((mode === 'sixColor' || mode === 'sevenColor') && processedData.length !== canvas.width * canvas.height) {
     console.log(`Lỗi: cần ${canvas.width * canvas.height} byte, nhận được ${processedData.length} byte`);
     addLog('Kích thước mảng không khớp. Kiểm tra kích thước ảnh và chế độ.');
     return;
@@ -140,7 +140,8 @@ function downloadDataArray() {
     formattedData.push(dataLines.slice(i, i + 16).join(', '));
   }
 
-  const colorModeValue = mode === 'sixColor' ? 0 : mode === 'fourColor' ? 1 : mode === 'blackWhiteColor' ? 2 : 3;
+  const colorModeValue = (mode === 'sixColor' || mode === 'sevenColor') ? 0
+    : mode === 'fourColor' ? 1 : mode === 'blackWhiteColor' ? 2 : 3;
   const arrayContent = [
     'const uint8_t imageData[] PROGMEM = {',
     formattedData.join(',\n'),

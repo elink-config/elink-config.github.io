@@ -17,6 +17,25 @@
   // màn 7.5 CHƯA có firmware cũ ngoài thị trường (v0.2 là bản đầu phát hành)
   // nên gate LUÔN BẬT — card mode 2/18 ẩn vĩnh viễn, không cần cờ __fw17.
   function v17() { return true; }
+  /* Driver 11 = tấm 7.3" ACeP BẢY MÀU (có mực CAM thật). Firmware từ v2.4 dùng
+   * cam cho: THỨ BẢY (chủ nhật vẫn đỏ), dòng đếm ngược lễ, KIM PHÚT của mọi
+   * đồng hồ kim. Tấm Spectra 6 (driver 0A) không có cam nên bảng mã của nó nắn
+   * cam về đỏ — preview giữ nguyên ĐỎ, đúng như màn hiện.
+   * Gallery vẽ lại mỗi lần đổi driver (updateDitcherOptions gọi
+   * refreshModeGallery) nên hàm này đọc lại select mỗi lượt vẽ. */
+  function is7c() {
+    const s = document.getElementById('epddriver');
+    return !!s && s.value === '11';
+  }
+  const ORG = '#E8720C';
+  // màu của một THỨ (day: 0=CN..6=T7): CN đỏ, T7 cam (tấm bảy màu), còn lại normal
+  function wdCol(day, normal) {
+    if (day === 0) return RED;
+    if (day === 6) return is7c() ? ORG : RED;
+    return normal;
+  }
+  // màu dòng lễ / đếm ngược lễ
+  function fesCol() { return is7c() ? ORG : RED; }
   const WD_SHORT = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
   const WD_FULL = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'];
   const WD_BAR = ['CN', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
@@ -102,6 +121,8 @@
     x.strokeStyle = handCol; x.lineCap = 'round';
     x.lineWidth = 6; x.beginPath(); x.moveTo(cx, cy);
     x.lineTo(cx + r * 0.5 * Math.sin(ha), cy - r * 0.5 * Math.cos(ha)); x.stroke();
+    // BẢY MÀU: kim PHÚT màu CAM (kim giờ giữ màu handCol)
+    x.strokeStyle = is7c() ? ORG : handCol;
     x.lineWidth = 4; x.beginPath(); x.moveTo(cx, cy);
     x.lineTo(cx + r * 0.74 * Math.sin(ma), cy - r * 0.74 * Math.cos(ma)); x.stroke();
     x.fillStyle = RED; x.beginPath(); x.arc(cx, cy, 4, 0, 7); x.fill(); x.lineCap = 'butt';
@@ -136,7 +157,8 @@
       }
       font(x, opt.dayPx || 13, 1);
       center(x, d, cx, cy + (opt.lunar ? 2 : 5),
-             d === today ? (comboYellow ? BK : '#fff') : (weekend && !opt.noWeekendRed ? RED : BK));
+             d === today ? (comboYellow ? BK : '#fff')
+                         : (weekend && !opt.noWeekendRed ? wdCol(wd, BK) : BK));
       if (opt.lunar) {
         font(x, 9, 0);
         center(x, lunarish(d), cx, cy + rh / 2 - 3, d === today ? '#fff' : '#555');
@@ -151,7 +173,7 @@
       const day = (i + off) % 7;  // 0=CN..6=T7 (thứ tự nhãn theo week_start)
       // BWRY: T7 nền VÀNG chữ đen (CN vẫn đỏ) — đúng firmware
       const yellowSat = is4c() && day === 6;
-      x.fillStyle = day === 0 ? RED : (yellowSat ? YE : (day === 6 ? RED : BK));
+      x.fillStyle = day === 0 ? RED : (yellowSat ? YE : wdCol(day, BK));
       x.fillRect(gx + i * w, gy, w - 1, h);
       center(x, labels[day], gx + i * w + w / 2, gy + h / 2 + 5, yellowSat ? BK : '#fff');
     }
@@ -203,7 +225,7 @@
     font(x, 11, 1);
     for (let i = 0; i < 7; i++) {
       const day = (i + (v17() ? 1 : 0)) % 7;
-      center(x, WD_SHORT[day], 206 + i * 26 + 13, 72, (v17() && (day === 0 || day === 6)) ? RED : BK);
+      center(x, WD_SHORT[day], 206 + i * 26 + 13, 72, v17() ? wdCol(day, BK) : BK);
     }
     // v1.7: vòng «hôm nay» ĐỎ (trước là đen)
     monthGrid(x, 206, 80, 182, 144, now, { todayCol: v17() ? RED : BK, dayPx: 11, noWeekendRed: true });
@@ -212,6 +234,7 @@
     // v1.7: năm Can Chi + âm lịch + lễ + số ngày còn lại đều ĐỎ
     font(x, 13, 0); x.fillStyle = v17() ? RED : BK;
     x.fillText('Bính Ngọ (Ngựa)', 12, 252); x.fillText('Âm Lịch 21/5', 12, 274);
+    x.fillStyle = fesCol();  // BẢY MÀU: cụm đếm ngược lễ CAM
     x.fillText('Lễ Vu Lan', 148, 252); x.fillText('còn 52 ngày', 148, 274);
     segStr(x, 300, 240, 2.4, '32', BK, BK);
     font(x, 13, v17() ? 1 : 0); x.fillStyle = BK; x.fillText('°C', 344, 262);
@@ -246,7 +269,7 @@
     font(x, 11, 1);
     for (let i = 0; i < 7; i++) {
       const day = (i + (v17() ? 1 : 0)) % 7;
-      center(x, WD_SHORT[day], 173 + i * 31 + 15, 88, v17() ? ((day === 0 || day === 6) ? RED : BK) : RED);
+      center(x, WD_SHORT[day], 173 + i * 31 + 15, 88, v17() ? wdCol(day, BK) : RED);
     }
     monthGrid(x, 173, 96, 217, 186, now, { dayPx: 12, noWeekendRed: true });
   }
@@ -272,7 +295,7 @@
     multi(x, [['Âm Lịch 21/5', RED], [' - Ngày Canh Thìn - Năm Bính Ngọ', BK]], 200, 216);
     line(x, 10, 250, 390, 250);
     font(x, 13, v17() ? 1 : 0); x.fillStyle = BK; x.fillText('32°C', 12, 282);
-    multi(x, [['Lễ Vu Lan còn 52 ngày', RED]], 220, 282);
+    multi(x, [['Lễ Vu Lan còn 52 ngày', fesCol()]], 220, 282);
   }
   function m7(x, now) { // Đồng hồ kim
     font(x, 12, 0); x.fillStyle = BK; x.fillText('32°C', 12, 22);
@@ -292,7 +315,7 @@
     line(x, 70, 228, 330, 228);
     font(x, 14, v17() ? 1 : 0);  // v1.7: all text bold
     multi(x, [['Âm Lịch 21/5', RED], [' - Ngày Canh Thìn - Năm Bính Ngọ', BK]], 200, 254);
-    multi(x, [['Lễ Vu Lan còn 52 ngày', RED]], 200, 280);
+    multi(x, [['Lễ Vu Lan còn 52 ngày', fesCol()]], 200, 280);
   }
   function m9(x, now) { // Lịch tuần — v1.7: all text bold
     font(x, 15, v17() ? 1 : 0);
@@ -313,12 +336,12 @@
         }
       } else { x.strokeStyle = BK; x.lineWidth = 1.5; x.stroke(); }
       const wd = d.getDay(), weekend = wd === 0 || wd === 6;
-      font(x, 13, 1); center(x, WD_SHORT[wd], bx + 26, 84, today ? '#fff' : (weekend ? RED : BK));
+      font(x, 13, 1); center(x, WD_SHORT[wd], bx + 26, 84, today ? '#fff' : (weekend ? wdCol(wd, BK) : BK));
       font(x, 22, 1); center(x, d.getDate(), bx + 26, 146, today ? '#fff' : BK);
       font(x, 11, 0); center(x, lunarish(d.getDate()), bx + 26, 178, today ? '#fff' : '#555');
     }
     line(x, 10, 224, 390, 224);
-    font(x, 14, v17() ? 1 : 0); multi(x, [['Lễ Vu Lan còn 52 ngày', RED]], 200, 250);
+    font(x, 14, v17() ? 1 : 0); multi(x, [['Lễ Vu Lan còn 52 ngày', fesCol()]], 200, 250);
     font(x, 13, v17() ? 1 : 0); multi(x, [['32°C - Ngày Canh Thìn - Tuần 27', BK]], 200, 278);
   }
   function m10(x, now) { // Giờ + lịch tháng
@@ -339,7 +362,7 @@
     font(x, 12, 1);
     for (let i = 0; i < 7; i++) {
       const day = (i + (v17() ? 1 : 0)) % 7;  // v1.7: tuần bắt đầu T2
-      center(x, WD_SHORT[day], 11 + i * 54 + 27, 102, (day === 0 || day === 6) ? RED : BK);
+      center(x, WD_SHORT[day], 11 + i * 54 + 27, 102, wdCol(day, BK));
     }
     monthGrid(x, 11, 110, 378, 186, now, { lunar: true, dayPx: 13, rPlus: v17() ? 2 : 0 });
   }
@@ -388,7 +411,7 @@
     font(x, Math.max(8, dayPx - 3), 1);
     for (let i = 0; i < 7; i++) {
       const day = (i + off) % 7;
-      center(x, WD_SHORT[day], bx + i * cw + cw / 2, by, (day === 0 || day === 6) ? RED : BK);
+      center(x, WD_SHORT[day], bx + i * cw + cw / 2, by, wdCol(day, BK));
     }
     for (let d = 1; d <= maxD; d++) {
       const idx = first + d - 1, col = idx % 7, row = (idx - col) / 7;
@@ -468,7 +491,7 @@
     miniMonth(x, 15, 80, 180, 29, y, mo, now.getDate(), 12);
     miniMonth(x, 205, 80, 180, 29, mo === 11 ? y + 1 : y, (mo + 1) % 12, 0, 12);
     line(x, 200, 44, 200, 280, BK, 1);
-    font(x, 12, 0); multi(x, [['8. Tiểu Thử  24. Đại Thử', BK], ['  -  Lễ Vu Lan còn 52 ngày', RED]], 200, 294);
+    font(x, 12, 0); multi(x, [['8. Tiểu Thử  24. Đại Thử', BK], ['  -  Lễ Vu Lan còn 52 ngày', fesCol()]], 200, 294);
   }
   function m16(x, now) { // Lịch cả năm
     const y = now.getFullYear();
@@ -535,7 +558,7 @@
     if (is4c()) { x.strokeStyle = YE; x.lineWidth = 1.5; x.strokeRect(34, 68, 332, 162); }  // BWRY: khung kép đỏ-vàng
     font(x, 14, 1); center(x, 'GHI CHÚ', 200, 85, '#fff');
     font(x, 26, 1); center(x, 'Họp phụ huynh 15:00', 200, 152, BK); center(x, 'thứ Hai tuần sau!', 200, 190, BK);
-    font(x, 12, v17() ? 1 : 0); multi(x, [['Âm Lịch 21/5 - Ngày Canh Thìn  -  ', BK], ['Lễ Vu Lan còn 52 ngày', RED]], 200, 266);
+    font(x, 12, v17() ? 1 : 0); multi(x, [['Âm Lịch 21/5 - Ngày Canh Thìn  -  ', BK], ['Lễ Vu Lan còn 52 ngày', fesCol()]], 200, 266);
   }
 
   function m20(x, now, design) { // Tự thiết kế 1 (thẻ 22) / 2 (thẻ 23)

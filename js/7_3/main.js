@@ -589,7 +589,9 @@ async function sendimg(slot = 0) {
     } else {
       ok = await writeImage(processedData, 'bw');
     }
-  } else if (ditherMode === 'fourColor' || ditherMode === 'sixColor') {
+  } else if (ditherMode === 'fourColor' || ditherMode === 'sixColor' || ditherMode === 'sevenColor') {
+    // 4bpp thô: firmware phát THẲNG vào DTM1, mã màu do bảng dither quyết định
+    // (sixColor = tấm Spectra 6 driver 0A, sevenColor = tấm ACeP driver 11)
     ok = await writeImage(processedData, 'bw');
   } else {
     addLog("Firmware không hỗ trợ chế độ màu này.");

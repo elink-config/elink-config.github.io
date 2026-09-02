@@ -10,6 +10,23 @@ const rgbPalette = [
   { name: "绿色", r: 41, g: 204, b: 20, value: 0x06 }
 ];
 
+/* Bảng BẢY MÀU của tấm 7.3" ACeP (AC057TC1 — «Waveshare 7.3inch e-Paper (F)»,
+ * driver 11 của máy 7.3"). Màu thứ bảy là CAM.
+ *
+ * ⚠ MÃ MÀU KHÁC HẲN bảng sáu màu Spectra 6 ở trên — xanh lá 2 / xanh dương 3 /
+ * đỏ 4 / vàng 5 (Spectra 6: vàng 2 / đỏ 3 / xanh dương 5 / xanh lá 6). Gửi ảnh
+ * dither bằng bảng SAI thì máy vẫn hiện đủ hình nhưng SAI MÀU HẾT và không có
+ * lỗi nào báo, nên chế độ màu phải đi theo mục «Driver»: 0A = 6 màu, 11 = 7 màu. */
+const sevenColorPalette = [
+  { name: "đen", r: 0, g: 0, b: 0, value: 0x00 },
+  { name: "trắng", r: 255, g: 255, b: 255, value: 0x01 },
+  { name: "xanh lá", r: 41, g: 204, b: 20, value: 0x02 },
+  { name: "xanh dương", r: 0, g: 0, b: 255, value: 0x03 },
+  { name: "đỏ", r: 255, g: 0, b: 0, value: 0x04 },
+  { name: "vàng", r: 255, g: 255, b: 0, value: 0x05 },
+  { name: "cam", r: 255, g: 128, b: 0, value: 0x06 }
+];
+
 // 四色调色板
 const fourColorPalette = [
   { name: "黑色", r: 0, g: 0, b: 0, value: 0x00 },
@@ -108,13 +125,18 @@ function findClosestColor(r, g, b, mode) {
     palette = fourColorPalette;
   } else if (mode === 'threeColor') {
     palette = threeColorPalette;
+  } else if (mode === 'sevenColor') {
+    palette = sevenColorPalette;
   } else {
     palette = rgbPalette;
   }
 
   // 蓝色特殊情况（仅限非三色、四色模式）
+  // LẤY XANH DƯƠNG TỪ CHÍNH BẢNG ĐANG DÙNG: hai bảng 4bpp đánh mã khác nhau
+  // (Spectra 6 xanh dương = 5, ACeP7 = 3), trả cứng rgbPalette[4] là ảnh bảy
+  // màu ra sai màu ở mọi vùng trời/nước.
   if (mode !== 'fourColor' && mode !== 'threeColor' && r < 50 && g < 150 && b > 100) {
-    return rgbPalette[4]; // 蓝色
+    return (mode === 'sevenColor') ? sevenColorPalette[3] : rgbPalette[4]; // 蓝色
   }
 
   // 三色模式下优先检测红色
@@ -567,14 +589,15 @@ function decodeProcessedData(processedData, width, height, mode) {
   const imageData = new ImageData(width, height);
   const data = imageData.data;
 
-  if (mode === 'sixColor') {
+  if (mode === 'sixColor' || mode === 'sevenColor') {
+    const pal = (mode === 'sevenColor') ? sevenColorPalette : rgbPalette;
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
         const newIndex = (y * width + x) >> 1;
         const colorValue = (x % 2 === 0)
           ? (processedData[newIndex] >> 4) & 0x0F
           : processedData[newIndex] & 0x0F;
-        const color = rgbPalette.find(c => c.value === colorValue) || rgbPalette[1]; // 默认白色
+        const color = pal.find(c => c.value === colorValue) || pal[1]; // 默认白色
         const index = (y * width + x) * 4;
         data[index] = color.r;
         data[index + 1] = color.g;
@@ -653,7 +676,9 @@ function processImageData(imageData, mode) {
 
   let processedData;
 
-  if (mode === 'sixColor') {
+  // sáu màu (Spectra 6) và BẢY MÀU (ACeP) đóng gói y hệt nhau — 4bpp, 2 điểm
+  // một byte, điểm TRÁI ở nibble cao; chỉ khác BẢNG MÃ ở findClosestColor
+  if (mode === 'sixColor' || mode === 'sevenColor') {
     processedData = new Uint8Array(Math.ceil((width * height) / 2)); // 4bpp
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
