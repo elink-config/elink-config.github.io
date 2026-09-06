@@ -963,6 +963,10 @@ function handleNotify(value, idx) {
       // máy cũ chỉ hai ô chữ, hiện ra thì người dùng xếp xong mới biết không gửi được
       const six = fwHasSixText();
       document.querySelectorAll('.dsTextExtra').forEach(e => { e.style.display = six ? '' : 'none'; });
+      // Thanh phan + nut «Chinh sua giao dien nay» cua BO CUC DOI 2 (BWR v3.1).
+      // Dat o day — nhanh GOI CAU HINH — chu KHONG o nhanh fw=: goi khai phien
+      // ban co the rot, con goi cau hinh thi luon toi khi da ket noi.
+      if (typeof dsRefreshCaps === 'function') dsRefreshCaps();
       const dRow = document.getElementById('dsDesignRow');
       if (dRow) dRow.style.display = fwHasNewSlots() ? '' : 'none';
       if (typeof updateImgAutoUI === 'function') updateImgAutoUI();

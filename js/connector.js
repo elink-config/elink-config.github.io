@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  const VER = '20260903a'; // cache-buster, keep in sync with index.html
+  const VER = '20260906a'; // cache-buster, keep in sync with index.html
 
   const EPD42_SERVICE = '62750001-d828-918d-fb46-b6c11c675aec';
   const HM213_SERVICE = '0000ff00-0000-1000-8000-00805f9b34fb';
@@ -98,7 +98,7 @@
       prefixes: ['DIY-4_2-'],
       family: '4_2',
       scripts: ['js/app_common.js', 'js/family_epd.js', 'js/dithering.js', 'js/paint.js', 'js/crop.js',
-        'js/4_2/profile.gen.js', 'js/4_2/modes.gen.js', 'js/4_2/mode_preview.js', 'js/common/designer.js', 'js/diy_store.js', 'js/4_2/timetable.js', 'js/4_2/main.js'],
+        'js/4_2/profile.gen.js', 'js/4_2/modes.gen.js', 'js/4_2/seeds.gen.js', 'js/4_2/mode_preview.js', 'js/common/designer.js', 'js/diy_store.js', 'js/4_2/timetable.js', 'js/4_2/main.js'],
     },
     '4_2c': {
       label: '4.2" BỐN MÀU',
@@ -107,7 +107,7 @@
       prefixes: ['DIY-4_2C-'],
       family: '4_2',
       scripts: ['js/app_common.js', 'js/family_epd.js', 'js/dithering.js', 'js/paint.js', 'js/crop.js',
-        'js/4_2/profile.gen.js', 'js/4_2/modes.gen.js', 'js/4_2/mode_preview.js', 'js/common/designer.js', 'js/diy_store.js', 'js/4_2/timetable.js', 'js/4_2/main.js'],
+        'js/4_2/profile.gen.js', 'js/4_2/modes.gen.js', 'js/4_2/seeds.gen.js', 'js/4_2/mode_preview.js', 'js/common/designer.js', 'js/diy_store.js', 'js/4_2/timetable.js', 'js/4_2/main.js'],
     },
     'reader_4_2': {
       label: 'Máy đọc sách 4.2"',

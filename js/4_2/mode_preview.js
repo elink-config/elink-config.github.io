@@ -861,7 +861,98 @@
   }
 
   // shared drawing helpers for the mode-20 designer (designer.js)
+
+  /* ---- CÁC KHỐI CỦA «Tự thiết kế» (v2.9) --------------------------------
+   * Vẽ đúng những gì firmware vẽ cho các thành phần MỚI, để khung thiết kế
+   * hiện ra cái người dùng sẽ thấy trên máy chứ không phải ô chữ nhật rỗng.
+   * Đặt Ở ĐÂY chứ không ở designer.js vì chúng dùng helper cục bộ của IIFE
+   * này (font/center/monthGrid/weekBar) — đúng lý do bảng DRAW cũng ở đây. */
+
+  // Lịch tháng ĐẦY ĐỦ: hàng thứ nền đậm + lưới ngày kèm số âm lịch
+  function wCalFull(x, px, py, w, h) {
+    const now = new Date();
+    weekBar(x, px, py, w, 24, WD_SHORT, 13, true);
+    monthGrid(x, px, py + 32, w, Math.max(40, h - 32), now, { lunar: 1, dayPx: 15 });
+  }
+
+  // Dải 7 ngày của TUẦN NÀY, hôm nay tô đỏ
+  function wWeekStrip(x, px, py, w, h) {
+    const now = new Date();
+    const pitch = w / 7, bw = pitch - 2;
+    const start = new Date(now);
+    start.setDate(now.getDate() - (v17() ? (now.getDay() + 6) % 7 : now.getDay()));
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(start); d.setDate(start.getDate() + i);
+      const bx = px + i * pitch;
+      const today = d.getDate() === now.getDate() && d.getMonth() === now.getMonth();
+      x.beginPath(); x.roundRect(bx, py, bw, h, 7);
+      if (today) { x.fillStyle = RED; x.fill(); }
+      else { x.strokeStyle = BK; x.lineWidth = 1.5; x.stroke(); }
+      const wd = d.getDay(), weekend = wd === 0 || wd === 6;
+      const cx = bx + bw / 2;
+      font(x, 13, 1); center(x, WD_SHORT[wd], cx, py + h * 26 / 150, today ? '#fff' : (weekend ? RED : BK));
+      font(x, 22, 1); center(x, d.getDate(), cx, py + h * 82 / 150, today ? '#fff' : BK);
+      font(x, 11, 0); center(x, lunarish(d.getDate()), cx, py + h * 116 / 150, today ? '#fff' : '#555');
+    }
+  }
+
+  // 12 tháng trong năm, tháng này viền đỏ (cỡ CỐ ĐỊNH 388x255 như firmware)
+  function wYearGrid(x, px, py) {
+    const now = new Date(), y = now.getFullYear();
+    for (let m = 0; m < 12; m++) {
+      const bx = px + (m % 4) * 97, by = py + ((m - m % 4) / 4) * 85, cur = m === now.getMonth();
+      if (cur) {
+        x.strokeStyle = RED; x.lineWidth = 2;
+        x.beginPath(); x.roundRect(bx - 3, by - 10, 94, 82, 4); x.stroke();
+      }
+      font(x, 10, 1); center(x, 'Tháng ' + (m + 1), bx + 44, by, cur ? RED : BK);
+      const first0 = new Date(y, m, 1).getDay(), maxD = new Date(y, m + 1, 0).getDate();
+      const first = (first0 + 7 - (v17() ? 1 : 0)) % 7;
+      for (let d = 1; d <= maxD; d++) {
+        const idx = first + d - 1, col = idx % 7, row = (idx - col) / 7;
+        const dx = bx + col * 12.6 + 6, dy = by + 11 + row * 10;
+        const wd = (first0 + d - 1) % 7;
+        const today = cur && d === now.getDate();
+        if (today) { x.fillStyle = RED; x.fillRect(dx - 6, dy - 8, 13, 10); }
+        font(x, 9, 0);
+        center(x, d, dx, dy, today ? '#fff' : ((wd === 0 || wd === 6) ? RED : BK));
+      }
+    }
+  }
+
+  /* Giờ hoàng đạo / hắc đạo. Bảng mặt nạ CHÉP TỪ FIRMWARE (HOANG_DAO_MASK):
+   * chỉ số = chi của ngày quy về Tý=0 rồi lấy dư 6. Xem trở lại DrawHoangDao
+   * trong GUI.c nếu bảng bên kia đổi. */
+  const HD_CHI = ['Tý', 'Sửu', 'Dần', 'Mão', 'Thìn', 'Tỵ', 'Ngọ', 'Mùi', 'Thân', 'Dậu', 'Tuất', 'Hợi'];
+  const HD_MASK = [0x0B33, 0x0CCD, 0x0B33, 0x0CCD, 0x0B33, 0x0CCD];
+  function hdGio(i) {
+    return HD_CHI[i] + ' ' + (i === 0 ? '23-1h' : (2 * i - 1) + '-' + (2 * i + 1) + 'h');
+  }
+  function wHoangDao(x, px, py) {
+    const mask = HD_MASK[(new Date().getDate()) % 6];
+    font(x, 13, 1); x.fillStyle = RED; x.fillText('Giờ hoàng đạo', px, py);
+    let n = 0;
+    for (let i = 0; i < 12; i++) {
+      if (!(mask & (1 << i))) continue;
+      const hx = px + (n % 2) * 100, hy = py + 26 + ((n - n % 2) / 2) * 30;
+      x.fillStyle = RED; x.beginPath(); x.arc(hx + 4, hy - 5, 3, 0, 7); x.fill();
+      font(x, 13, 0); x.fillStyle = BK; x.fillText(hdGio(i), hx + 12, hy);
+      n++;
+    }
+    line(x, px, py + 120, px + 188, py + 120, BK, 1);
+    font(x, 13, 1); x.fillStyle = RED; x.fillText('Giờ hắc đạo', px, py + 144);
+    n = 0;
+    for (let i = 0; i < 12; i++) {
+      if (mask & (1 << i)) continue;
+      const hx = px + (n % 2) * 100, hy = py + 168 + ((n - n % 2) / 2) * 28;
+      x.fillStyle = BK; x.beginPath(); x.arc(hx + 4, hy - 5, 3, 0, 7); x.fill();
+      font(x, 13, 0); x.fillStyle = BK; x.fillText(hdGio(i), hx + 12, hy);
+      n++;
+    }
+  }
+
   window.__pv = { font, center, multi, seg7, segStr, battery, analogClock, monthGrid, pad2, lunarish,
+                  line, weekBar, wCalFull, wWeekStrip, wYearGrid, wHoangDao,
                   RED, BK, WH, WD_SHORT, WD_FULL };
 
   /* BANG THE NAY DUOC SINH RA — xem js/4_2/modes.gen.js (window.EPD_MODES),
@@ -896,6 +987,16 @@
     });
   };
 
+  /* Bấm «Chỉnh sửa giao diện này» trên một thẻ. Nạp bố cục mẫu vào thiết kế
+   * ĐANG chọn rồi cuộn tới khung để người dùng thấy ngay kết quả — không cuộn
+   * thì màn hình không đổi gì và ai cũng tưởng nút hỏng. */
+  window.dsEditMode = function (mode) {
+    if (typeof window.dsSeed !== 'function') return;
+    if (!window.dsSeed(mode)) return;
+    const c = document.getElementById('designerCanvas');
+    if (c) c.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+
   function build() {
     const gallery = document.getElementById('modeGallery');
     if (!gallery) return;
@@ -908,7 +1009,18 @@
         '<canvas width="400" height="300"></canvas>' +
         '<div class="mode-name">' + ((m.nameNew && fwCal()) ? m.nameNew : m.name) + '</div>' +
         '<div class="mode-tick">' + ((m.tickNew && fwTime()) ? m.tickNew : m.tick) + '</div>' +
-        '<button id="' + m.id + '" type="button" class="primary" onclick="syncTime(' + m.mode + ')">Áp dụng</button>';
+        '<button id="' + m.id + '" type="button" class="primary" onclick="syncTime(' + m.mode + ')">Áp dụng</button>' +
+        /* «Chỉnh sửa giao diện này»: đổ bố cục XẤP XỈ của giao diện này vào
+         * khung «Tự thiết kế» rồi cuộn xuống đó. Chỉ hiện với giao diện CÓ
+         * bố cục mẫu (window.EPD_SEEDS, sinh từ hồ sơ máy) — thẻ nào không
+         * dựng lại được bằng thành phần thì không có nút, đỡ hứa suông.
+         *
+         * Nút hiện SẴN, chỉ khi bấm mới báo nếu máy chưa hỗ trợ: gác theo
+         * năng lực ngay lúc dựng thẻ thì lúc chưa kết nối nút biến mất và
+         * không ai biết là có tính năng đó. */
+        ((window.EPD_SEEDS && window.EPD_SEEDS[m.mode])
+          ? '<button type="button" class="secondary ds-seed-btn" onclick="dsEditMode(' + m.mode + ')">Chỉnh sửa giao diện này</button>'
+          : '');
       gallery.appendChild(card);
       // mode 2 + 18 đã bỏ ở firmware v1.7: ẩn card khi thiết bị khai fw >= 1.7
       // mode 2+18 bỏ ở v1.7; 21+22 (Núi tuyết, Hoàng hôn) bỏ ở v2.4 lấy RAM
@@ -938,6 +1050,12 @@
     if (mode === 23 && !(typeof fwHasNewSlots === 'function' && fwHasNewSlots())) return true;
     // «Thời khóa biểu» chỉ có từ BWR v2.5 / 4 màu v3.6
     if (mode === 24 && !window.__fwTKB) return true;
+    /* v3.1 (ba màu): «Núi tuyết» + «Khủng long» ĐÃ GỠ khỏi firmware để lấy RAM
+     * cho «Tự thiết kế» đời 2 — DA14585 chạy mã trong SysRAM nên mã là RAM.
+     * Số mode GIỮ NGUYÊN (không đánh lại, khỏi bắt khách factory reset) nên ở
+     * đây chỉ việc ẩn thẻ. Hai giao diện tranh còn lại đều có đồng hồ.
+     * Gác theo BẢNG NĂNG LỰC, cùng mốc với bố cục đời 2. */
+    if ((mode === 18 || mode === 20) && window.EpdProf && window.EpdProf.co('bo_cuc_doi_2')) return true;
     return false;
   }
 

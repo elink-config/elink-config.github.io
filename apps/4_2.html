@@ -111,7 +111,7 @@
 		</fieldset>
 		<fieldset>
 			<legend>Thiết kế màn hình</legend>
-			<p class="mode-gallery-hint">Bấm nút để thêm thành phần, <b>kéo-thả trên khung để di chuyển</b>, chọn một thành phần rồi <b>kéo thanh «Cỡ» (hoặc lăn chuột ngay trên khung) để phóng to / thu nhỏ</b>. Đồng hồ kim và lịch tháng co giãn từng pixel; chữ và icon chỉ nhân được 1/2/3 lần vì font của máy là ảnh điểm, nên thanh kéo tự bám nấc. Đồng hồ và nhiệt độ vẫn tự cập nhật mỗi phút không chớp màn hình như các chế độ khác.</p>
+			<p class="mode-gallery-hint">Muốn nhanh: bấm <b>«Chỉnh sửa giao diện này»</b> dưới một thẻ giao diện ở trên để nạp sẵn bố cục của nó vào đây rồi sửa lại. Hoặc bấm nút để thêm thành phần, <b>kéo-thả trên khung để di chuyển</b>, chọn một thành phần rồi <b>kéo thanh «Cỡ» (hoặc lăn chuột ngay trên khung) để phóng to / thu nhỏ</b>. Đồng hồ kim và lịch tháng co giãn từng pixel; chữ và icon chỉ nhân được 1/2/3 lần vì font của máy là ảnh điểm, nên thanh kéo tự bám nấc. Đồng hồ và nhiệt độ vẫn tự cập nhật mỗi phút không chớp màn hình như các chế độ khác.</p>
 			<div class="designer-palette">
 				<button type="button" class="secondary" onclick="dsAdd(1)">+ Đồng hồ số</button>
 				<button type="button" class="secondary" onclick="dsAdd(2)">+ Đồng hồ kim</button>
@@ -129,6 +129,23 @@
 				<button type="button" class="secondary dsTextExtra" onclick="dsAdd(13)">+ Chữ 5</button>
 				<button type="button" class="secondary dsTextExtra" onclick="dsAdd(14)">+ Chữ 6</button>
 				<button type="button" class="secondary" onclick="dsAdd(10)">+ Icon (lấy từ mục Truyền hình ảnh)</button>
+				<button type="button" class="secondary dsV2" onclick="dsAdd(17)">+ Kẻ ngang</button>
+				<button type="button" class="secondary dsV2" onclick="dsAdd(18)">+ Kẻ dọc</button>
+				<button type="button" class="secondary dsV2" onclick="dsAdd(19)">+ Khung / khối</button>
+				<button type="button" class="secondary dsV2" onclick="dsAdd(20)">+ Số ngày khổng lồ</button>
+				<button type="button" class="secondary dsV2" onclick="dsAdd(21)">+ dd.mm khổng lồ</button>
+				<button type="button" class="secondary dsV2" onclick="dsAdd(22)">+ Tháng - Năm</button>
+				<button type="button" class="secondary dsV2" onclick="dsAdd(23)">+ Đếm ngược lễ</button>
+				<button type="button" class="secondary dsV2" onclick="dsAdd(24)">+ Âm lịch đầy đủ</button>
+				<button type="button" class="secondary dsV2" onclick="dsAdd(33)">+ Âm lịch ngắn</button>
+				<button type="button" class="secondary dsV2" onclick="dsAdd(25)">+ Ngày Can Chi</button>
+				<button type="button" class="secondary dsV2" onclick="dsAdd(26)">+ Năm Can Chi</button>
+				<button type="button" class="secondary dsV2" onclick="dsAdd(27)">+ Lịch tháng đầy đủ</button>
+				<button type="button" class="secondary dsV2" onclick="dsAdd(34)">+ Lịch tháng SAU</button>
+				<button type="button" class="secondary dsV2" onclick="dsAdd(28)">+ Dải 7 ngày</button>
+				<button type="button" class="secondary dsV2" onclick="dsAdd(29)">+ Lưới 12 tháng</button>
+				<button type="button" class="secondary dsV2" onclick="dsAdd(30)">+ Giờ hoàng đạo</button>
+				<button type="button" class="secondary dsV2" onclick="dsAdd(32)">+ Nhiệt độ cao / thấp</button>
 			</div>
 			<div class="flex-container" id="dsDesignRow" style="display:none">
 					<div class="flex-group">
@@ -148,6 +165,26 @@
 					       style="flex:1;max-width:320px" oninput="dsSizeInput(this.value)">
 					<span class="mode-gallery-hint" style="margin:0" id="dsSizeLbl">Chọn một thành phần để đổi cỡ</span>
 				</div>
+				<div class="flex-group" id="dsFlagRow" style="flex:1 1 100%;display:none">
+					<label for="dsColor">Màu:</label>
+					<select id="dsColor" onchange="dsSetColor(this.value)">
+						<option value="0">Đen</option>
+						<option value="1">Đỏ</option>
+						<option value="2">Trắng (đặt trên khối đậm)</option>
+					</select>
+					<label for="dsAlign">Canh lề:</label>
+					<select id="dsAlign" onchange="dsSetAlign(this.value)">
+						<option value="0">Trái</option>
+						<option value="1">Giữa</option>
+						<option value="2">Phải</option>
+					</select>
+					<label for="dsBold"><input type="checkbox" id="dsBold" onchange="dsSetBold(this.checked)"> Đậm</label>
+					<label for="dsFill"><input type="checkbox" id="dsFill" onchange="dsSetFill(this.checked)"> Tô đặc</label>
+					<label for="dsParam">Cao:</label>
+					<input type="range" id="dsParam" min="1" max="100" step="1" value="10" disabled
+					       style="flex:1;max-width:200px" oninput="dsParamInput(this.value)">
+					<span class="mode-gallery-hint" style="margin:0" id="dsParamLbl"></span>
+				</div>
 				<div class="flex-group">
 					<button type="button" class="secondary" onclick="dsDelete()">Xóa</button>
 					<button type="button" class="secondary" onclick="dsClear()">Xóa hết</button>
@@ -163,7 +200,9 @@
 					<p style="margin:6px 0 0"><b>Cách làm một màn hình riêng, theo thứ tự:</b></p>
 					<ol style="margin:4px 0 0;padding-left:20px;line-height:1.7">
 						<li>Chọn <b>Thiết kế 1</b> hay <b>Thiết kế 2</b> ở ô trên cùng. Hai thiết kế hoàn toàn tách biệt: bố cục, ảnh nền và icon riêng, tương ứng hai chế độ «Tự thiết kế 1» và «Tự thiết kế 2» trong bộ giao diện.</li>
-						<li>Bấm các nút <b>+ Đồng hồ số</b>, <b>+ Lịch tháng</b>, <b>+ Chữ 1</b>… để thêm thành phần. Tối đa <b>10 thành phần</b> mỗi thiết kế.</li>
+						<li><b>Cách nhanh nhất:</b> tìm giao diện có sẵn nào gần ý bạn nhất trong bộ giao diện phía trên, bấm <b>«Chỉnh sửa giao diện này»</b> ngay dưới thẻ đó. Bố cục của nó được nạp vào đây, rồi bạn kéo-thả, đổi cỡ, thêm bớt tuỳ ý.</li>
+						<li>Hoặc dựng từ đầu: bấm các nút <b>+ Đồng hồ số</b>, <b>+ Lịch tháng</b>, <b>+ Chữ 1</b>… để thêm thành phần. Tối đa <b><span id="dsMaxHint">10</span> thành phần</b> mỗi thiết kế.</li>
+						<li>Chọn một thành phần rồi đặt <b>Màu</b> (đen / đỏ / trắng), <b>Canh lề</b> (trái / giữa / phải) và <b>Đậm</b>. Chữ trắng chỉ hiện khi có <b>Khung / khối</b> tô đặc nằm dưới.</li>
 						<li><b>Kéo thả</b> từng thành phần trên khung xem trước để xếp chỗ. Bấm chọn rồi dùng <b>Đổi cỡ</b> để phóng to/thu nhỏ, <b>Xoá</b> để bỏ.</li>
 						<li>Muốn có chữ của riêng bạn thì thêm thành phần <b>Chữ 1…Chữ 6</b> rồi gõ nội dung vào ô <b>Chữ</b> cùng số bên dưới. Mỗi ô tối đa 47 byte — chữ có dấu tốn 2-3 byte mỗi ký tự, nên khoảng 20 chữ cái.</li>
 						<li>Muốn có <b>ảnh nền toàn màn</b>: lên mục <b>Truyền hình ảnh</b> chọn ảnh, chỉnh cắt/màu cho vừa ý, rồi quay lại đây bấm <b>Làm nền Thiết kế 1</b> (hoặc 2).</li>

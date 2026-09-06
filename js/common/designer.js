@@ -74,7 +74,35 @@
       });
     } catch (e) { /* trình duyệt chặn localStorage: bỏ qua */ }
   }
-  const MAXW = 10;
+  /* ---- BỐ CỤC ĐỜI 2 -----------------------------------------------------
+   * Máy từ 4.2" ba màu v3.1 hiểu bố cục 20 thành phần, mỗi thành phần có thêm
+   * MÀU + CANH LỀ + một tham số phụ. Máy cũ chỉ hiểu 10 thành phần 6 byte.
+   *
+   * Gác bằng BẢNG NĂNG LỰC chứ không gõ số phiên bản vào đây: mỗi dòng máy
+   * đánh số riêng, chép mốc của dòng này sang dòng kia là phép so luôn sai
+   * (xem CLAUDE.md của kho webtool). Chưa kết nối -> EpdProf.co trả false, tức
+   * mặc định là dạng CŨ — an toàn, vì dạng cũ máy nào cũng nhận. */
+  const V2 = () => !!(window.EpdProf && window.EpdProf.co('bo_cuc_doi_2'));
+  const maxW = () => (V2() ? 20 : 10);
+  /* Loại thành phần CHỈ có ở đời 2. Gửi xuống máy cũ thì nó vẽ ra khoảng
+   * trống, nên chặn ngay lúc bấm «Gửi lên thiết bị». */
+  const V2_TYPES = [17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 32, 33, 34];
+  const laV2 = t => V2_TYPES.indexOf(t) >= 0;
+
+  /* Màu vẽ của một thành phần: 0 đen, 1 đỏ, 2 trắng (chữ trên băng đậm).
+   * ⚠ Thứ NHẢY MỖI PHÚT bị firmware ép ĐEN dù chọn đỏ — cập nhật phút là phép
+   * diff một mặt đen trắng, mực đỏ mà đổi thì để lại vết. Xem cw_ink trong
+   * GUI.c. Bản xem trước ép y hệt để không hứa điều máy không làm được. */
+  const EP_DEN = [1, 2, 4, 32];
+  function mauCua(w) {
+    const c = (w.f || 0) & 3;
+    if (c === 2) return '#fff';
+    if (c !== 1) return pv.BK;
+    return EP_DEN.indexOf(w.type) >= 0 ? pv.BK : pv.RED;
+  }
+  const canhLe = w => ((w.f || 0) >> 2) & 3;   // 0 trái, 1 giữa, 2 phải
+  const toDac = w => !!((w.f || 0) & 0x10);
+  const chuDam = w => !!((w.f || 0) & 0x20);
 
   // widget metadata: display name and bounding box per size (mirrors the
   // firmware DrawCustom geometry; used for hit tests and bounds clamping)
@@ -106,6 +134,9 @@
       case 7: return { gw: FREE(s) ? pxOf(s, 180, 112, 400) : [180, 240, 300][s],
                        rh: FREE(s) ? pxOf(s, 26, 12, 60) : [26, 32, 38][s] };
       case 10: return { k: FREE(s) ? mulOf(s, 1, 3) : s + 1 };
+      // khối HAI CHIỀU của đời 2: size là bề rộng/4, không phải hệ số nhân
+      case 17: case 18: case 19: case 27: case 28: return { px: s * 4 };
+      case 20: case 21: case 23: case 24: case 29: case 30: return { k: 1 };
       default: return { k: FREE(s) ? mulOf(s, 1, 3) : (s ? 2 : 1) };   // chữ
     }
   }
@@ -140,6 +171,10 @@
       case 7: return Math.max(10, Math.min(36, s));                       // rộng 112..400
       case 3: return 16;                                                  // pin: một cỡ
       case 10: return Math.max(16, Math.min(48, Math.round(s / 16) * 16));  // 1x/2x/3x
+      // khối hai chiều: bước 4px, tối đa 1020px (một byte)
+      case 17: case 18: case 19: case 27: case 28: return Math.max(1, Math.min(255, s));
+      // cỡ CỐ ĐỊNH: chữ số khổng lồ, lưới 12 tháng, bảng giờ, các dòng ghép màu
+      case 20: case 21: case 23: case 24: case 29: case 30: return 0;
       default: return Math.max(16, Math.min(48, Math.round(s / 16) * 16));  // chữ 1x/2x/3x
     }
   }
@@ -172,6 +207,26 @@
     14: { name: 'Chữ 6', sizes: 2, dim: null },
     15: { name: 'Thứ', sizes: 2, dim: s => { const k = parOf(15, s).k; return [100 * k, 16 * k]; } },
     16: { name: 'Ngày dương', sizes: 2, dim: s => { const k = parOf(16, s).k; return [110 * k, 16 * k]; } },
+
+    /* ---- đời 2: các khối lấy ra từ chính giao diện dựng sẵn ----
+     * `p` = tham số phụ (cao/4 với khối hai chiều, độ dày với đường kẻ). */
+    17: { name: 'Kẻ ngang', sizes: 1, v2: 1, dim: (s, p) => [s * 4, Math.max(1, p || 1)] },
+    18: { name: 'Kẻ dọc', sizes: 1, v2: 1, dim: (s, p) => [Math.max(1, p || 1), s * 4] },
+    19: { name: 'Khung / khối', sizes: 1, v2: 1, dim: (s, p) => [s * 4, (p || 1) * 4] },
+    20: { name: 'Số ngày khổng lồ', sizes: 1, v2: 1, dim: () => [72, 92] },
+    21: { name: 'dd.mm khổng lồ', sizes: 1, v2: 1, dim: () => [210, 92] },
+    22: { name: 'Tháng - Năm', sizes: 2, v2: 1, dim: s => { const k = parOf(22, s).k; return [125 * k, 16 * k]; } },
+    23: { name: 'Đếm ngược lễ', sizes: 1, v2: 1, dim: () => [225, 16] },
+    24: { name: 'Âm lịch đầy đủ', sizes: 1, v2: 1, dim: () => [340, 16] },
+    25: { name: 'Ngày Can Chi', sizes: 2, v2: 1, dim: s => { const k = parOf(25, s).k; return [135 * k, 16 * k]; } },
+    26: { name: 'Năm Can Chi', sizes: 2, v2: 1, dim: s => { const k = parOf(26, s).k; return [125 * k, 16 * k]; } },
+    27: { name: 'Lịch tháng đầy đủ', sizes: 1, v2: 1, dim: (s, p) => [s * 4, (p || 1) * 4] },
+    28: { name: 'Dải 7 ngày', sizes: 1, v2: 1, dim: (s, p) => [s * 4, (p || 1) * 4] },
+    29: { name: 'Lưới 12 tháng', sizes: 1, v2: 1, dim: () => [388, 265] },
+    30: { name: 'Giờ hoàng đạo', sizes: 1, v2: 1, dim: () => [200, 200] },
+    32: { name: 'Nhiệt độ cao / thấp', sizes: 2, v2: 1, dim: s => { const k = parOf(32, s).k; return [205 * k, 16 * k]; } },
+    33: { name: 'Âm lịch ngắn', sizes: 2, v2: 1, dim: s => { const k = parOf(33, s).k; return [115 * k, 16 * k]; } },
+    34: { name: 'Lịch tháng SAU', sizes: 3, v2: 1, dim: s => { const p = parOf(7, s); return [p.gw, 6 * p.rh + 14]; } },
   };
 
   // khung bao riêng của máy (nếu có) — đè lên bảng của màn 4.2"
@@ -223,12 +278,22 @@
     return textAt(i) || ('Chữ ' + (i + 1));
   }
 
+  /* Mép TRÁI thật của một thành phần: x là MỐC, canh lề quyết định mốc đó là
+   * mép trái, điểm giữa hay mép phải. Mọi phép kéo thả và chặn biên phải đi
+   * qua đây, không thì bấm trúng một đằng mà kéo một nẻo. */
+  function leftOf(w, bw) {
+    const a = canhLe(w);
+    return a === 1 ? w.x - bw / 2 : (a === 2 ? w.x - bw : w.x);
+  }
+
   function dimOf(w) {
     const t = TYPES[w.type];
     // Tham so thu HAI la NOI DUNG chu — man nao dung font diem anh (be rong
     // moi ky tu co dinh) can no de tinh khung bao cho dung. Bang cua man 4.2"
     // bo qua tham so nay nen khong doi gi.
-    if (t.dim) return t.dim(w.size, isTextType(w.type) ? textOf(w) : null);
+    // Tham so thu HAI: khoi hai chieu can `p` (cao/4, do day); o chu can NOI
+    // DUNG. Hai thu khong bao gio dung chung mot loai nen mot cho la du.
+    if (t.dim) return t.dim(w.size, t.v2 ? (w.p | 0) : (isTextType(w.type) ? textOf(w) : null));
     // text widgets: measure with the canvas font the preview uses
     const k = parOf(w.type, w.size).k;
     pv.font(ctx, 15 * k, 1);
@@ -245,8 +310,73 @@
     }
     return drawWidget42(x, w, now);
   }
+  /* Vẽ một dòng chữ theo CANH LỀ + màu + đậm của thành phần. Trả về bề rộng
+   * đo được, để chỗ gọi biết khung bao thật. */
+  function veChu(x, w, s, px, baseY) {
+    pv.font(x, px, chuDam(w));
+    const bw = x.measureText(s).width;
+    x.fillStyle = mauCua(w);
+    x.fillText(s, leftOf(w, bw), baseY);
+    return bw;
+  }
+  const CAN = ['Giáp', 'Ất', 'Bính', 'Đinh', 'Mậu', 'Kỷ', 'Canh', 'Tân', 'Nhâm', 'Quý'];
+  const CHI = ['Tý', 'Sửu', 'Dần', 'Mão', 'Thìn', 'Tỵ', 'Ngọ', 'Mùi', 'Thân', 'Dậu', 'Tuất', 'Hợi'];
+  // Xem trước thôi nên Can Chi lấy theo công thức ngày Julius rút gọn — máy
+  // mới là nơi tính thật (day_can_chi trong Lunar.c).
+  function canChiNgay(now) {
+    const jd = Math.floor(now.getTime() / 86400000) + 2440588;
+    return 'Ngày ' + CAN[(jd + 9) % 10] + ' ' + CHI[(jd + 1) % 12];
+  }
+
   function drawWidget42(x, w, now) {
     const BK = pv.BK, RED = pv.RED;
+    const k2 = () => parOf(w.type, w.size).k;
+    switch (w.type) {
+      /* ---- đời 2 ---- */
+      case 17: x.fillStyle = mauCua(w); x.fillRect(w.x, w.y, w.size * 4, Math.max(1, w.p || 1)); return;
+      case 18: x.fillStyle = mauCua(w); x.fillRect(w.x, w.y, Math.max(1, w.p || 1), w.size * 4); return;
+      case 19: {
+        const bw = w.size * 4, bh = (w.p || 1) * 4;
+        if (toDac(w)) { x.fillStyle = mauCua(w); x.fillRect(w.x, w.y, bw, bh); }
+        else { x.strokeStyle = mauCua(w); x.lineWidth = 1.5; x.strokeRect(w.x, w.y, bw, bh); }
+        return;
+      }
+      case 20: veChu(x, w, String(now.getDate()), 88, w.y + 88); return;
+      case 21: veChu(x, w, pv.pad2(now.getDate()) + '.' + pv.pad2(now.getMonth() + 1), 88, w.y + 88); return;
+      case 22: veChu(x, w, 'Tháng ' + (now.getMonth() + 1) + ' - ' + now.getFullYear(), 15 * k2(), w.y + 13 * k2()); return;
+      case 23: {
+        // dòng ghép hai màu: firmware LUÔN căn giữa tại x, không theo cờ lề
+        pv.font(x, 15, 1);
+        pv.center(x, 'Lễ Vu Lan còn 1 ngày', w.x, w.y + 13, RED);
+        return;
+      }
+      case 24: {
+        pv.font(x, 15, 1);
+        pv.multi(x, [['Âm Lịch ' + pv.lunarish(now.getDate()) + '/7', RED],
+                     [' - ' + canChiNgay(now) + ' - Năm Bính Ngọ', BK]], w.x, w.y + 13);
+        return;
+      }
+      case 25: veChu(x, w, canChiNgay(now), 15 * k2(), w.y + 13 * k2()); return;
+      case 26: veChu(x, w, 'Năm Bính Ngọ', 15 * k2(), w.y + 13 * k2()); return;
+      case 27: pv.wCalFull(x, w.x, w.y, w.size * 4, (w.p || 1) * 4); return;
+      case 28: pv.wWeekStrip(x, w.x, w.y, w.size * 4, (w.p || 1) * 4); return;
+      case 29: pv.wYearGrid(x, w.x, w.y); return;
+      case 30: pv.wHoangDao(x, w.x, w.y + 13); return;
+      case 32: veChu(x, w, 'Cao 28°C - Thấp 24°C', 15 * k2(), w.y + 13 * k2()); return;
+      case 33: veChu(x, w, 'Âm Lịch ' + pv.lunarish(now.getDate()) + '/7', 15 * k2(), w.y + 13 * k2()); return;
+      case 34: {
+        const p = parOf(7, w.size), n = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+        pv.font(x, 11, 1);
+        for (let i = 0; i < 7; i++) {
+          const wd = (i + 1) % 7;
+          x.fillStyle = (wd === 0 || wd === 6) ? RED : BK;
+          const gw = p.gw;
+          x.fillText(pv.WD_SHORT[wd], w.x + i * (gw / 7) + gw / 14 - 8, w.y + 12);
+        }
+        pv.monthGrid(x, w.x, w.y + 18, p.gw, p.rh * 6 - 22, n, { dayPx: 11, todayCol: null });
+        return;
+      }
+    }
     switch (w.type) {
       case 1: { // 7-seg HH:MM; unit chosen so the width matches the firmware box
         const u = parOf(1, w.size).cS * 1.77;
@@ -260,17 +390,15 @@
         pv.battery(x, w.x + 63, w.y, BK, '3.2V');
         break;
       case 4:
-        pv.font(x, 15 * parOf(w.type, w.size).k, 0); x.fillStyle = BK;
-        x.fillText('28°C', w.x, w.y + 13 * parOf(w.type, w.size).k);
+        veChu(x, w, '28°C', 15 * k2(), w.y + 13 * k2());
         break;
       case 5:
-        pv.font(x, 15 * parOf(w.type, w.size).k, 0); x.fillStyle = BK;
-        x.fillText(pv.WD_FULL[now.getDay()] + ', ' + pv.pad2(now.getDate()) + '/' + pv.pad2(now.getMonth() + 1) + '/' + now.getFullYear(),
-                   w.x, w.y + 13 * parOf(w.type, w.size).k);
+        veChu(x, w, pv.WD_FULL[now.getDay()] + ', ' + pv.pad2(now.getDate()) + '/' + pv.pad2(now.getMonth() + 1) + '/' + now.getFullYear(),
+              15 * k2(), w.y + 13 * k2());
         break;
       case 6:
-        pv.font(x, 15 * parOf(w.type, w.size).k, 0); x.fillStyle = BK;
-        x.fillText('Âm Lịch 21/5 - Đinh Sửu', w.x, w.y + 13 * parOf(w.type, w.size).k);
+        veChu(x, w, 'Âm Lịch ' + pv.lunarish(now.getDate()) + '/7 - ' + canChiNgay(now).slice(5),
+              15 * k2(), w.y + 13 * k2());
         break;
       case 7: {
         const [gw, gh] = TYPES[7].dim(w.size);
@@ -293,18 +421,17 @@
       case 11:
       case 12:
       case 13:
-      case 14:
-        pv.font(x, 15 * parOf(w.type, w.size).k, 1); x.fillStyle = BK;
-        x.fillText(textOf(w), w.x, w.y + 13 * parOf(w.type, w.size).k);
-        break;
+      case 14: {
+        // ô chữ tự nhập luôn ĐẬM trên máy (vẽ đè lệch 1px), bất kể cờ
+        const wd = Object.assign({}, w, { f: (w.f | 0) | 0x20 });
+        veChu(x, wd, textOf(w), 15 * k2(), w.y + 13 * k2());
+      } break;
       case 15:   // chỉ THỨ
-        pv.font(x, 15 * parOf(w.type, w.size).k, 0); x.fillStyle = BK;
-        x.fillText(pv.WD_FULL[now.getDay()], w.x, w.y + 13 * parOf(w.type, w.size).k);
+        veChu(x, w, pv.WD_FULL[now.getDay()], 15 * k2(), w.y + 13 * k2());
         break;
       case 16:   // chỉ NGÀY DƯƠNG
-        pv.font(x, 15 * parOf(w.type, w.size).k, 0); x.fillStyle = BK;
-        x.fillText(pv.pad2(now.getDate()) + '/' + pv.pad2(now.getMonth() + 1) + '/' + now.getFullYear(),
-                   w.x, w.y + 13 * parOf(w.type, w.size).k);
+        veChu(x, w, pv.pad2(now.getDate()) + '/' + pv.pad2(now.getMonth() + 1) + '/' + now.getFullYear(),
+              15 * k2(), w.y + 13 * k2());
         break;
       case 10: {
         const k = parOf(10, w.size).k;  // 1x/2x/3x — ảnh bitmap nên chỉ nguyên lần
@@ -473,7 +600,7 @@
     });
   };
 
-  function redraw() { if (ctx) renderLayout(ctx, new Date(), true); syncSizeUI(); }
+  function redraw() { if (ctx) renderLayout(ctx, new Date(), true); syncSizeUI(); syncFlagUI(); }
 
   /* ---- interactions ---- */
 
@@ -486,14 +613,23 @@
    *   máy cũ hơn / bản bốn màu -> chỉ ba nấc 0/1/2 mà firmware đó dựng được
    * Pin không có đường co giãn nào nên thanh kéo tắt. */
   function freeSizeOk() { return window.__fwFreeSize !== false; }
-  function canResize(w) { return !!w && w.type !== 3; }
+  // Cỡ CỐ ĐỊNH: pin, và các khối đời 2 vẽ bằng font/ảnh không phóng được
+  const CO_CO_DINH = [3, 20, 21, 23, 24, 29, 30];
+  function canResize(w) { return !!w && CO_CO_DINH.indexOf(w.type) < 0; }
+  // Khối có CHIỀU CAO chỉnh riêng (tham số phụ `p`)
+  const CO_CHIEU_CAO = [19, 27, 28];
+  const CO_DO_DAY = [17, 18];
+  function coParam(w) { return !!w && (CO_CHIEU_CAO.indexOf(w.type) >= 0 || CO_DO_DAY.indexOf(w.type) >= 0); }
   function sizeRange(type) {
     if (!freeSizeOk()) return { min: 0, max: (TYPES[type].sizes - 1), step: 1, legacy: true };
     if (DEV && DEV.sizeRange) { const r = DEV.sizeRange(type); if (r) return r; }
     switch (type) {
       case 1: return { min: 8, max: 64, step: 8 };     // đồng hồ số: cS 1..8
       case 2: return { min: 5, max: 60, step: 1 };     // đồng hồ kim: bán kính 12..150
-      case 7: return { min: 10, max: 36, step: 1 };    // lịch tháng: rộng 112..400
+      case 7: case 34: return { min: 10, max: 36, step: 1 };  // lịch tháng: rộng 112..400
+      // khối hai chiều của đời 2: `size` là bề rộng, bước 4px
+      case 17: case 18: return { min: 1, max: 100, step: 1 };
+      case 19: case 27: case 28: return { min: 5, max: 100, step: 1 };
       default: return { min: 16, max: 48, step: 16 };  // chữ + icon: 1x/2x/3x
     }
   }
@@ -536,12 +672,68 @@
     sl.value = sizeValue(w);
     if (lb) lb.textContent = sizeLabel(w);
   }
+
+  /* Hàng «Màu / Canh lề / Đậm / Cao» chỉ có nghĩa với máy đời 2, và mỗi ô chỉ
+   * bật khi thành phần đang chọn thật sự dùng tới nó. */
+  function syncFlagUI() {
+    const row = document.getElementById('dsFlagRow');
+    if (!row) return;
+    row.style.display = V2() ? '' : 'none';
+    const w = (sel >= 0) ? st.widgets[sel] : null;
+    const set = (id, on, val) => {
+      const e = document.getElementById(id);
+      if (!e) return;
+      e.disabled = !on;
+      if (on && val !== undefined) { if (e.type === 'checkbox') e.checked = !!val; else e.value = val; }
+    };
+    set('dsColor', !!w, w ? ((w.f | 0) & 3) : 0);
+    set('dsAlign', !!w, w ? (((w.f | 0) >> 2) & 3) : 0);
+    set('dsBold', !!w, w ? !!((w.f | 0) & 0x20) : false);
+    set('dsFill', !!w && w.type === 19, w ? !!((w.f | 0) & 0x10) : false);
+    const pOn = !!w && coParam(w);
+    const ps = document.getElementById('dsParam');
+    const pl = document.getElementById('dsParamLbl');
+    if (ps) {
+      ps.disabled = !pOn;
+      if (pOn) {
+        const day = CO_DO_DAY.indexOf(w.type) >= 0;
+        ps.min = 1; ps.max = day ? 4 : 100; ps.step = 1;
+        ps.value = Math.max(1, w.p | 0);
+        if (pl) pl.textContent = day ? ('Dày ' + (w.p | 0) + ' px') : ('Cao ' + ((w.p | 0) * 4) + ' px');
+      } else if (pl) {
+        pl.textContent = w ? 'Thành phần này không chỉnh chiều cao riêng' : '';
+      }
+    }
+  }
   window.dsSizeInput = function (v) { if (sel >= 0) applySize(Number(v)); };
+
+  /* ---- tham số phụ: chiều cao (khung / lịch / dải tuần) hoặc độ dày (kẻ) ---- */
+  window.dsParamInput = function (v) {
+    const w = (sel >= 0) ? st.widgets[sel] : null;
+    if (!w || !coParam(w)) return;
+    const day = CO_DO_DAY.indexOf(w.type) >= 0;
+    w.p = Math.max(1, Math.min(day ? 4 : 100, Math.round(Number(v))));
+    clampW(w); save(); redraw();
+  };
+
+  /* ---- màu / canh lề / đậm ------------------------------------------------
+   * Cả ba nằm chung byte `f`, đúng khuôn CWF_* của firmware. Đổi khuôn ở đây
+   * là phải đổi cả GUI.h — hai bên là MỘT giao ước. */
+  function datCo(mask, shift, v) {
+    const w = (sel >= 0) ? st.widgets[sel] : null;
+    if (!w) return;
+    w.f = ((w.f | 0) & ~mask) | ((Number(v) << shift) & mask);
+    clampW(w); save(); redraw();
+  }
+  window.dsSetColor = function (v) { datCo(0x03, 0, v); };
+  window.dsSetAlign = function (v) { datCo(0x0C, 2, v); };
+  window.dsSetBold = function (on) { datCo(0x20, 5, on ? 1 : 0); };
+  window.dsSetFill = function (on) { datCo(0x10, 4, on ? 1 : 0); };
 
   function hit(px, py) {
     for (let i = st.widgets.length - 1; i >= 0; i--) {
-      const w = st.widgets[i], [bw, bh] = dimOf(w);
-      if (px >= w.x - 4 && px <= w.x + bw + 4 && py >= w.y - 4 && py <= w.y + bh + 4) return i;
+      const w = st.widgets[i], [bw, bh] = dimOf(w), lx = leftOf(w, bw);
+      if (px >= lx - 4 && px <= lx + bw + 4 && py >= w.y - 4 && py <= w.y + bh + 4) return i;
     }
     return -1;
   }
@@ -554,16 +746,22 @@
 
   function clampW(w) {
     const [bw, bh] = dimOf(w);
-    w.x = Math.round(Math.max(0, Math.min(dsW() - bw, w.x)));
+    const a = canhLe(w), off = a === 1 ? bw / 2 : (a === 2 ? bw : 0);
+    w.x = Math.round(Math.max(off, Math.min(dsW() - bw + off, w.x)));
     w.y = Math.round(Math.max(0, Math.min(dsH() - bh, w.y)));
   }
 
   window.dsAdd = function (type) {
-    if (st.widgets.length >= MAXW) { alert('Tối đa ' + MAXW + ' thành phần.'); return; }
+    if (st.widgets.length >= maxW()) { alert('Tối đa ' + maxW() + ' thành phần.'); return; }
     if ((type === 8 || type === 9) && st.widgets.some(w => w.type === type)) {
       alert('Mỗi ô chữ chỉ dùng được một lần.'); return;
     }
-    const w = { type: type, size: 0, x: 140, y: 120 };
+    const w = { type: type, size: 0, f: 0, p: 0, x: 140, y: 120 };
+    // khối hai chiều mở ra với một cỡ dùng được ngay, không phải 0x0
+    if (type === 17 || type === 18) { w.size = 40; w.p = 1; }
+    else if (type === 19) { w.size = 30; w.p = 10; }
+    else if (type === 27) { w.size = 90; w.p = 60; }
+    else if (type === 28) { w.size = 90; w.p = 37; }
     clampW(w);
     st.widgets.push(w);
     sel = st.widgets.length - 1;
@@ -600,6 +798,34 @@
 
   // ---- kho thiết kế (js/diy_store.js) + ảnh từ mục «Truyền hình ảnh» ----
 
+  /* ---- «Chỉnh sửa giao diện này» --------------------------------------
+   * Đổ bố cục XẤP XỈ của một giao diện dựng sẵn vào khung thiết kế. Số liệu
+   * do js/<máy>/seeds.gen.js mang sang, sinh từ tools/profile/<máy>.json bên
+   * kho firmware — cùng một nguồn với danh sách thẻ, nên không lệch được.
+   *
+   * Bố cục mồi dùng các loại thành phần ĐỜI 2, nên máy cũ không nạp được:
+   * chặn ngay ở đây thay vì để người dùng sửa cả buổi rồi mới báo lỗi lúc gửi. */
+  window.dsSeed = function (mode) {
+    const S = window.EPD_SEEDS && window.EPD_SEEDS[mode];
+    if (!S) { alert('Giao diện này chưa có bố cục mẫu.'); return false; }
+    if (!V2()) {
+      alert('Máy đang kết nối chưa hỗ trợ bố cục đời 2 (cần 4.2" ba màu từ v3.1).\n\n'
+            + 'Hãy cập nhật firmware rồi thử lại.');
+      return false;
+    }
+    if (!confirm('Nạp bố cục của giao diện này vào «Thiết kế ' + (dsDesign + 1) + '»?\n\n'
+                 + 'Thiết kế đang có sẽ bị thay. Ảnh nền và icon giữ nguyên.')) return false;
+    st.widgets = S.w.map(a => ({ type: a[0], size: a[1], f: a[2], p: a[3], x: a[4], y: a[5] }))
+                     .filter(w => TYPES[w.type]);
+    st.frame = S.frame || 0;
+    if (S.text) Object.keys(S.text).forEach(k => setTextAt(Number(k), S.text[k]));
+    sel = -1;
+    st.widgets.forEach(clampW);
+    save(); redraw();
+    if (typeof dsSyncTextInputs === 'function') dsSyncTextInputs();
+    return true;
+  };
+
   window.dsGetState = function () {
     try { return JSON.parse(JSON.stringify(st)); } catch (e) { return null; }
   };
@@ -610,6 +836,7 @@
     st.frame = Number(st.frame) || 0;
     st.widgets = st.widgets.filter(w => TYPES[w.type]).map(w => {
       w.size = fixSize(w.type, w.size);
+      w.f = w.f | 0; w.p = w.p | 0;
       return w;
     });
     iconImg = null;
@@ -864,26 +1091,44 @@
       }
       texts.push(b);
     }
-    if (!six && st.widgets.some(w => w.type > 10)) {
+    if (!six && st.widgets.some(w => w.type > 10 && w.type <= 16)) {
       alert('Máy này chỉ dùng được «Chữ 1» và «Chữ 2» (cần firmware 4.2" ba màu từ v2.8, bốn màu từ v3.8).\n\n'
             + 'Hãy bỏ bớt các thành phần Chữ 3-6 / Thứ / Ngày dương rồi gửi lại.');
       return;
     }
-    const buf = new Uint8Array(62 + slots * 48);
+    /* ---- ĐỜI BỐ CỤC ----------------------------------------------------
+     * Đời 2: 20 thành phần x 8 byte (thêm cờ màu/canh lề + tham số phụ).
+     * Đời 1: 10 x 6 byte, y như cũ — máy chưa cập nhật vẫn nhận được.
+     * Máy quyết định bằng ĐỘ DÀI gói, nên hai dạng không nhập nhằng. */
+    const v2 = V2();
+    if (!v2 && st.widgets.some(w => laV2(w.type))) {
+      alert('Thiết kế có thành phần chỉ máy đời mới vẽ được (kẻ, khung, số ngày khổng lồ, '
+            + 'lịch tháng đầy đủ…).\n\nCần firmware 4.2" ba màu từ v3.1. Hãy cập nhật rồi gửi lại.');
+      return;
+    }
+    if (!v2 && st.widgets.length > 10) {
+      alert('Máy này nhận tối đa 10 thành phần (cần firmware 4.2" ba màu từ v3.1 để dùng 20).');
+      return;
+    }
+    const nW = v2 ? 20 : 10, stride = v2 ? 8 : 6;
+    const head = 2 + nW * stride;
+    const buf = new Uint8Array(head + slots * 48);
     buf[0] = st.widgets.length;
     buf[1] = st.frame;
     st.widgets.forEach((w, i) => {
-      const o = 2 + i * 6;
+      const o = 2 + i * stride;
       buf[o] = w.type; buf[o + 1] = w.size;
-      buf[o + 2] = w.x & 0xFF; buf[o + 3] = (w.x >> 8) & 0xFF;
-      buf[o + 4] = w.y & 0xFF; buf[o + 5] = (w.y >> 8) & 0xFF;
+      if (v2) { buf[o + 2] = w.f | 0; buf[o + 3] = w.p | 0; }
+      const ox = o + (v2 ? 4 : 2);
+      buf[ox] = w.x & 0xFF; buf[ox + 1] = (w.x >> 8) & 0xFF;
+      buf[ox + 2] = w.y & 0xFF; buf[ox + 3] = (w.y >> 8) & 0xFF;
     });
-    texts.forEach((t, i) => buf.set(t, 62 + i * 48));
+    texts.forEach((t, i) => buf.set(t, head + i * 48));
 
     // Bố cục 6 ô chữ dài 350 byte — VƯỢT MTU (tối đa 247, tức 244 byte tải)
     // nên phải chẻ. Máy đời trước vẫn nhận trọn gói như cũ.
     let sent;
-    if (six) {
+    if (six || v2) {
       const room = Math.max(32, (Number(document.getElementById('mtusize').value) || 20) - 10);
       sent = true;
       syncOverlayStep('Đang gửi bố cục…',
@@ -921,6 +1166,18 @@
   };
 
   /* ---- init ---- */
+
+  /* Nút của các thành phần ĐỜI 2 mang class .dsV2 trong HTML: máy chưa hỗ trợ
+   * thì ẩn hẳn, chứ hiện ra rồi báo lỗi lúc gửi là bắt người dùng làm không
+   * công. Gọi lại mỗi lần đổi máy/kết nối — xem dsRefreshCaps. */
+  window.dsRefreshCaps = function () {
+    const on = V2();
+    document.querySelectorAll('.dsV2').forEach(e => { e.style.display = on ? '' : 'none'; });
+    document.querySelectorAll('.ds-seed-btn').forEach(e => { e.style.display = on ? '' : 'none'; });
+    const h = document.getElementById('dsMaxHint');
+    if (h) h.textContent = String(maxW());
+    syncFlagUI();
+  };
 
   function init() {
     canvas = document.getElementById('designerCanvas');
