@@ -77,6 +77,28 @@ function fwHasNewSlots() {
 let timeSynced = false;     // device clock is valid (reported or just synced);
                             // gates the mode gallery in [Điều khiển thiết bị]
 
+/* KHÔI PHỤC CÀI ĐẶT GỐC (lệnh 0x2F).
+ *
+ * Máy 7.3" chỉ có lệnh này TỪ v2.6 — trước đó nó dùng lớp dịch vụ RIÊNG chứ
+ * chưa lên epd_common nên không được thừa hưởng (28 lệnh so với 30). Hàng nút
+ * gác bằng cổng «khoi_phuc_goc» trong hồ sơ máy, mở ở nhánh GÓI CẤU HÌNH. */
+async function factoryReset() {
+  if (!epdCharacteristic) { alert('Chưa kết nối thiết bị.'); return; }
+  // KHÔNG nhắc gì tới mã kích hoạt ở đây: khách không cần biết máy có cơ chế
+  // đó. Với họ chỉ có một ý — bấm reset là máy về như mới và chạy bình thường.
+  if (!confirm('Khôi phục cài đặt gốc?\n\n' +
+               'Máy sẽ về như lúc mới và XOÁ HẾT:\n' +
+               '  • cấu hình (chế độ, kiểu pin, 12/24h, chữ đậm...)\n' +
+               '  • giao diện «Tự thiết kế» + icon\n' +
+               '  • thời khoá biểu\n' +
+               '  • tất cả ảnh đã gửi vào khe\n\n' +
+               'Không hoàn tác được.')) return;
+  addLog('Gửi lệnh khôi phục cài đặt gốc...', '⇑');
+  // 4 byte magic 'R','S','T',0x5A — firmware bỏ qua gói thiếu magic
+  await write(EpdCmd.FACTORY_RESET, [0x52, 0x53, 0x54, 0x5A]);
+  addLog('Máy sẽ khởi động lại và tự ngắt kết nối. Kết nối lại sau vài giây.');
+}
+
 const EpdCmd = {
   SET_PINS: 0x00,
   INIT: 0x01,
@@ -98,6 +120,7 @@ const EpdCmd = {
   ASSET: 0x2C, // nạp blob dữ liệu vào flash: [00 len_u16] mở / [01 data] / [02 crc32_u32] chốt
   TIME_FMT: 0x2A, // [0/1] định dạng giờ: 24h / 12h (BWR >= 2.1, 4 màu >= 3.0, 7.5" V1 >= 0.3)
   TIMETABLE: 0x2D, // thời khóa biểu (mode 24), chia mảnh: [00 flags am pm data] rồi [01 data]
+  FACTORY_RESET: 0x2F, // [2F 'R' 'S' 'T' 5A] khôi phục cài đặt gốc (7.3" >= v2.6)
   INFO: 0x2E, // xin máy gửi LẠI loạt thông tin mở màn (fw/mac/act/config) — fw >= 2.6
 
   WRITE_IMG: 0x30, // v1.6
@@ -787,6 +810,13 @@ function handleNotify(value, idx) {
        * kết nối, còn 'fw=' thì có thể rơi. Treo giao diện vào 'fw=' đã làm
        * mất nút trên máy 10.2" một lần rồi. */
       updateShowImgUI();
+      /* «Khôi phục cài đặt gốc» — cùng lý do: mở ở gói CẤU HÌNH, không ở
+       * nhánh 'fw='. Gác theo bảng năng lực (máy 7.3" chỉ có lệnh 0x2F từ
+       * v2.6, khi nó lên nền chung), KHÔNG gõ số phiên bản vào đây. */
+      {
+        const fr = document.getElementById('factoryResetRow');
+        if (fr && window.EpdProf && window.EpdProf.co('khoi_phuc_goc')) fr.style.display = '';
+      }
       document.getElementById('imgAutoCHK').checked = auto === 1;
       const r = document.querySelector(`input[name="imgInterval"][value="${itv}"]`);
       if (r) r.checked = true;

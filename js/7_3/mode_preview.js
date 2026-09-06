@@ -881,35 +881,49 @@
   /* SỐ THẺ = SỐ MODE của firmware v2.0 (GUI.h). Bảng này PHẢI khớp enum
    * display_mode_t — đổi một bên mà quên bên kia là máy vẽ nhầm giao diện.
    * Máy còn chạy v1.0 hiểu bảng số CŨ; main.js tự quy đổi (MODE_NEW2OLD). */
-  const MODE_LIST = [
-    { mode: 1, name: 'Lịch tháng', tick: 'Cập nhật lúc 0h', id: 'calendarmodebutton', draw: m1 },
-    { mode: 2, name: 'Đồng hồ + Lịch', tick: 'Làm mới mỗi giờ', id: 'combomodebutton', draw: m3 },
-    { mode: 3, name: 'Lịch để bàn (đỏ)', tick: 'Làm mới mỗi giờ', id: 'redcombomodebutton', draw: m4 },
-    { mode: 4, name: 'Lịch VN (Can Chi)', tick: 'Cập nhật lúc 0h', id: 'vncalendarmodebutton', draw: m5 },
-    { mode: 5, name: 'Đồng hồ số', tick: 'Làm mới mỗi giờ', id: 'digitalmodebutton', draw: m6 },
-    { mode: 6, name: 'Đồng hồ kim', tick: 'Làm mới mỗi giờ', id: 'analogmodebutton', draw: m7 },
-    { mode: 7, name: 'Lịch bloc', tick: 'Cập nhật lúc 0h', id: 'dayblocmodebutton', draw: m8 },
-    { mode: 8, name: 'Lịch tuần', tick: 'Làm mới mỗi giờ', id: 'weekmodebutton', draw: m9 },
-    { mode: 9, name: 'Giờ + lịch tháng', tick: 'Làm mới mỗi giờ', id: 'digitalcalmodebutton', draw: m10 },
-    { mode: 10, name: 'Kim + thẻ ngày', tick: 'Làm mới mỗi giờ', id: 'analogdaymodebutton', draw: m11 },
-    { mode: 11, name: 'Tối giản', tick: 'Cập nhật lúc 0h', id: 'minimalmodebutton', draw: m12 },
-    { mode: 12, name: 'Lịch vạn niên', tick: 'Cập nhật lúc 0h', id: 'vanniemodebutton', draw: m13 },
-    { mode: 13, name: 'Lịch dương + âm', tick: 'Làm mới mỗi giờ', id: 'countdownmodebutton', draw: mDual },
-    { mode: 14, name: 'Hai tháng', tick: 'Cập nhật lúc 0h', id: 'twomonthmodebutton', draw: m15 },
-    { mode: 15, name: 'Lịch cả năm', tick: 'Cập nhật lúc 0h', id: 'yearmodebutton', draw: m16 },
-    { mode: 16, name: 'Nhiệt kế', tick: 'Làm mới mỗi giờ', id: 'thermomodebutton', draw: m17 },
-    { mode: 17, name: 'Ghi chú', tick: 'Làm mới mỗi giờ', id: 'notemodebutton', draw: m19 },
-    { mode: 18, name: 'Núi tuyết 8-bit', tick: 'Cập nhật lúc 0h', id: 'retromtnmodebutton', draw: m21 },
-    { mode: 19, name: 'Hoàng hôn 8-bit', tick: 'Làm mới mỗi giờ', id: 'retrosunsetmodebutton', draw: m22 },
-    { mode: 20, name: 'Khủng long 8-bit', tick: 'Cập nhật lúc 0h', id: 'retrowinmodebutton', draw: m23 },
-    { mode: 21, name: 'Thành phố 8-bit', tick: 'Làm mới mỗi giờ', id: 'retrocitymodebutton', draw: m24 },
-    { mode: 22, name: 'Tự thiết kế 1', tick: 'Làm mới mỗi giờ', id: 'custommodebutton', draw: (x, n) => m20(x, n, 0) },
-    { mode: 23, name: 'Tự thiết kế 2', tick: 'Làm mới mỗi giờ', id: 'custommodebutton2', draw: (x, n) => m20(x, n, 1) },
+  /* BẢNG THẺ NÀY ĐƯỢC SINH RA — xem js/7_3/modes.gen.js (window.EPD_MODES),
+   * nguồn là tools/profile/7_3.json trong kho firmware.
+   *
+   * VÌ SAO: trước đây danh sách chế độ phải giữ KHỚP BẰNG TAY giữa enum
+   * display_mode_t của firmware và bảng này. Lệch một số là bấm thẻ này ra chế
+   * độ khác — đã xảy ra một lần ở app 4.2". Nay cả hai sinh từ một hồ sơ.
+   *
+   * Hàm vẽ VẪN NẰM Ở ĐÂY: chúng dùng helper cục bộ của IIFE (font, seg7,
+   * monthGrid...) nên không đưa ra file sinh được. Hồ sơ chỉ mang KHOÁ, bảng
+   * DRAW dưới đây nối khoá vào hàm. */
+  const DRAW = {
+    m1: m1,
+    m3: m3,
+    m4: m4,
+    m5: m5,
+    m6: m6,
+    m7: m7,
+    m8: m8,
+    m9: m9,
+    m10: m10,
+    m11: m11,
+    m12: m12,
+    m13: m13,
+    mDual: mDual,
+    m15: m15,
+    m16: m16,
+    m17: m17,
+    m19: m19,
+    m21: m21,
+    m22: m22,
+    m23: m23,
+    m24: m24,
+    custom: (x, n) => m20(x, n, 0),
+    custom2: (x, n) => m20(x, n, 1),
     // thẻ 24 vẽ bằng CHÍNH hàm dựng bảng của js/7_3/timetable.js nên thẻ luôn
     // khớp bảng người dùng đang gõ (không có bảng thì nó vẽ màn hướng dẫn)
-    { mode: 24, name: 'Thời khóa biểu', tick: 'Cập nhật lúc 0h', id: 'timetablemodebutton',
-      draw: (x, n) => { if (window.ttRenderPreview) window.ttRenderPreview(x, n, false); } },
-  ];
+    timetable: (x, n) => { if (window.ttRenderPreview) window.ttRenderPreview(x, n, false); },
+  };
+  const MODE_LIST = (window.EPD_MODES || []).map(e => {
+    const d = DRAW[e.draw];
+    if (!d) console.error('mode ' + e.mode + ': khong co ham ve cho khoa "' + e.draw + '"');
+    return Object.assign({}, e, { draw: d || (() => {}) });
+  });
 
   // highlight the mode the device reports (config byte 11) or was just set to
   window.highlightMode = function (mode) {

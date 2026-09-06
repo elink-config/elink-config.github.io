@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  const VER = '20260906a'; // cache-buster, keep in sync with index.html
+  const VER = '20260906b'; // cache-buster, keep in sync with index.html
 
   const EPD42_SERVICE = '62750001-d828-918d-fb46-b6c11c675aec';
   const HM213_SERVICE = '0000ff00-0000-1000-8000-00805f9b34fb';
@@ -122,8 +122,8 @@
       fragment: 'apps/7_3.html',
       prefixes: ['DIY-7_3-'],
       scripts: ['js/app_common.js', 'js/family_epd.js', 'js/dithering.js', 'js/paint.js', 'js/crop.js',
-        'js/7_3/mode_preview.js', 'js/7_3/designer.js', 'js/diy_store.js', 'js/7_3/timetable.js',
-        'js/7_3/main.js'],
+        'js/7_3/profile.gen.js', 'js/7_3/modes.gen.js', 'js/7_3/mode_preview.js', 'js/7_3/designer.js', 'js/diy_store.js',
+        'js/7_3/timetable.js', 'js/7_3/main.js'],
     },
     '7_5': {
       label: '7.5"',
