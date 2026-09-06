@@ -329,15 +329,20 @@
 						<input type="checkbox" id="imgAutoCHK" onchange="setImgAuto()">
 						Tự động đổi ảnh đã tải
 					</label>
+					<!-- Chu kỳ tính bằng PHÚT: cùng một byte img_interval, firmware hiểu
+					     15/30/45 là phút vì không có chu kỳ 15/30/45 giờ. Đổi ảnh dày thì
+					     mỗi lần đều là một lượt làm mới toàn màn, hao pin hơn hẳn.
+					     ⚠ PHẢI LÀ 45, KHÔNG PHẢI 40. Đời firmware RIÊNG cũ của máy này
+					     dùng 40; nền chung nhận 15/30/45 (img_interval_ok). Gửi 40 xuống
+					     bản nền chung thì nó rơi xuống nhánh GIỜ -> 40 GIỜ, tức người
+					     dùng chọn «40 phút» mà máy đổi ảnh gần hai ngày một lần.
+					     Xếp TĂNG DẦN như ba app kia: phút trước, giờ sau. -->
+					<label><input type="radio" name="imgInterval" value="15" onchange="setImgAuto()"> 15 phút</label>
+					<label><input type="radio" name="imgInterval" value="30" onchange="setImgAuto()"> 30 phút</label>
+					<label><input type="radio" name="imgInterval" value="45" onchange="setImgAuto()"> 45 phút</label>
 					<label><input type="radio" name="imgInterval" value="1" onchange="setImgAuto()"> 1 giờ</label>
 					<label><input type="radio" name="imgInterval" value="12" onchange="setImgAuto()"> 12 giờ</label>
 					<label><input type="radio" name="imgInterval" value="24" checked onchange="setImgAuto()"> 24 giờ</label>
-					<!-- Chu kỳ tính bằng PHÚT: cùng một byte img_interval, firmware hiểu
-					     15/30/40 là phút vì không có chu kỳ 15/30/40 giờ. Đổi ảnh dày thì
-					     mỗi lần đều là một lượt làm mới toàn màn, hao pin hơn hẳn. -->
-					<label><input type="radio" name="imgInterval" value="15" onchange="setImgAuto()"> 15 phút</label>
-					<label><input type="radio" name="imgInterval" value="30" onchange="setImgAuto()"> 30 phút</label>
-					<label><input type="radio" name="imgInterval" value="40" onchange="setImgAuto()"> 40 phút</label>
 					<span class="mode-gallery-hint" style="margin:0" id="imgAutoHint">Cần gửi ảnh vào ít nhất 2 khe để bật tự đổi ảnh (khe 1 → 2 → 3 → 1).</span>
 				</div>
 			</div>
@@ -510,6 +515,17 @@
 									<br><b>⚠ Ảnh đang lưu trong máy sẽ mất một lần.</b> Cập nhật xong hãy gửi lại ảnh.</td>
 								<td>01/09/2026</td>
 								<td><a href="OTA firmware/7_3/fw_7_3inch_v2.3.bin" download>Tải về</a></td>
+								<td><button type="button" class="primary" onclick="fwInstallRow(this)">Cài ngay</button></td>
+							</tr>
+							<tr>
+								<td>6</td>
+								<td>2.4</td>
+								<td><b>Sửa lỗi vừa kết nối đã bị ngắt.</b> Kết nối trong lúc màn đang vẽ nay vẫn ổn định.
+									<br>Thêm nút <b>«Khôi phục cài đặt gốc»</b>: đưa máy về như lúc mới khi máy hiển thị sai hoặc không dùng được.
+									<br>Nhận thêm tấm 7.3" <b>bảy màu</b> (ACeP AC057TC1).
+									<br><b>LƯU Ý:</b> nếu bạn đang dùng <b>icon</b> trong «Tự thiết kế», hãy gửi lại icon một lần sau khi cập nhật. Ảnh trong khe và các cài đặt khác giữ nguyên.</td>
+								<td>07/09/2026</td>
+								<td><a href="OTA firmware/7_3/fw_7_3inch_v2.4.bin" download>Tải về</a></td>
 								<td><button type="button" class="primary" onclick="fwInstallRow(this)">Cài ngay</button></td>
 							</tr>
 					</tbody>
