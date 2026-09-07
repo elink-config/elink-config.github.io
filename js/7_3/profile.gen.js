@@ -8,7 +8,7 @@ window.EPD_PROFILE = {
     e6: { tenBle: 'DIY-7_3-', soMau: 6 },
   },
   cong: {
-    'khoi_phuc_goc': {  },  // lenh 0x2F. May 7.3 chi co tu v2.6 — khi no chuyen sang epd_common.
+    'khoi_phuc_goc': { e6: '2.4' },  // lenh 0x2F, co tu v2.4 (ban gop) khi may chuyen sang epd_common
   },
   anTheTrongKhoang: {
   },
