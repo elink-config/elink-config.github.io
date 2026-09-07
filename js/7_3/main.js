@@ -824,10 +824,6 @@ function handleNotify(value, idx) {
       /* «Khôi phục cài đặt gốc» — cùng lý do: mở ở gói CẤU HÌNH, không ở
        * nhánh 'fw='. Gác theo bảng năng lực (máy 7.3" chỉ có lệnh 0x2F từ
        * v2.6, khi nó lên nền chung), KHÔNG gõ số phiên bản vào đây. */
-      {
-        const fr = document.getElementById('factoryResetRow');
-        if (fr && window.EpdProf && window.EpdProf.co('khoi_phuc_goc')) fr.style.display = '';
-      }
       document.getElementById('imgAutoCHK').checked = auto === 1;
       const r = document.querySelector(`input[name="imgInterval"][value="${itv}"]`);
       if (r) r.checked = true;
