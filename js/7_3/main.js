@@ -761,11 +761,22 @@ function notifyIsText(d) {
   return true;
 }
 
+/* Da nhan GOI CAU HINH cua phien nay chua.
+ *
+ * Khong phai chuyen nho: MOI hang giao dien can thiet bi deu duoc mo
+ * trong nhanh goi cau hinh (nut «Khoi phuc cai dat goc», nut khe anh,
+ * chu ky tu doi anh...). Goi do dai ~224 byte nen ROT khi MTU con nho,
+ * trong khi «fw=» la goi ngan thi luon toi. Vong xin gui lai truoc day
+ * chi doi «fw=» -> thay no toi la bo cuoc -> nguoi dung khong bao gio
+ * thay nhung hang do va khong hieu vi sao. */
+let cfgSeen = false;
+
 function handleNotify(value, idx) {
   const data = new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
   // config nhị phân dài 200+ byte; mọi gói chữ đều là "khoá=giá trị"
   if (!notifyIsText(data) && data.length >= 12) {
     addLog(`Nhận cấu hình: ${bytes2hex(data)}`);
+    cfgSeen = true;
     const epdpins = document.getElementById("epdpins");
     const epddriver = document.getElementById("epddriver");
     epdpins.value = bytes2hex(data.slice(0, 7));
@@ -1024,6 +1035,7 @@ async function connect() {
   if (bleDevice == null || epdCharacteristic != null) return;
   // đời cũ không tự khai coi như 1.0; kèm tên thiết bị để popup nhắc cập nhật
   // tối đa 1 lần/ngày cho mỗi máy (so với bảng «Danh sách firmware» của 7.3").
+  cfgSeen = false;  // phien moi: doi lai goi cau hinh
   FwCheck.reset('1.0', bleDevice && bleDevice.name);
 
   try {
@@ -1083,7 +1095,7 @@ async function connect() {
   (async () => {
     for (let i = 0; i < 3; i++) {
       await sleep(1200);
-      if (FwCheck.atLeast('0.0')) return;  // đã nhận fw= (deviceVer != null)
+      if (FwCheck.atLeast('0.0') && cfgSeen) return;  // đã nhận fw= (deviceVer != null)
       if (window.__imgSending) return;     // đang gửi ảnh: cấm ghi lại CCCD
       if (!epdCharacteristic || !gattServer || !gattServer.connected) return;
       addLog('(Chưa nhận phiên bản firmware — yêu cầu thiết bị gửi lại...)');
@@ -1092,7 +1104,7 @@ async function connect() {
       // vô hại — với máy đó vẫn còn đường ghi lại CCCD bên dưới.
       await write(EpdCmd.INFO);
       await sleep(300);
-      if (FwCheck.atLeast('0.0')) return;
+      if (FwCheck.atLeast('0.0') && cfgSeen) return;
       try {
         await epdCharacteristic.stopNotifications();
         msgIndex = 0;  // loạt gửi lại bắt đầu bằng config (idx 0)
