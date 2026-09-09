@@ -23,6 +23,7 @@ window.EPD_PROFILE = {
     'chu_ky_phut': { bwr: '3.0', bwry: '4.0' },  // 15/30/45 phut. Tu v4.0 ban 4 mau chay loi chung nen nhan DUNG cung bo gia tri voi ban 3 mau (truoc do no rieng mot nac 40)
     'nhip_lam_moi_3': { bwr: null, bwry: '3.3' },  // ban 4 mau: lenh 0x23 mang BA gia tri
     'bo_cuc_doi_2': { bwr: '3.1', bwry: null },  // bo cuc «Tu thiet ke» doi 2: 20 thanh phan, co mau + canh le, 18 loai moi, va BO CUC MOI lay tu giao dien dung san. Ban 4 mau CHUA co.
+    'bo_thanh_pho': { bwr: null, bwry: '4.1' },  // bo giao dien tranh «Thanh pho 8-bit» de lay RAM; mode GIU NGUYEN SO nen webtool chi viec an the
   },
   anTheTrongKhoang: {
     '8bit_nui_tuyet_hoang_hon': { bwr: ['2.3', '2.4'], modes: [18, 19] },

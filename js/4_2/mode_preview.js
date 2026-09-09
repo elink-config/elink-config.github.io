@@ -1056,6 +1056,10 @@
      * đây chỉ việc ẩn thẻ. Hai giao diện tranh còn lại đều có đồng hồ.
      * Gác theo BẢNG NĂNG LỰC, cùng mốc với bố cục đời 2. */
     if ((mode === 18 || mode === 20) && window.EpdProf && window.EpdProf.co('bo_cuc_doi_2')) return true;
+    /* Ban 4 MAU v4.1: go «Thanh pho 8-bit» de lay RAM (bo mode 21, giu nguyen
+     * so). Ban BA MAU van co the do — nen gac theo BANG NANG LUC chu khong
+     * theo so mode, moc cua hai dong may khac nhau. */
+    if (mode === 21 && window.EpdProf && window.EpdProf.co('bo_thanh_pho')) return true;
     return false;
   }
 

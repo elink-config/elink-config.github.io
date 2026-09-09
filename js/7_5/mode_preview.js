@@ -895,6 +895,18 @@
     });
   };
 
+  /* Thế nào PHẢI ẨN với firmware đang kết nối — MỘT quy tắc duy nhất, dùng cho
+   * cả lượt dựng thẻ lẫn lượt vẽ lại mỗi phút. Họ 4_2 từng dính lỗi hai chỗ
+   * hai bộ luật riêng, đừng lặp lại.
+   *
+   * Gác theo BẢNG NĂNG LỰC chứ không gõ số phiên bản vào mã — xem CLAUDE.md. */
+  function cardHidden(mode) {
+    // v1.1: gỡ «Thành phố 8-bit» để lấy RAM. Mode GIỮ NGUYÊN SỐ (khỏi bắt
+    // khách khôi phục cài đặt gốc) nên ở đây chỉ việc ẩn thẻ.
+    if (mode === 20 && window.EpdProf && window.EpdProf.co('bo_thanh_pho')) return true;
+    return false;
+  }
+
   function build() {
     const gallery = document.getElementById('modeGallery');
     if (!gallery) return;
@@ -908,6 +920,7 @@
         '<div class="mode-name">' + ((m.nameNew && fwCal()) ? m.nameNew : m.name) + '</div>' +
         '<div class="mode-tick">' + ((m.tickNew && fwTime()) ? m.tickNew : m.tick) + '</div>' +
         '<button id="' + m.id + '" type="button" class="primary" onclick="syncTime(' + m.mode + ')">Áp dụng</button>';
+      card.style.display = cardHidden(m.mode) ? 'none' : '';
       gallery.appendChild(card);
       /* KHÔNG còn thẻ nào phải ẩn. Từ v1.0 (đợt chuyển sang nền chung) số mode
        * được đánh lại LIỀN MẠCH 1..23 nên mọi thẻ trong danh sách đều là một
@@ -927,6 +940,7 @@
     const t = new Date();
     document.querySelectorAll('.mode-card').forEach((card, i) => {
       if (MODE_LIST[i]) {
+        card.style.display = cardHidden(MODE_LIST[i].mode) ? 'none' : '';
         // tên card đổi theo firmware (vd card 13: Đếm ngược -> Lịch dương + âm)
         const nEl = card.querySelector('.mode-name');
         const nTxt = (MODE_LIST[i].nameNew && fwCal()) ? MODE_LIST[i].nameNew : MODE_LIST[i].name;

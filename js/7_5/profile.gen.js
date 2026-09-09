@@ -19,6 +19,7 @@ window.EPD_PROFILE = {
     'hien_khe_anh': { bwr: '1.0' },  // lenh 0x27 05
     'chu_ky_phut': { bwr: '1.0' },  // 15/30/45 phut
     'thoi_khoa_bieu': { bwr: '1.0' },  // che do rieng + lenh 0x2D + sector 0x3B000
+    'bo_thanh_pho': { bwr: '1.1' },  // bo giao dien tranh «Thanh pho 8-bit» de lay RAM; mode GIU NGUYEN SO nen webtool chi viec an the
   },
   anTheTrongKhoang: {
   },
