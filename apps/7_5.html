@@ -114,7 +114,7 @@
 					<label><input type="radio" name="battStyle" value="0" onchange="setBattStyle()"> Không (chỉ icon với mức pin)</label>
 					<label><input type="radio" name="battStyle" value="1" onchange="setBattStyle()"> Phần trăm</label>
 					<label><input type="radio" name="battStyle" value="2" checked onchange="setBattStyle()"> Điện áp</label>
-					<span class="mode-gallery-hint" style="margin:0" id="battStyleHint">Cần firmware ≥ 1.9.</span>
+					<span class="mode-gallery-hint" style="margin:0" id="battStyleHint">Cần firmware ≥ 1.2.</span>
 				</div>
 				<div class="flex-group" style="flex:1 1 100%" id="timeFmtRow">
 					<span>Định dạng giờ:</span>
@@ -495,6 +495,14 @@
 							<td><b>Sửa lỗi tự đổi ảnh không chạy khi không kết nối webtool.</b><br><b>Sửa lỗi vừa kết nối đã bị ngắt.</b><br>Bỏ giao diện <b>«Thành phố 8-bit»</b> để nhường chỗ cho các tính năng trên.</td>
 							<td>10/09/2026</td>
 							<td><a href="OTA firmware/7_5/fw_7_5inch_v1.1.bin" download>Tải về</a></td>
+							<td><button type="button" class="primary" onclick="fwInstallRow(this)">Cài ngay</button></td>
+						</tr>
+						<tr>
+							<td>3</td>
+							<td>1.2</td>
+							<td><b>Thêm kiểu hiển thị pin <i>Phần trăm</i></b> — cụm chọn «Hiển thị pin» trên trang này nay có tác dụng thật: <i>Không</i> chỉ hiện icon, <i>Phần trăm</i> hiện 71%, <i>Điện áp</i> hiện 2.9V.</td>
+							<td>10/09/2026</td>
+							<td><a href="OTA firmware/7_5/fw_7_5inch_v1.2.bin" download>Tải về</a></td>
 							<td><button type="button" class="primary" onclick="fwInstallRow(this)">Cài ngay</button></td>
 						</tr>
 					</tbody>
