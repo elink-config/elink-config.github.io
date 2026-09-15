@@ -493,6 +493,7 @@ async function sendBook() {
   const titleBytes = new TextEncoder().encode((title + partLabel).slice(0, 60)).slice(0, 63);
   startTime = Date.now();
   updateButtonStatus(true);
+  setBusyTitle('Đang gửi sách vào thiết bị…');
   setProgress(0);
   idxEstPages = 0;
   try {

@@ -36,11 +36,70 @@ function addLog(txt, action = '') {
 
 function clearLog() { document.getElementById('log').innerHTML = ''; }
 
-function setStatus(s) { document.getElementById('status').textContent = s; }
+/* ---- LỚP PHỦ «vừa chờ», dùng chung với các app màn lịch --------------
+ * syncOverlay* nằm trong app_common.js (app reader đã nạp sẵn file đó).
+ *
+ * NỐI VÀO ĐÚNG MỘT CHỖ: setProgress là cửa duy nhất của mọi tiến độ phần
+ * sách ở CẢ HAI máy đọc (nạp tệp, nén truyện, gửi, phân trang) — nối ở đây thì
+ * không phải sửa từng chỗ gọi và không sót đường nào.
+ *
+ * Đếm lồng nhau của syncOverlayShow không dùng được ở đây (setProgress bị gọi
+ * hàng trăm lần một phiên) nên tự giữ cờ mở/đóng và luôn đóng bằng force. */
+let rdOvOn = false;
+let rdOvTitle = 'Đang xử lý, vui lòng chờ…';
+
+// Đặt TRƯỚC khi bắt đầu một việc dài, để lớp phủ nói đúng đang làm gì.
+function setBusyTitle(t) {
+  rdOvTitle = t || 'Đang xử lý, vui lòng chờ…';
+  if (rdOvOn && typeof syncOverlayStep === 'function') {
+    syncOverlayStep(rdOvTitle, document.getElementById('status').textContent);
+  }
+}
+
+function rdOverlayOpen() {
+  if (typeof syncOverlayShow !== 'function') return;
+  const ov = document.getElementById('syncOverlay');
+  // Đang mở THẬT thì thôi. Kiểm cả display chứ không chỉ tin cờ: syncOverlayShow
+  // đặt một chốt chặn TỰ ẨN sau 5 phút, mà gửi một cuốn sách 224KB qua BLE
+  // có thể lâu hơn thế — lúc đó phải mở lại, không thì người dùng mất luôn
+  // thanh tiến độ giữa chừng. Đóng luôn bằng force nên bộ đếm lồng nhau của
+  // syncOverlay* không dồn lại.
+  if (rdOvOn && ov && ov.style.display !== 'none') return;
+  rdOvOn = true;
+  syncOverlayShow(rdOvTitle, document.getElementById('status').textContent);
+}
+
+function rdOverlayClose() {
+  if (!rdOvOn) return;
+  rdOvOn = false;
+  if (typeof syncOverlayHide === 'function') syncOverlayHide(true);
+}
+
+function setStatus(s) {
+  document.getElementById('status').textContent = s;
+  // lớp phủ đang mở thì chạy chữ theo — người dùng không nhìn thấy dòng
+  // trạng thái bên dưới nữa vì lớp phủ che hết trang
+  if (rdOvOn && typeof syncOverlayStep === 'function') syncOverlayStep(rdOvTitle, s);
+}
 
 // thanh tiến độ tổng của phiên gửi sách (null = ẩn, 'busy' = nhịp chờ
 // vô định — dùng khi đọc/phân tích file chưa biết tổng khối lượng)
 function setProgress(pct) {
+  if (pct === null) rdOverlayClose();
+  else {
+    rdOverlayOpen();
+    // 'busy' = chưa biết tổng khối lượng: để thanh ở 0 và để vòng xoay của lớp
+    // phủ nói thay, đừng bịa một con số phần trăm không có thật
+    if (typeof syncOverlayProgress === 'function') {
+      if (pct === 'busy') syncOverlayProgress(0, 100);
+      else syncOverlayProgress(Math.max(0, Math.min(100, pct)), 100);
+    }
+    if (pct === 'busy') {
+      const pe = document.getElementById('syncOverlayPct');
+      if (pe) pe.textContent = '';
+    }
+  }
+
   const el = document.getElementById('sendProgress');
   if (!el) return;
   if (pct === null) {
@@ -286,6 +345,7 @@ async function bookFileChange() {
   comicPages.forEach(b => b.close && b.close());
   comicPages = [];
   previewTextPages = null;
+  setBusyTitle('Đang đọc tệp sách…');
   setStatus('Đang đọc file...');
   setProgress('busy');
   await uiYield();

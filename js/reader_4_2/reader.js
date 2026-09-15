@@ -492,6 +492,7 @@ async function sendBook() {
   const titleBytes = new TextEncoder().encode((title + partLabel).slice(0, 60)).slice(0, 63);
   startTime = Date.now();
   updateButtonStatus(true);
+  setBusyTitle('Đang gửi sách vào thiết bị…');
   setProgress(0);
   idxEstPages = 0;
   try {
@@ -650,7 +651,19 @@ async function otaUpdate(preBuf) {
   addLog('Firmware: ' + firmSize + ' byte, phiên bản 0x' + (firmVer >>> 0).toString(16) + '.');
   if (!confirm('Cập nhật firmware qua BLE?\nSách trong máy sẽ bị xóa (gửi lại sau khi cập nhật).\nKhông tắt nguồn thiết bị trong quá trình cập nhật!')) return;
 
-  const show = t => { const el = document.getElementById('otaProgress'); if (el) el.textContent = t; };
+  /* OTA có thanh tiến độ riêng (otaProgress), KHÔNG đi qua setProgress —
+   * nên phải nối lớp phủ tại đây, không ăn theo đường sách ở trên. */
+  if (typeof syncOverlayShow === 'function') {
+    syncOverlayShow('Đang cập nhật firmware…',
+      'Không tắt nguồn thiết bị và không đóng trang cho đến khi xong.');
+  }
+  const show = t => {
+    const el = document.getElementById('otaProgress');
+    if (el) el.textContent = t;
+    if (typeof syncOverlayStep === 'function') syncOverlayStep('Đang cập nhật firmware…', t);
+    const m = /(\d+)%/.exec(t);
+    if (m && typeof syncOverlayProgress === 'function') syncOverlayProgress(parseInt(m[1]), 100);
+  };
   const btn = document.getElementById('otabutton');
   btn.disabled = 'disabled';
   try {
@@ -696,6 +709,7 @@ async function otaUpdate(preBuf) {
     show('Lỗi: ' + (e.message || e));
     addLog('OTA thất bại: ' + (e.message || e));
   } finally {
+    if (typeof syncOverlayHide === 'function') syncOverlayHide(true);
     btn.disabled = null;
     updateButtonStatus();
   }
