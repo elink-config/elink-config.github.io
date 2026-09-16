@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  const VER = '20260915a'; // cache-buster, keep in sync with index.html
+  const VER = '20260917a'; // cache-buster, keep in sync with index.html
 
   const EPD42_SERVICE = '62750001-d828-918d-fb46-b6c11c675aec';
   const HM213_SERVICE = '0000ff00-0000-1000-8000-00805f9b34fb';
@@ -68,6 +68,28 @@
         // màn 4.2" — không có font 7 đoạn, chỉ ba nấc cỡ).
         'js/2_13n/designer_2_13.js', 'js/common/designer.js', 'js/diy_store.js',
         'js/2_13n/main.js'],
+    },
+    // BẢN BA MÀU của chính khổ 2.13" — tấm E0213A192-FPC-A0, cùng thân máy
+    // chung, cùng 30 chế độ, chỉ khác ở chỗ khe ảnh giữ HAI mặt (đen + đỏ) và
+    // máy chỉ nhận ĐÚNG MỘT cỡ tấm (không có nút đổi khổ như bản đen trắng).
+    //
+    // Vì sao phải là MỘT MỤC RIÊNG chứ không dùng chung với '2_13n': trang phải
+    // biết TỪ TRƯỚC là màn có mặt đỏ để còn tách ảnh thành hai mặt lúc gửi;
+    // nó không hỏi được thiết bị điều đó trước khi kết nối. Gửi nhầm số mặt
+    // là ảnh xuống máy sai hoàn toàn.
+    //
+    // main.js lấy từ bản 2.9" (cũng MỘT tấm, cũng ba màu), còn common/
+    // mode_preview/designer lấy từ bản 2.13" đen trắng — xem trước và bộ dựng
+    // phải bám theo GIAO DIỆN của firmware, mà firmware máy này dùng GUI 2.13".
+    '2_13c': {
+      label: '2.13" BA MÀU',
+      sub: 'Màn 2.13" ba màu 212×104 (DIY-2_13C, DA14585): kết nối, cấu hình và truyền hình ảnh',
+      fragment: 'apps/2_13c.html',
+      prefixes: ['DIY-2_13C-'],
+      scripts: ['js/app_common.js', 'js/family_epd.js', 'js/dithering.js', 'js/paint.js', 'js/crop.js',
+        'js/common/lunar_vn.js', 'js/2_13c/common.js', 'js/2_13c/mode_preview.js',
+        'js/2_13c/designer_2_13.js', 'js/common/designer.js', 'js/diy_store.js',
+        'js/2_13c/main.js'],
     },
     // ĐỜI MỚI của máy 2.9" — dựng trên nền chung, cùng cách với 2.13".
     // Quảng bá «DIY-2_9N-xxxx» (thêm chữ N) nên hub tự nhận dạng; bản cũ
@@ -214,6 +236,7 @@
     if (name.startsWith('DLG-CLOCK-')) return 'dlg';
     // Chữ N tách đời mới khỏi đời cũ. Phải xét TRƯỚC 'DIY-2_13-' cho dễ đọc,
     // dù thật ra không chồng nhau: 'DIY-2_13N-…' không khớp 'DIY-2_13-'.
+    if (name.startsWith('DIY-2_13C-')) return '2_13c';
     if (name.startsWith('DIY-2_13N-')) return '2_13n';
     if (name.startsWith('DIY-2_13-')) return '2_13';
     if (name.startsWith('DIY-2_9N-')) return '2_9n';
