@@ -26,12 +26,13 @@ let imgCurrent = -1;
 // khi thiết bị báo 'fw=' — trước đó cứ coi là 3 cho an toàn.
 let IMG_SLOTS = 5;
 
-/* Máy này chỉ MỘT tấm: bản ĐỘ PHÂN GIẢI CAO 122×250, bày ngang thành 250×122 —
+/* HAI cỡ tấm ba màu: 0x12 = 250×122 (bản CAO, mặc định), 0x13 = 212×104 —
  * khác bản 2.13" ĐEN TRẮNG có hai cỡ tấm. Vẫn giữ bảng và resIdx để
  * mode_preview.js và bộ dựng «Tự thiết kế» đọc chung một đường, chỉ là bảng có
  * đúng một hàng, và KHÔNG có nút đổi khổ. */
 const RESOLUTIONS = [
   { w: 250, h: 122, label: '250×122', drv: '12' },
+  { w: 212, h: 104, label: '212×104', drv: '13' },
 ];
 let resIdx = 0;
 const IMG_BG_SLOT = d => 5 + d;   // khe nền của thiết kế d (0/1)
@@ -214,8 +215,9 @@ const canvasSizes = [
   // Tam 2.13" NAM DOC (104x212 / 122x250) nhung giao dien bay NGANG, nen
   // canvas de nguoi dung ve cung nam ngang; sendimg() xoay lai truoc khi goi.
   { name: '2.13_250_122', width: 250, height: 122 },
+  { name: '2.13_212_104', width: 212, height: 104 },
   { name: '2.13_122_250', width: 122, height: 250 },
-  { name: '2.13_122_250', width: 122, height: 250 },
+  { name: '2.13_104_212', width: 104, height: 212 },
   { name: '2.66_152_296', width: 152, height: 296 },
   { name: '2.66_184_360', width: 184, height: 360 },
   { name: '2.9_128_296', width: 128, height: 296 },
@@ -470,6 +472,108 @@ async function setBattStyle() {
  * «làm mới toàn màn mỗi giờ» bật/tắt ở dưới. Đã gỡ applyRefreshModeUI() và
  * setRefreshMode() cho khỏi tưởng là còn dùng được.
  */
+
+/* Chờ máy gửi lại gói CẤU HÌNH rồi lấy ra driver nó đang lưu (byte 7).
+ * Trả null nếu quá hạn. Cùng khuôn với waitImgRdy: một chỗ hẹn dùng một lần,
+ * handleNotify gọi lại khi gói cấu hình tới. */
+let cfgDrvResolve = null;
+function waitCfgDriver(ms) {
+  return new Promise(r => {
+    cfgDrvResolve = r;
+    setTimeout(() => { if (cfgDrvResolve === r) { cfgDrvResolve = null; r(null); } }, ms);
+  });
+}
+
+/* Đồng bộ nhãn + chữ trên nút theo khổ đang chọn. */
+function updateResUI() {
+  const lb = document.getElementById('resLabel');
+  const bt = document.getElementById('resswitchbutton');
+  if (lb) lb.textContent = RESOLUTIONS[resIdx].label;
+  if (bt) bt.textContent = 'Chuyển sang ' + RESOLUTIONS[1 - resIdx].label;
+}
+
+/* Lật giữa hai khổ tấm.
+ *
+ * Gửi lệnh INIT kèm mã driver — đúng phần mà setDriver() vẫn gửi cho model,
+ * chỉ khác là KHÔNG đụng tới chân cắm (khách không có việc gì phải đổi chân).
+ * Chưa kết nối thì vẫn đổi ở phía trang để xem trước cho đúng khổ, và nói rõ
+ * là chưa gửi được. */
+async function switchResolution() {
+  const target = 1 - resIdx;
+
+  /* HỎI LẠI TRƯỚC KHI ĐỔI.
+   *
+   * Đây là nút SẮC nhất trang: chọn khổ không khớp tấm đang gắn thì màn ra
+   * RÁC, không đọc được gì — mà đường về lại chính là cái nút vừa gây ra, nên
+   * người dùng rất dễ tưởng máy hỏng. Đã gặp thật.
+   *
+   * Nói luôn ba điều người ta cần biết lúc đó: chọn sai thì thấy gì, cách quay
+   * lại, và rằng máy KHÔNG hỏng. */
+  if (!confirm(
+      'Chuyển sang khổ ' + RESOLUTIONS[target].label + '?\n\n' +
+      'Chỉ chọn đúng loại tấm đang gắn trên máy:\n' +
+      '  • 212×104 — HINK-E0213A41 / A55\n' +
+      '  • 250×122 — OPM021B1\n\n' +
+      'Chọn sai thì màn hiện RÁC, không đọc được gì. Máy KHÔNG hỏng: cứ kết ' +
+      'nối lại rồi bấm nút này thêm lần nữa là về như cũ (Bluetooth vẫn chạy ' +
+      'bình thường kể cả khi màn đang rác).')) return;
+
+  const sel = document.getElementById('epddriver');
+  if (sel) sel.value = RESOLUTIONS[target].drv;
+  updateDitcherOptions();   // cập nhật resIdx, dựng lại thẻ + khung thiết kế
+  updateResUI();
+  if (!epdCharacteristic) {
+    addLog('Đã đổi khổ xem trước sang ' + RESOLUTIONS[target].label +
+           ' — chưa kết nối nên chưa gửi xuống máy.');
+    return;
+  }
+  const want = RESOLUTIONS[target].drv;
+  if (!await write(EpdCmd.INIT, want)) return;
+
+  /* ĐỐI CHIẾU LẠI VỚI MÁY, đừng tin là đã xong.
+   *
+   * Lệnh ghi BLE trả về "thành công" chỉ có nghĩa gói đã tới nơi, KHÔNG có
+   * nghĩa máy đã đổi. Mà biểu hiện khi máy không đổi lại rất dễ gây hiểu lầm:
+   * màn vẫn nháy (vì lượt vẽ lại phía dưới vẫn chạy) nhưng khổ giữ nguyên,
+   * nhìn y như nút hỏng.
+   *
+   * 0x2E bảo máy gửi lại loạt thông tin mở màn, trong đó byte 7 của gói cấu
+   * hình là driver ĐANG LƯU. So byte đó với cái vừa gửi là biết ngay lỗi nằm
+   * ở webtool hay ở firmware. */
+  const kq = waitCfgDriver(3000);
+  await write(EpdCmd.INFO);
+  const got = await kq;
+  if (got === null) {
+    addLog('⚠ Máy không gửi lại cấu hình sau 3 giây — chưa xác nhận được là đã đổi khổ.');
+  } else if (got !== want) {
+    addLog(`⚠ ĐỔI KHÔNG ĂN: đã gửi driver "${want}" nhưng máy vẫn báo đang lưu "${got}". ` +
+           `Lỗi nằm ở phía firmware chứ không phải trang này — hãy báo lại nguyên dòng này.`);
+    return;
+  } else {
+    addLog(`Máy xác nhận đã lưu driver "${got}".`);
+  }
+
+  /* ⚠ PHẢI VẼ LẠI, nếu không nút này trông y như hỏng.
+   *
+   * EPD_CMD_INIT chỉ đổi model rồi ghi cấu hình — xem trình xử lý của nó
+   * trong epd_common/epd/EPD_service_core.c: huỷ lượt vẽ đang chạy, gọi
+   * epd_init, gửi lại mtu/time, HẾT. Không có lệnh vẽ nào. Nên máy đổi khổ
+   * xong vẫn treo nguyên hình cũ cho tới nhịp vẽ kế tiếp, và người dùng bấm
+   * nút xong thấy màn không nhúc nhích thì kết luận là nút chết.
+   *
+   * Đồng bộ giờ là đường vẽ lại sẵn có: nó gửi kèm số chế độ nên máy dựng
+   * lại toàn bộ giao diện theo khổ MỚI. */
+  let mode = deviceMode;
+  if (mode === 0) {
+    // chế độ ẢNH: tấm ảnh đang hiện được gói theo khổ CŨ nên đằng nào cũng
+    // hỏng sau khi đổi khổ — vẽ lịch tháng để màn còn nội dung đúng khổ.
+    addLog('Ảnh đang hiện gói theo khổ cũ nên không dùng lại được — máy sẽ vẽ lịch tháng.');
+    mode = 1;
+  }
+  if (mode == null) mode = 1;
+  await sendTimeSync(mode);
+  addLog('Đã chuyển máy sang khổ ' + RESOLUTIONS[target].label + '. Chờ màn hình vẽ lại.');
+}
 
 async function setHourlyFull() {
   const chk = document.getElementById('hourlyFullCHK');
@@ -817,6 +921,8 @@ function handleNotify(value, idx) {
     // cu, gia tri do KHONG co trong select nen gan thang se lam select mat
     // lua chon (selectedIndex -1) va moi thao tac doc option sau do nem loi.
     const drvHex = bytes2hex(data.slice(7, 8));
+    // ai đang đợi đối chiếu driver (nút đổi khổ màn) thì trả lời họ trước
+    if (cfgDrvResolve) { const f = cfgDrvResolve; cfgDrvResolve = null; f(drvHex); }
     if ([...epddriver.options].some(o => o.value === drvHex)) {
       epddriver.value = drvHex;
     } else {
@@ -1097,6 +1203,7 @@ function updateDitcherOptions() {
     addLog('Chuyển sang khổ màn ' + RESOLUTIONS[idx].label + '.');
     if (window.rebuildModeGallery) window.rebuildModeGallery();
   }
+  updateResUI();  // nhãn + chữ trên nút bám theo khổ, kể cả khi máy tự báo lên
   /* Khung dựng «Tự thiết kế» ĐỒNG BỘ MỖI LƯỢT, không chỉ khi đổi khổ: thẻ
    * <canvas> trong mảnh giao diện thừa kế cỡ 400x300 của máy 4.2", mà lúc mở
    * trang thì chỉ số khổ chưa đổi nên nhánh trên không chạy — khung sẽ giữ
