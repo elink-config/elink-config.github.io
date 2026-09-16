@@ -151,7 +151,7 @@
   window.EPD_DS_DEVICE = {
     /* Tên máy — designer.js lấy nó làm khoá lưu bản nháp, để bố cục của máy
      * này không lẫn với máy khác dùng chung trình duyệt. */
-    key: '2_13n',
+    key: '2_13c',
 
     // Khổ màn ĐỌC ĐỘNG: máy 2.13" có hai tấm, đổi driver là đổi khổ.
     /* ⚠ ĐỌC BẰNG TÊN TRẦN, đừng qua window.
@@ -169,7 +169,7 @@
           return { w: RESOLUTIONS[resIdx].w, h: RESOLUTIONS[resIdx].h };
         }
       } catch (e) { /* main.js chưa nạp xong */ }
-      return { w: 212, h: 104 };
+      return { w: 250, h: 122 };
     },
     // firmware kẹp size > 2 về 2 -> không có cỡ tự do, chỉ ba nấc
     freeSize: false,

@@ -26,12 +26,12 @@ let imgCurrent = -1;
 // khi thiết bị báo 'fw=' — trước đó cứ coi là 3 cho an toàn.
 let IMG_SLOTS = 5;
 
-/* Máy này chỉ MỘT tấm (E0213A192-FPC-A0, 104×212 bày ngang thành 212×104) —
+/* Máy này chỉ MỘT tấm: bản ĐỘ PHÂN GIẢI CAO 122×250, bày ngang thành 250×122 —
  * khác bản 2.13" ĐEN TRẮNG có hai cỡ tấm. Vẫn giữ bảng và resIdx để
  * mode_preview.js và bộ dựng «Tự thiết kế» đọc chung một đường, chỉ là bảng có
  * đúng một hàng, và KHÔNG có nút đổi khổ. */
 const RESOLUTIONS = [
-  { w: 212, h: 104, label: '212×104', drv: '12' },
+  { w: 250, h: 122, label: '250×122', drv: '12' },
 ];
 let resIdx = 0;
 const IMG_BG_SLOT = d => 5 + d;   // khe nền của thiết kế d (0/1)
@@ -213,8 +213,8 @@ const canvasSizes = [
   { name: '1.54_200_200', width: 200, height: 200 },
   // Tam 2.13" NAM DOC (104x212 / 122x250) nhung giao dien bay NGANG, nen
   // canvas de nguoi dung ve cung nam ngang; sendimg() xoay lai truoc khi goi.
-  { name: '2.13_212_104', width: 212, height: 104 },
-  { name: '2.13_104_212', width: 104, height: 212 },
+  { name: '2.13_250_122', width: 250, height: 122 },
+  { name: '2.13_122_250', width: 122, height: 250 },
   { name: '2.13_122_250', width: 122, height: 250 },
   { name: '2.66_152_296', width: 152, height: 296 },
   { name: '2.66_184_360', width: 184, height: 360 },
@@ -1088,7 +1088,7 @@ function updateDitcherOptions() {
   if (hfRow) hfRow.style.display = '';
   if (dbRow) dbRow.style.display = '';
 
-  /* ĐỔI DRIVER = ĐỔI KHỔ MÀN (0d = 212×104, 0e = 250×122). Thẻ xem trước và
+  /* Bảng một hàng nên nhánh đổi khổ dưới đây không bao giờ chạy. Thẻ xem trước và
    * khung dựng «Tự thiết kế» vẽ theo RESOLUTIONS[resIdx] nên phải cập nhật rồi
    * DỰNG LẠI — canvas của thẻ đổi kích thước, vẽ lại thôi không đủ. */
   const idx = RESOLUTIONS.findIndex(r => r.drv === selectedOption.value);

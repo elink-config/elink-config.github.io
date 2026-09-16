@@ -9,7 +9,7 @@
 						<!-- Model 13/14 trong epd_model_id_t (SSD1680.c). data-size để
 						     NẰM NGANG: người dùng vẽ theo hướng nhìn màn, sendimg() xoay
 						     lại thành hướng tấm trước khi gói bit. -->
-						<option value="12" data-color="threeColor" data-size="2.13_212_104" selected>2.13" 212×104 (Ba màu, SSD1680)</option>
+						<option value="12" data-color="threeColor" data-size="2.13_250_122" selected>2.13" 250×122 (Ba màu, SSD1680)</option>
 					</select>
 				</div>
 				<div class="flex-group debug only-4_2">
@@ -65,7 +65,7 @@
 			<legend>Cài đặt thiết bị</legend>
 			<div class="flex-container">
 				<!-- KHÔNG có nút đổi độ phân giải ở đây — khác bản 2.13" đen trắng.
-				     Máy ba màu chỉ có ĐÚNG MỘT tấm (E0213A192-FPC-A0, 104×212) nên
+				     Máy ba màu chỉ có ĐÚNG MỘT tấm (E0213A192-FPC-A0, 122×250) nên
 				     không có gì để chọn. Bên đen trắng có hai cỡ tấm thật nên mới
 				     cần nút đó; bê nguyên sang đây là một nút bấm vào không làm gì
 				     (main.js của máy này không có switchResolution). -->
@@ -165,7 +165,7 @@
 						<li>Thành phần <b>Ngày tháng</b> hiện «Thứ Năm, 20/08/2026». Muốn tách rời thì dùng <b>Thứ</b> và <b>Ngày dương</b>.</li>
 						<li>Thành phần <b>Icon</b> lấy ảnh từ mục «Truyền hình ảnh» qua nút <b>Icon từ ảnh</b>, tối đa 176 px — phóng to hơn sẽ vỡ. Icon khác ảnh nền: icon nhỏ, đặt được ở bất cứ đâu.</li>
 						<li>Bố cục lưu trong <b>trình duyệt này</b>. Đổi máy tính hay xoá dữ liệu duyệt web là mất, phải xếp lại — máy vẫn giữ cái đã gửi.</li>
-						<li>Màn này chỉ rộng 212px — chữ cỡ đôi đã chiếm 16px mỗi ký tự, xếp vừa vài chữ là hết bề ngang.</li>
+						<li>Màn này chỉ rộng 250px — chữ cỡ đôi đã chiếm 16px mỗi ký tự, xếp vừa vài chữ là hết bề ngang.</li>
 					</ul>
 				</details>
 				<div class="flex-group" style="flex:1 1 100%">
@@ -209,8 +209,8 @@
 						<option value="1.54_152_152">1.54 (152x152)</option>
 						<option value="1.54_200_200">1.54 (200x200)</option>
 						<!-- hai khổ NẰM NGANG của máy 2.13" (tấm nằm dọc, giao diện bày ngang) -->
-						<option value="2.13_212_104" selected>2.13 (212x104)</option>
-						<option value="2.13_104_212">2.13 (104x212 — hướng tấm)</option>
+						<option value="2.13_250_122" selected>2.13 (250x122)</option>
+						<option value="2.13_122_250">2.13 (122x250 — hướng tấm)</option>
 						<option value="2.66_152_296">2.66 (152x296)</option>
 						<option value="2.66_184_360">2.66 (184x360)</option>
 						<option value="2.9_128_296">2.9 (128x296)</option>

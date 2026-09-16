@@ -19,12 +19,13 @@
   // BK/WH/GY, WD_FULL, WD_HDR, pad2, dateLine, voltValue, panelTempVal,
   // lunarText, IMG_MODE... đều nằm ở js/2_13/common.js (nạp trước file này)
 
-  // panel landscape size — theo phân giải đang chọn (212×104 hoặc 250×122)
+  // panel landscape size — máy này một tấm 250×122 (đọc qua RESOLUTIONS cho chung
+  // một đường với các máy nhiều tấm)
   function panelSize() {
     if (typeof RESOLUTIONS !== 'undefined' && typeof resIdx !== 'undefined') {
       return { w: RESOLUTIONS[resIdx].w, h: RESOLUTIONS[resIdx].h };
     }
-    return { w: 212, h: 104 };
+    return { w: 250, h: 122 };
   }
 
   function ctx2d(canvas, w, h) {
@@ -78,6 +79,10 @@
   }
 
   // pad2/dateLine ở common.js; lunarStr = lunarText với tiền tố mặc định
+  /* MỰC ĐỎ — tấm này BA MÀU. Bản 2.13" đen trắng quy «đỏ» về đen; ở đây
+   * đỏ là đỏ thật, tô ĐÚNG NHỮNG CHỖ GUI.c tô đỏ (đối chiếu từng hàm). */
+  const RED = '#c02a1e';
+
   function lunarStr(now) { return lunarText(now); }
   function weekOfYear(now) {
     const jan1 = new Date(now.getFullYear(), 0, 1);
@@ -96,7 +101,9 @@
     x.font = Math.round(H * 0.55) + 'px "Hobo Std","HoboStd",cursive';
     center(x, pad2(now.getHours()) + ':' + pad2(now.getMinutes()), W / 2, H * 0.68, BK);
     font(x, 9, 1); x.fillStyle = BK;
+    x.fillStyle = RED;
     x.fillText(lunarStr(now), 6, H - 3);          // hàng dưới hạ sát mép (khớp fw y=86)
+    x.fillStyle = BK;
     font(x, 9, 0);
     center(x, 'Đông chí', W / 2 + 14, H - 3, BK);
     right(x, panelTempVal() + '°C', W - 4, H - 3, BK);
@@ -111,7 +118,7 @@
     font(x, 14, 0); x.fillStyle = BK;                    // firmware: unifont 16px
     x.fillText('Tháng ' + (now.getMonth() + 1), 6, 16);
     serif(x, TIMES_BIG, 1);
-    center(x, now.getDate(), lcx, H / 2 + 25, BK);       // fw: (H/2-40) + BL_TIMES
+    center(x, now.getDate(), lcx, H / 2 + 25, RED);      // fw: (H/2-40) + BL_TIMES — ngày to: ĐỎ
     font(x, 14, 0);
     center(x, WD_FULL[now.getDay()], lcx, H - 6, BK);
     line(x, vline, 4, vline, H - 4);
@@ -122,7 +129,7 @@
     const rows = Math.ceil((firstCol + maxD) / 7);
     const rh = ((H - 18) / rows) | 0;
     font(x, 14, 0);
-    for (let i = 0; i < 7; i++) center(x, WD_HDR[i], gx + i * cw + cw / 2, 16, BK);
+    for (let i = 0; i < 7; i++) center(x, WD_HDR[i], gx + i * cw + cw / 2, 16, i >= 5 ? RED : BK);
     for (let d = 1; d <= maxD; d++) {
       const idx = firstCol + d - 1, col = idx % 7, row = (idx - col) / 7;
       const cx = gx + col * cw + cw / 2, cy = 16 + row * rh;
@@ -234,8 +241,8 @@
     }
     x.textAlign = 'left';
     const cxm = x0 + tw4 * 2 + 14;
-    x.fillStyle = WH;
-    x.fillRect(cxm - 2, ts - 12, 5, 5);                    // dấu ':' trắng
+    x.fillStyle = RED;
+    x.fillRect(cxm - 2, ts - 12, 5, 5);                    // dấu ':' ĐỎ
     x.fillRect(cxm - 2, ts + 8, 5, 5);
     font(x, 9, 1); x.fillStyle = BK;
     x.fillText(lunarStr(now), 4, H - 3);
@@ -252,7 +259,7 @@
     battery(x, W - 16, 5, WH, voltLabel());   // pin canh giữa thanh đen (tâm y≈9)
     // số ngày nâng lên trên, chừa chỗ cho dòng thứ hiển thị rõ bên dưới
     serif(x, TIMES_BIG, 1);
-    center(x, now.getDate(), W / 2, (20 + (((H - 102) / 2) | 0) - 16) + 65, BK);
+    center(x, now.getDate(), W / 2, (20 + (((H - 102) / 2) | 0) - 16) + 65, RED);
     font(x, 13, 1);
     center(x, WD_FULL[now.getDay()], W / 2, H - 17, BK);
     font(x, 9, 0);
@@ -273,7 +280,7 @@
       const today = i === off;
       // ô bo góc (khớp firmware draw_rect_r/draw_box_r)
       if (today) {
-        x.fillStyle = BK;
+        x.fillStyle = RED;
         if (x.roundRect) { x.beginPath(); x.roundRect(bx, by0, bw, bh, 3); x.fill(); }
         else x.fillRect(bx, by0, bw, bh);
       } else {
@@ -282,7 +289,7 @@
         else x.strokeRect(bx + 0.5, by0 + 0.5, bw - 1, bh - 1);
       }
       font(x, 8, 0);
-      center(x, WD_HDR[i], bx + bw / 2, by0 + 12, today ? WH : BK);
+      center(x, WD_HDR[i], bx + bw / 2, by0 + 12, today ? WH : (i >= 5 ? RED : BK));
       font(x, 13, 1);                                    // số dương đậm hơn
       center(x, d.getDate(), bx + bw / 2, by0 + bh / 2 + 4, today ? WH : BK);
       font(x, 8, 0);
@@ -318,8 +325,8 @@
   function header(x, gx, gy, gw, cw) {
     font(x, 8, 1);
     for (let i = 0; i < 7; i++) {
-      const wknd = i >= 5;                     // T7/CN đảo màu (màn 2.13" không có đỏ)
-      if (wknd) { x.fillStyle = BK; x.fillRect(gx + i * cw, gy, cw, 12); }
+      const wknd = i >= 5;                     // T7/CN: ô ĐỎ chữ trắng
+      if (wknd) { x.fillStyle = RED; x.fillRect(gx + i * cw, gy, cw, 12); }
       center(x, WD_MON[i], gx + i * cw + cw / 2, gy + 10, wknd ? WH : BK);
     }
     line(x, gx, gy + 12, gx + gw - 1, gy + 12, BK, 1);
@@ -332,9 +339,9 @@
       const col = (first + d - 1) % 7, row = (first + d - 1) / 7 | 0;
       const cx = gx + col * cw + cw / 2, cy = gy + row * rh;
       const today = d === now.getDate();
-      if (today) { x.fillStyle = BK; x.fillRect(cx - cw / 2, cy - 1, cw - 1, lunarSub ? 15 : rh - 1); }
+      if (today) { x.fillStyle = RED; x.fillRect(cx - cw / 2, cy - 1, cw - 1, lunarSub ? 15 : rh - 1); }
       font(x, 8, 1);
-      center(x, d, cx, cy + 7, today ? WH : BK);
+      center(x, d, cx, cy + 7, today ? WH : (col >= 5 ? RED : BK));
       if (lunarSub) {
         let ls = '';
         try { const l = lunarToday(new Date(now.getFullYear(), now.getMonth(), d)); ls = l.day === 1 ? '1/' + (l.month & 0x7f) : String(l.day); } catch (e) { ls = String(d); }
@@ -416,7 +423,7 @@
       const col = (first + d - 1) % 7, row = (first + d - 1) / 7 | 0;
       const cx = lx + col * cw + cw / 2, cy = gy + 13 + row * rh;
       center(x, d, cx, cy + 7, BK);
-      if (d === now.getDate()) { x.strokeStyle = BK; x.strokeRect(cx - cw / 2 + 0.5, cy - 1.5, cw - 1, rh + 1); }
+      if (d === now.getDate()) { x.strokeStyle = RED; x.strokeRect(cx - cw / 2 + 0.5, cy - 1.5, cw - 1, rh + 1); }
     }
     if (lu) {
       const lfirst = ((now.getDay() - ((lu.day - 1) % 7) + 70) % 7 + 6) % 7;
@@ -424,7 +431,7 @@
         const col = (lfirst + d - 1) % 7, row = (lfirst + d - 1) / 7 | 0;
         const cx = rxg + col * cw + cw / 2, cy = gy + 13 + row * rh;
         const today = d === lu.day;
-        if (today) { x.fillStyle = BK; x.fillRect(cx - cw / 2, cy - 2, cw, rh + 1); }
+        if (today) { x.fillStyle = RED; x.fillRect(cx - cw / 2, cy - 2, cw, rh + 1); }
         center(x, d, cx, cy + 7, today ? WH : BK);
       }
     }
@@ -495,7 +502,7 @@
     for (let i = 0; i < 7; i++) {
       const lb = WD_MON[i];
       const today = i === (now.getDay() + 6) % 7;
-      if (today) { x.fillStyle = BK; x.fillRect(2, i * rh + 1, 30, rh - 2); }
+      if (today) { x.fillStyle = RED; x.fillRect(2, i * rh + 1, 30, rh - 2); }
       x.fillStyle = today ? WH : BK;
       x.fillText(lb, 6, i * rh + rh / 2 + 4);
     }
@@ -515,10 +522,10 @@
     let l = '24/05'; try { const lu = lunarToday(now); l = lu.day + '/' + pad2(lu.month & 0x7f); } catch (e) {}
     center(x, l, mx, H - 6, BK);
     font(x, 9, 0);
-    center(x, '12', cx, cy - r + 6, BK);
-    center(x, '3', cx + r, cy + 3, BK);
-    center(x, '6', cx, cy + r - 3, BK);
-    center(x, '9', cx - r, cy + 3, BK);
+    center(x, '12', cx, cy - r + 6, RED);   // số giờ chính: ĐỎ
+    center(x, '3', cx + r, cy + 3, RED);
+    center(x, '6', cx, cy + r - 3, RED);
+    center(x, '9', cx - r, cy + 3, RED);
     for (let k = 5; k < 60; k += 5) {
       if (k % 15 === 0) continue;
       const a = k * Math.PI / 30;
@@ -559,7 +566,7 @@
     x.fillText(pad2(now.getMonth() + 1) + '-' + now.getFullYear(), 6, 13);
     battery(x, W - 16, 5, WH, voltLabel());                // pin + điện áp căn giữa thanh
     serif(x, TIMES_BIG, 1);
-    center(x, now.getDate(), W / 2, 83, BK);          // fw: 18 + BL_TIMES
+    center(x, now.getDate(), W / 2, 83, RED);         // fw: 18 + BL_TIMES — số ngày to: ĐỎ
     font(x, 12, 1);
     center(x, WD_FULL[now.getDay()], W / 2, 98, BK);
     font(x, 9, 0);
@@ -567,7 +574,7 @@
     center(x, l, W / 2, 116, BK);
     const cw = (W >= 120) ? 16 : 14, gx = ((W - cw * 7) / 2) | 0, gy = H - 78;
     font(x, 7, 1);
-    for (let i = 0; i < 7; i++) center(x, WD_MON[i], gx + i * cw + cw / 2, gy - 6, BK);
+    for (let i = 0; i < 7; i++) center(x, WD_MON[i], gx + i * cw + cw / 2, gy - 6, i >= 5 ? RED : BK);
     line(x, gx, gy - 3, gx + cw * 7 - 2, gy - 3, BK, 1);
     const first = (new Date(now.getFullYear(), now.getMonth(), 1).getDay() + 6) % 7;
     const maxD = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
@@ -576,7 +583,7 @@
       const col = (first + d - 1) % 7, row = (first + d - 1) / 7 | 0;
       const cx = gx + col * cw + cw / 2, cy = gy + row * 13;
       const today = d === now.getDate();
-      if (today) { x.fillStyle = BK; x.fillRect(cx - cw / 2, cy - 1, cw - 1, 12); }
+      if (today) { x.fillStyle = RED; x.fillRect(cx - cw / 2, cy - 1, cw - 1, 12); }
       center(x, d, cx, cy + 7, today ? WH : BK);
     }
   }
@@ -589,11 +596,11 @@
     center(x, now.getDate(), W / 2, 101, BK);         // fw: 36 + BL_TIMES
     font(x, 11, 1);
     center(x, pad2(now.getMonth() + 1) + '-' + now.getFullYear(), W / 2, 120, BK);
-    line(x, 8, 126, W - 8, 126, BK, 1);
+    line(x, 8, 126, W - 8, 126, RED, 2);   // vạch chia ĐỎ, hai nét
     font(x, 18, 1);
     // HH:MM cân giữa dải giữa 2 vạch 126..H-46 (khớp firmware)
     center(x, pad2(now.getHours()) + ':' + pad2(now.getMinutes()), W / 2, (126 + H - 46) / 2 + 7, BK);
-    line(x, 8, H - 46, W - 8, H - 46, BK, 1);
+    line(x, 8, H - 46, W - 8, H - 46, RED, 2);   // vạch chia ĐỎ, hai nét
     font(x, 9, 0);
     let l = 'Âm 24/05'; try { const lu = lunarToday(now); l = 'Âm ' + lu.day + '/' + pad2(lu.month & 0x7f); } catch (e) {}
     center(x, l, W / 2, H - 24, BK);
@@ -615,10 +622,10 @@
            cx + (r - 7) * Math.sin(a), cy - (r - 7) * Math.cos(a), BK, 1);
     }
     font(x, 7, 0);
-    center(x, '12', cx, cy - r + 11, BK);
-    center(x, '3', cx + r - 8, cy + 3, BK);
-    center(x, '6', cx, cy + r - 5, BK);
-    center(x, '9', cx - r + 8, cy + 3, BK);
+    center(x, '12', cx, cy - r + 11, RED);  // số giờ chính: ĐỎ
+    center(x, '3', cx + r - 8, cy + 3, RED);
+    center(x, '6', cx, cy + r - 5, RED);
+    center(x, '9', cx - r + 8, cy + 3, RED);
     const h = now.getHours() % 12, m = now.getMinutes();
     const ha = (h + m / 60) * Math.PI / 6, ma = m * Math.PI / 30;
     x.strokeStyle = BK; x.lineCap = 'round';
@@ -633,7 +640,7 @@
     center(x, pad2(now.getDate()) + '/' + pad2(now.getMonth() + 1) + '/' + now.getFullYear(), W / 2, cy + r + 34, BK);
     let l = 'Âm 24/05'; try { const lu = lunarToday(now); l = 'Âm ' + lu.day + '/' + pad2(lu.month & 0x7f); } catch (e) {}
     center(x, l, W / 2, cy + r + 50, BK);
-    line(x, 8, H - 42, W - 8, H - 42, BK, 1);
+    line(x, 8, H - 42, W - 8, H - 42, RED, 2);   // vạch chia ĐỎ, hai nét
     font(x, 18, 1);
     // HH:MM cân giữa vùng dưới vạch (khớp firmware y = H-39)
     center(x, pad2(now.getHours()) + ':' + pad2(now.getMinutes()), W / 2, H - 15, BK);
@@ -649,7 +656,7 @@
       const d = new Date(monday); d.setDate(monday.getDate() + i);
       const ry = y0 + i * rh, today = i === off;
       if (today) {
-        x.fillStyle = BK;                                  // ô hôm nay bo góc
+        x.fillStyle = RED;                                 // ô hôm nay bo góc ĐỎ
         if (x.roundRect) { x.beginPath(); x.roundRect(2, ry, W - 4, rh - 2, 3); x.fill(); }
         else x.fillRect(2, ry, W - 4, rh - 2);
       }
@@ -705,7 +712,7 @@
     x.fillText('°C', tx + tw + 4, 32);
     font(x, 9, 0);
     center(x, 'Nhiệt độ', W / 2, 80, BK);
-    line(x, 8, 92, W - 8, 92, BK, 1);
+    line(x, 8, 92, W - 8, 92, RED, 2);   // vạch chia ĐỎ, hai nét
     font(x, 18, 1);
     center(x, pad2(now.getHours()) + ':' + pad2(now.getMinutes()), W / 2, 122, BK);
     font(x, 11, 1);
@@ -920,11 +927,11 @@
 
   /* Cầu nối cho js/common/designer.js — nó đọc window.__pv để vẽ chữ, khung
    * và mấy hằng số màu. Thiếu cái này thì bộ dựng «Tự thiết kế» chết ngay lúc
-   * nạp. Máy này còn khai thêm window.EPD_DS_DEVICE (js/2_13n/designer_2_13.js)
+   * nạp. Máy này còn khai thêm window.EPD_DS_DEVICE (js/2_13c/designer_2_13.js)
    * để tự vẽ widget theo hình học của chính nó. */
   window.__pv = {
     font, center, battery, pad2, BK, WH,
-    RED: BK,                       // màn này ĐEN TRẮNG: «đỏ» quy về đen
+    RED,                           // tấm BA MÀU: «đỏ» là đỏ thật
     WD_FULL, WD_SHORT: WD_HDR,
   };
 
