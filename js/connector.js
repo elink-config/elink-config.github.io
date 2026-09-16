@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  const VER = '20260917d'; // cache-buster, keep in sync with index.html
+  const VER = '20260917e'; // cache-buster, keep in sync with index.html
 
   const EPD42_SERVICE = '62750001-d828-918d-fb46-b6c11c675aec';
   const HM213_SERVICE = '0000ff00-0000-1000-8000-00805f9b34fb';
@@ -83,7 +83,7 @@
     // phải bám theo GIAO DIỆN của firmware, mà firmware máy này dùng GUI 2.13".
     '2_13c': {
       label: '2.13" BA MÀU',
-      sub: 'Màn 2.13" ba màu 250×122 hoặc 212×104 (DIY-2_13C, DA14585): kết nối, cấu hình và truyền hình ảnh',
+      sub: 'Màn 2.13" ba màu 250×128 (DIY-2_13C, DA14585): kết nối, cấu hình và truyền hình ảnh',
       fragment: 'apps/2_13c.html',
       prefixes: ['DIY-2_13C-'],
       scripts: ['js/app_common.js', 'js/family_epd.js', 'js/dithering.js', 'js/paint.js', 'js/crop.js',

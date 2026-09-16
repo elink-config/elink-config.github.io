@@ -9,8 +9,8 @@
 						<!-- Model 13/14 trong epd_model_id_t (SSD1680.c). data-size để
 						     NẰM NGANG: người dùng vẽ theo hướng nhìn màn, sendimg() xoay
 						     lại thành hướng tấm trước khi gói bit. -->
-						<option value="12" data-color="threeColor" data-size="2.13_250_122" selected>2.13" 250×122 (Ba màu, SSD1680)</option>
-						<option value="13" data-color="threeColor" data-size="2.13_212_104">2.13" 212×104 (Ba màu, SSD1680)</option>
+						<option value="12" data-color="threeColor" data-size="2.13_250_128" selected>2.13" 250×128 (Ba màu, SSD1680)</option>
+						<option value="13" data-color="threeColor" data-size="2.13_250_122">2.13" 250×122 (Ba màu, SSD1680)</option>
 					</select>
 				</div>
 				<div class="flex-group debug only-4_2">
@@ -73,8 +73,8 @@
 				     trong trang vẫn đọc một nguồn duy nhất. -->
 				<div class="flex-group" style="flex:1 1 100%" id="resRow">
 					<label>Độ phân giải màn hình:</label>
-					<span id="resLabel" class="system-time">250×122</span>
-					<button id="resswitchbutton" type="button" class="primary" onclick="switchResolution()">Chuyển sang 212×104</button>
+					<span id="resLabel" class="system-time">250×128</span>
+					<button id="resswitchbutton" type="button" class="primary" onclick="switchResolution()">Chuyển sang 250×122</button>
 					<span class="mode-gallery-hint" style="margin:0">Hai cỡ tấm 2.13" trông giống nhau. Nếu hình bị lệch, cắt mất một dải, hoặc có vạch đỏ/nhiễu ở mép thì bấm nút này để đổi sang cỡ kia. Lựa chọn được lưu trong máy.</span>
 				</div>
 				<div class="flex-group" style="flex:1 1 100%" id="hourlyFullRow">
@@ -217,10 +217,10 @@
 						<option value="1.54_152_152">1.54 (152x152)</option>
 						<option value="1.54_200_200">1.54 (200x200)</option>
 						<!-- hai khổ NẰM NGANG của máy 2.13" (tấm nằm dọc, giao diện bày ngang) -->
-						<option value="2.13_250_122" selected>2.13 (250x122)</option>
-						<option value="2.13_212_104">2.13 (212x104)</option>
+						<option value="2.13_250_128" selected>2.13 (250x128)</option>
+						<option value="2.13_250_122">2.13 (250x122)</option>
+						<option value="2.13_128_250">2.13 (128x250 — hướng tấm)</option>
 						<option value="2.13_122_250">2.13 (122x250 — hướng tấm)</option>
-						<option value="2.13_104_212">2.13 (104x212 — hướng tấm)</option>
 						<option value="2.66_152_296">2.66 (152x296)</option>
 						<option value="2.66_184_360">2.66 (184x360)</option>
 						<option value="2.9_128_296">2.9 (128x296)</option>
@@ -466,10 +466,10 @@
 					<tbody>
 						<tr>
 							<td>1</td>
-							<td>0.3</td>
-							<td>Bản đầu tiên của máy 2.13" ba màu. Chọn được cả hai cỡ tấm 250×122 và 212×104.</td>
+							<td>0.4</td>
+							<td>Bản đầu tiên của máy 2.13" ba màu. Tấm 250×128.</td>
 							<td>17/09/2026</td>
-							<td><a href="OTA firmware/2_13c/fw_2_13inch_bwr_v0.3.bin" download>Tải về</a></td>
+							<td><a href="OTA firmware/2_13c/fw_2_13inch_bwr_v0.4.bin" download>Tải về</a></td>
 							<td><button type="button" class="primary" onclick="fwInstallRow(this)">Cài ngay</button></td>
 						</tr>
 						<tr class="fw-alt">

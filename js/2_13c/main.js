@@ -26,13 +26,13 @@ let imgCurrent = -1;
 // khi thiết bị báo 'fw=' — trước đó cứ coi là 3 cho an toàn.
 let IMG_SLOTS = 5;
 
-/* HAI cỡ tấm ba màu: 0x12 = 250×122 (bản CAO, mặc định), 0x13 = 212×104 —
+/* 0x12 = 250×128 (ĐO ĐƯỢC trên máy thật, mặc định), 0x13 = 250×122 (cỡ tài liệu ghi) —
  * khác bản 2.13" ĐEN TRẮNG có hai cỡ tấm. Vẫn giữ bảng và resIdx để
  * mode_preview.js và bộ dựng «Tự thiết kế» đọc chung một đường, chỉ là bảng có
  * đúng một hàng, và KHÔNG có nút đổi khổ. */
 const RESOLUTIONS = [
-  { w: 250, h: 122, label: '250×122', drv: '12' },
-  { w: 212, h: 104, label: '212×104', drv: '13' },
+  { w: 250, h: 128, label: '250×128', drv: '12' },
+  { w: 250, h: 122, label: '250×122', drv: '13' },
 ];
 let resIdx = 0;
 const IMG_BG_SLOT = d => 5 + d;   // khe nền của thiết kế d (0/1)
@@ -214,10 +214,10 @@ const canvasSizes = [
   { name: '1.54_200_200', width: 200, height: 200 },
   // Tam 2.13" NAM DOC (104x212 / 122x250) nhung giao dien bay NGANG, nen
   // canvas de nguoi dung ve cung nam ngang; sendimg() xoay lai truoc khi goi.
+  { name: '2.13_250_128', width: 250, height: 128 },
   { name: '2.13_250_122', width: 250, height: 122 },
-  { name: '2.13_212_104', width: 212, height: 104 },
+  { name: '2.13_128_250', width: 128, height: 250 },
   { name: '2.13_122_250', width: 122, height: 250 },
-  { name: '2.13_104_212', width: 104, height: 212 },
   { name: '2.66_152_296', width: 152, height: 296 },
   { name: '2.66_184_360', width: 184, height: 360 },
   { name: '2.9_128_296', width: 128, height: 296 },
