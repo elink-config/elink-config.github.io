@@ -9,7 +9,7 @@
 						<!-- Model 13/14 trong epd_model_id_t (SSD1680.c). data-size để
 						     NẰM NGANG: người dùng vẽ theo hướng nhìn màn, sendimg() xoay
 						     lại thành hướng tấm trước khi gói bit. -->
-						<option value="12" data-color="threeColor" data-size="2.13_250_120" selected>2.13" 250×120 (Ba màu, SSD1680)</option>
+						<option value="12" data-color="threeColor" data-size="2.13_252_120" selected>2.13" 252×120 (Ba màu, SSD1680)</option>
 					</select>
 				</div>
 				<div class="flex-group debug only-4_2">
@@ -72,7 +72,7 @@
 				     trong trang vẫn đọc một nguồn duy nhất. -->
 				<div class="flex-group" style="flex:1 1 100%" id="resRow">
 					<label>Độ phân giải màn hình:</label>
-					<span id="resLabel" class="system-time">250×120</span>
+					<span id="resLabel" class="system-time">252×120</span>
 					<button id="resswitchbutton" type="button" class="primary" onclick="switchResolution()">Đổi khổ</button>
 					<span class="mode-gallery-hint" style="margin:0">Máy này chỉ có một cỡ tấm nên hàng này tự ẩn. Giữ lại để còn dùng khi gặp lô tấm khác.</span>
 				</div>
@@ -216,8 +216,8 @@
 						<option value="1.54_152_152">1.54 (152x152)</option>
 						<option value="1.54_200_200">1.54 (200x200)</option>
 						<!-- hai khổ NẰM NGANG của máy 2.13" (tấm nằm dọc, giao diện bày ngang) -->
-						<option value="2.13_250_120" selected>2.13 (250x120)</option>
-						<option value="2.13_120_250">2.13 (120x250 — hướng tấm)</option>
+						<option value="2.13_252_120" selected>2.13 (252x120)</option>
+						<option value="2.13_120_252">2.13 (120x252 — hướng tấm)</option>
 						<option value="2.66_152_296">2.66 (152x296)</option>
 						<option value="2.66_184_360">2.66 (184x360)</option>
 						<option value="2.9_128_296">2.9 (128x296)</option>
@@ -463,10 +463,10 @@
 					<tbody>
 						<tr>
 							<td>1</td>
-							<td>0.5</td>
-							<td>Bản đầu tiên của máy 2.13" ba màu. Tấm 250×120.</td>
+							<td>0.6</td>
+							<td>Bản đầu tiên của máy 2.13" ba màu. Tấm 252×120.</td>
 							<td>17/09/2026</td>
-							<td><a href="OTA firmware/2_13c/fw_2_13inch_bwr_v0.5.bin" download>Tải về</a></td>
+							<td><a href="OTA firmware/2_13c/fw_2_13inch_bwr_v0.6.bin" download>Tải về</a></td>
 							<td><button type="button" class="primary" onclick="fwInstallRow(this)">Cài ngay</button></td>
 						</tr>
 						<tr class="fw-alt">

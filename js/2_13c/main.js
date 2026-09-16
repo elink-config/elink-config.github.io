@@ -26,13 +26,13 @@ let imgCurrent = -1;
 // khi thiết bị báo 'fw=' — trước đó cứ coi là 3 cho an toàn.
 let IMG_SLOTS = 5;
 
-/* MỘT cỡ duy nhất: 250×120 — ĐO ĐƯỢC trên máy thật, không phải 250×122 như
+/* MỘT cỡ duy nhất: 252×120 — ĐO ĐƯỢC trên máy thật, không phải 250×122 như
  * tài liệu ghi. Không còn gì để người dùng chọn nên nút đổi khổ tự ẩn —
  * khác bản 2.13" ĐEN TRẮNG có hai cỡ tấm. Vẫn giữ bảng và resIdx để
  * mode_preview.js và bộ dựng «Tự thiết kế» đọc chung một đường, chỉ là bảng có
  * đúng một hàng, và KHÔNG có nút đổi khổ. */
 const RESOLUTIONS = [
-  { w: 250, h: 120, label: '250×120', drv: '12' },
+  { w: 252, h: 120, label: '252×120', drv: '12' },
 ];
 let resIdx = 0;
 const IMG_BG_SLOT = d => 5 + d;   // khe nền của thiết kế d (0/1)
@@ -214,8 +214,8 @@ const canvasSizes = [
   { name: '1.54_200_200', width: 200, height: 200 },
   // Tam 2.13" NAM DOC (104x212 / 122x250) nhung giao dien bay NGANG, nen
   // canvas de nguoi dung ve cung nam ngang; sendimg() xoay lai truoc khi goi.
-  { name: '2.13_250_120', width: 250, height: 120 },
-  { name: '2.13_120_250', width: 120, height: 250 },
+  { name: '2.13_252_120', width: 252, height: 120 },
+  { name: '2.13_120_252', width: 120, height: 252 },
   { name: '2.66_152_296', width: 152, height: 296 },
   { name: '2.66_184_360', width: 184, height: 360 },
   { name: '2.9_128_296', width: 128, height: 296 },
