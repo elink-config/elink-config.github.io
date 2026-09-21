@@ -116,6 +116,15 @@
 					<span class="mode-gallery-hint" style="margin:0">Cỡ chữ + hướng màn áp xuống máy khi bấm «Gửi sách xuống máy» (chỉ trang đọc sách chữ xoay dọc; menu máy và truyện tranh vẫn ngang).</span>
 				</div>
 				<div class="flex-group">
+					<label for="langMode">Ngôn ngữ / Language:</label>
+					<select id="langMode">
+						<option value="0" selected>Tiếng Việt</option>
+						<option value="1">English</option>
+					</select>
+					<button id="langModebutton" type="button" class="secondary" onclick="setLang()" disabled>Áp dụng</button>
+					<span class="mode-gallery-hint" style="margin:0">Đổi chữ hiển thị <b>trên máy</b> (menu Trang chủ, màn Thông tin) — không đổi nội dung sách. Trên máy cũng đổi được ở mục «Ngôn ngữ / Language» trong menu Trang chủ.</span>
+				</div>
+				<div class="flex-group">
 					<label for="clockMode">Giờ thiết bị:</label>
 					<select id="clockMode">
 						<option value="0" selected>Cập nhật khi chuyển trang</option>

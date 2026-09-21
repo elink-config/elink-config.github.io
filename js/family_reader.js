@@ -278,6 +278,26 @@ async function setClockMode() {
     addLog('Giờ thiết bị: ' + ['cập nhật khi chuyển trang', 'tự động cập nhật', 'tắt hiển thị'][v] + '.');
 }
 
+// Ngôn ngữ chữ TRÊN MÁY (không phải ngôn ngữ của trang web này):
+// [0x28 0x32 0/1] — 0 tiếng Việt, 1 English. Firmware có tính năng ACK bằng
+// notify lang=ok; build cũ im lặng -> báo rõ để người dùng biết cần OTA.
+// Trên máy cũng đổi được: mục «Ngôn ngữ / Language» trong menu Trang chủ.
+async function setLang() {
+  const v = document.getElementById('langMode').value === '1' ? 1 : 0;
+  const ack = waitNotify(m => (m === 'lang=ok') ? m : null, 3000);
+  if (!(await write(EpdCmd.BOOK, [0x32, v]))) {
+    ack.catch(() => { });
+    addLog('⚠ Không gửi được (kết nối đang bận) — bấm lại «Áp dụng».');
+    return;
+  }
+  try {
+    await ack;
+    addLog('Ngôn ngữ trên máy: ' + (v ? 'English' : 'Tiếng Việt') + ' — màn hình sẽ vẽ lại.');
+  } catch (e) {
+    addLog('⚠ Máy KHÔNG xác nhận (lang=ok) — firmware trên máy chưa có tính năng đổi ngôn ngữ. Hãy cập nhật firmware mới nhất (mục OTA) rồi thử lại.');
+  }
+}
+
 async function setFullEvery() {
   let n = parseInt(document.getElementById('fullEvery').value);
   if (isNaN(n) || n < 0 || n > 60) n = 0;  // mặc định: tắt

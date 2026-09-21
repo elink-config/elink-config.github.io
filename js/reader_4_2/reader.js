@@ -62,6 +62,9 @@ function handleNotify(value, idx) {
       // rd_font offset 221, rd_clock offset 219 (fw r2.2+; cũ đọc 0xFF -> mặc định)
       if (data[221] <= 2) { devFont = data[221]; document.getElementById('fontSize').value = String(devFont); }
       if (data[219] <= 2) document.getElementById('clockMode').value = String(data[219]);
+      // rd_lang offset 206 (hai byte đệm căn lề của activation — fw r2.1+):
+      // 0 tiếng Việt / 1 English. Firmware cũ để rác ở đây nên chỉ nhận 0/1.
+      if (data[206] <= 1) document.getElementById('langMode').value = String(data[206]);
       // rd_rot offset 204 (byte cuối vùng note cũ — fw r1.0+): 0 ngang / 1 dọc
       if (data[204] <= 1) { devRot = data[204]; document.getElementById('rotMode').value = String(devRot); }
       previewTextPages = null;  // select đồng bộ theo máy: preview dựng lại
@@ -167,7 +170,7 @@ function updateButtonStatus(busy = false) {
   const set = (id, v) => { const e = document.getElementById(id); if (e) e.disabled = v; };
   set('reconnectbutton', (gattServer == null || connected) ? 'disabled' : null);
   set('sendbookbutton', (dis || !book) ? 'disabled' : null);
-  ['rprevbutton', 'rnextbutton', 'rhomebutton', 'rgotobutton', 'fullEverybutton', 'clockModebutton', 'syncClockbutton', 'btnApply', 'otabutton', 'sendcmdbutton']
+  ['rprevbutton', 'rnextbutton', 'rhomebutton', 'rgotobutton', 'fullEverybutton', 'clockModebutton', 'langModebutton', 'syncClockbutton', 'btnApply', 'otabutton', 'sendcmdbutton']
     .forEach(id => set(id, dis));
 }
 
