@@ -136,6 +136,19 @@
 					<span class="mode-gallery-hint" style="margin:0">Bấm «Đồng bộ giờ» để footer máy hiện giờ (máy mất điện thì đồng bộ lại).</span>
 				</div>
 				<div class="flex-group">
+					<label for="idleClock">Đồng hồ chờ sau</label>
+					<select id="idleClock">
+						<option value="5" selected>5 phút không dùng</option>
+						<option value="10">10 phút</option>
+						<option value="15">15 phút</option>
+						<option value="30">30 phút</option>
+						<option value="60">60 phút</option>
+						<option value="0">Tắt</option>
+					</select>
+					<button id="idleClockbutton" type="button" class="secondary" onclick="setIdleClock()" disabled>Áp dụng</button>
+					<span class="mode-gallery-hint" style="margin:0">Để không dùng một lúc thì màn chuyển sang đồng hồ (thứ — giờ — ngày); bấm nút bất kỳ trên máy là quay lại đúng trang đang đọc. Cần đã «Đồng bộ giờ», và màn tự vẽ lại mỗi phút nên tốn pin hơn — để máy lâu không dùng thì chọn «Tắt».</span>
+				</div>
+				<div class="flex-group">
 					<label for="fullEvery">Làm mới màn hình sau mỗi</label>
 					<select id="fullEvery">
 						<option value="1">mỗi trang</option>

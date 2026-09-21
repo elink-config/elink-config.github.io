@@ -298,6 +298,30 @@ async function setLang() {
   }
 }
 
+// ĐỒNG HỒ CHỜ: máy rảnh ngần này phút thì màn đọc nhường chỗ cho một
+// màn đồng hồ; bấm nút bất kỳ trên máy là quay lại đúng chỗ đang đọc.
+// [0x28 0x33 số_phút] — 0 = tắt. Máy có tính năng ACK bằng notify idle=ok.
+async function setIdleClock() {
+  const v = Math.min(120, Math.max(0, parseInt(document.getElementById('idleClock').value) || 0));
+  const ack = waitNotify(m => (m === 'idle=ok') ? m : null, 3000);
+  if (!(await write(EpdCmd.BOOK, [0x33, v]))) {
+    ack.catch(() => { });
+    addLog('⚠ Không gửi được (kết nối đang bận) — bấm lại «Áp dụng».');
+    return;
+  }
+  try {
+    await ack;
+    if (v === 0) {
+      addLog('Đã tắt đồng hồ chờ — máy giữ nguyên trang sách khi không dùng.');
+    } else {
+      addLog('Đồng hồ chờ: sau ' + v + ' phút không dùng, máy chuyển sang màn đồng hồ.');
+      if (!(await syncClock())) addLog('⚠ Máy chưa có giờ nên chưa hiện được đồng hồ — bấm «Đồng bộ giờ».');
+    }
+  } catch (e) {
+    addLog('⚠ Máy KHÔNG xác nhận (idle=ok) — firmware trên máy chưa có đồng hồ chờ. Hãy cập nhật firmware mới nhất (mục OTA) rồi thử lại.');
+  }
+}
+
 async function setFullEvery() {
   let n = parseInt(document.getElementById('fullEvery').value);
   if (isNaN(n) || n < 0 || n > 60) n = 0;  // mặc định: tắt
