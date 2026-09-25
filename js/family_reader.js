@@ -372,6 +372,80 @@ function updateBtnHint() {
     : '✓ Không có chân nào xung đột với cấu hình màn hình hiện tại.';
 }
 
+/* ==================== SOI CHÂN NÚT (chẩn đoán) ====================
+ * Bản sao ĐÚNG Y của btn_conflict() trong READER.c. Phải giống từng dòng:
+ * lệch một luật là webtool báo «tốt» trong khi máy đã tự tắt nút.
+ *   - cổng 0..3, số chân theo TẮNG CỔNG (P1 chỉ có 0..5!)
+ *   - chân flash cố định: P0_0 SCLK, P0_3 CS, P0_6 MOSI (P0_5 MISO được phép)
+ *   - mọi chân màn hình trong config + en + led
+ */
+const BTN_PORT_MAX = [7, 5, 9, 7];
+
+function btnPinName(p) {
+  if (p === 0xFF) return 'FF (mặc định)';
+  if (p === 0xFE) return 'FE (tắt nút)';
+  return 'P' + (p >> 4) + '_' + (p & 15);
+}
+
+// tra ve null neu dung duoc, hoac LY DO khong dung duoc
+function btnPinProblem(pin) {
+  if (pin >= 0xFE) return 'không phải số chân';
+  const port = pin >> 4, bit = pin & 15;
+  if (port > 3 || bit > BTN_PORT_MAX[port]) return 'chân KHÔNG TỒN TẠI trên DA14585';
+  if (pin === 0x00 || pin === 0x03 || pin === 0x06) return 'trùng chân flash';
+  if (!cfgPins) return null;
+  const scr = { 0: 'MOSI', 1: 'SCLK', 2: 'CS', 3: 'DC', 4: 'RST', 5: 'BUSY', 6: 'BS', 9: 'LED', 10: 'EN' };
+  for (const k of Object.keys(scr)) if (cfgPins[k] === pin) return 'trùng chân màn hình (' + scr[k] + ')';
+  return null;
+}
+
+// Doc ba byte 216-218 tu goi cau hinh va noi ro firmware se lam gi voi chung.
+// Goi ngay sau khi nhan goi cau hinh (app 4.2" — ban nRF 7.5" chan co dinh).
+function btnDiagFromConfig(data) {
+  if (data.length < 224) return;
+  const raw = [data[216], data[217], data[218]];
+  const ten = ['trang sau', 'trang trước', 'trang chủ'];
+  const mac = [0x14, 0x04, 0x15];
+  addLog('Chân nút trong cấu hình máy: ' + raw.map(v => btnPinName(v)).join(' · '));
+  let rac = 0;
+  for (let i = 0; i < 3; i++) {
+    if (raw[i] === 0xFF || raw[i] === 0xFE) continue;
+    const lydo = btnPinProblem(raw[i]);
+    if (lydo) {
+      rac++;
+      addLog('⚠ Nút ' + ten[i] + ': cấu hình để ' + btnPinName(raw[i]) + ' — ' + lydo + '.');
+    } else if (raw[i] !== mac[i]) {
+      addLog('ℹ Nút ' + ten[i] + ': đang dùng ' + btnPinName(raw[i]) + ' (khác pad mặc định ' + btnPinName(mac[i]) + ').');
+    }
+  }
+  if (rac) {
+    addLog('⚠⚠ ĐÂY LÀ NGUYÊN NHÂN NÚT KHÔNG ĂN: ba byte này trùng ô của firmware LỊ CH '
+      + '(img_auto / img_interval / img_slot_mask), nên máy nào đã từng chạy bản lịch thì ở đây '
+      + 'là số rác, không phải 0xFF. Bấm «Đặt lại chân nút về mặc định» là xong.');
+  }
+}
+
+// HOI may: goi EPD_CMD_BTN dai 1 byte -> may tra bcfg= / bpin= / blow=
+// (firmware r1.2+). Giu nut roi bam de biet pad da han di vao chan nao.
+async function probeButtons() {
+  addLog('Đang hỏi máy về ba nút… (GIỮ một nút lúc bấm nút này thì máy sẽ chỉ ra đúng chân đó)');
+  const ack = waitNotify(m => m.startsWith('blow=') ? m : null, 4000);
+  if (!(await write(EpdCmd.BTN, []))) { ack.catch(() => { }); return; }
+  try {
+    await ack;
+  } catch (e) {
+    addLog('⚠ Máy không trả lời — firmware trên máy cũ hơn r1.2, chưa có lệnh kiểm tra nút. '
+      + 'Hãy cập nhật firmware (mục OTA) rồi thử lại.');
+  }
+}
+
+// Tra ba chan nut ve MAC DINH (0xFF) — sua duoc ngay cai «nut chet im lang»
+async function resetButtons() {
+  if (await write(EpdCmd.BTN, [0xFF, 0xFF, 0xFF, 0xFE]))
+    addLog('Đã trả ba chân nút về mặc định (SWCLK / TX / SWDIO). '
+      + 'Nếu nút vẫn chưa ăn thì RÚT NGUỒN cắm lại một lần rồi thử.');
+}
+
 async function applyButtons() {
   // r2.0 chỉ còn 3 nút; vẫn gửi byte thứ 4 = 0xFE (tắt) để firmware r1.x cũ
   // (yêu cầu đủ 4 byte) không từ chối gói

@@ -74,6 +74,7 @@ function handleNotify(value, idx) {
       if (data[206] <= 1) document.getElementById('langMode').value = String(data[206]);
       // rd_rot offset 204 (byte cuối vùng note cũ — fw r1.0+): 0 ngang / 1 dọc
       if (data[204] <= 1) { devRot = data[204]; document.getElementById('rotMode').value = String(devRot); }
+      btnDiagFromConfig(data);  // SOI ba byte chân nút (216..218) ngay khi kết nối
       previewTextPages = null;  // select đồng bộ theo máy: preview dựng lại
       renderPreview();
       const pg = data[222] | (data[223] << 8);
@@ -99,6 +100,26 @@ function handleNotify(value, idx) {
     if (!deviceFw.startsWith('r')) {
       addLog('⚠ Thiết bị đang chạy firmware LỊCH chuẩn (' + deviceFw + '), không phải firmware máy đọc sách (rX.Y).');
       addLog('⚠ Hãy nạp firmware fw_reader_4_2inch_rX.Y.bin (mục OTA bên dưới) trước khi gửi sách.');
+    }
+  } else if (msg.startsWith('bcfg=') || msg.startsWith('bpin=')) {
+    // chẩn đoán nút (fw r1.2+): 3 cặp hex
+    const v = [0, 1, 2].map(i => parseInt(msg.substr(5 + 2 * i, 2), 16));
+    const nhan = msg.startsWith('bcfg=') ? 'Cấu hình đang lưu' : 'Máy ĐÃ CHỐT';
+    addLog(nhan + ': trang sau ' + btnPinName(v[0]) + ' · trang trước ' + btnPinName(v[1])
+      + ' · trang chủ ' + btnPinName(v[2]));
+    if (msg.startsWith('bpin=') && v.includes(0xFF))
+      addLog('⚠ Chân hiện FF ở dòng «Máy ĐÃ CHỐT» nghĩa là nút đó đã bị firmware TỰ TẮT.');
+  } else if (msg.startsWith('blow=')) {
+    const h = msg.substring(5);
+    if (!h) {
+      addLog('Quét chân: KHÔNG chân rảnh nào đang chạm đất. Nếu lúc bấm «Kiểm tra nút» '
+        + 'bạn ĐANG GIỮ một nút thì pad đó KHÔNG nối xuống GND — xem lại đúng pad GND của board '
+        + '(bản v1 và v2 của board 6TP khác pad nhau, xem 2 ảnh trong mục hướng dẫn hàn).');
+    } else {
+      const ps = [];
+      for (let i = 0; i + 1 < h.length; i += 2) ps.push(btnPinName(parseInt(h.substr(i, 2), 16)));
+      addLog('Quét chân: đang chạm đất — ' + ps.join(', ')
+        + '. Đây là chân mà pad bạn đang giữ nối tới; gán nút vào chính chân này là chạy.');
     }
   } else if (msg.startsWith('bki=')) {
     // máy đang phân trang sách chữ: ánh xạ số trang đã chốt vào 80..99% của
@@ -177,7 +198,7 @@ function updateButtonStatus(busy = false) {
   const set = (id, v) => { const e = document.getElementById(id); if (e) e.disabled = v; };
   set('reconnectbutton', (gattServer == null || connected) ? 'disabled' : null);
   set('sendbookbutton', (dis || !book) ? 'disabled' : null);
-  ['rprevbutton', 'rnextbutton', 'rhomebutton', 'rgotobutton', 'fullEverybutton', 'clockModebutton', 'langModebutton', 'idleClockbutton', 'syncClockbutton', 'btnApply', 'otabutton', 'sendcmdbutton']
+  ['rprevbutton', 'rnextbutton', 'rhomebutton', 'rgotobutton', 'fullEverybutton', 'clockModebutton', 'langModebutton', 'idleClockbutton', 'btnProbe', 'btnReset', 'syncClockbutton', 'btnApply', 'otabutton', 'sendcmdbutton']
     .forEach(id => set(id, dis));
 }
 
