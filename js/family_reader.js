@@ -419,7 +419,7 @@ function btnDiagFromConfig(data) {
     }
   }
   if (rac) {
-    addLog('⚠⚠ ĐÂY LÀ NGUYÊN NHÂN NÚT KHÔNG ĂN: ba byte này trùng ô của firmware LỊ CH '
+    addLog('⚠⚠ ĐÂY LÀ NGUYÊN NHÂN NÚT KHÔNG ĂN: ba byte này trùng ô của firmware LỊCH '
       + '(img_auto / img_interval / img_slot_mask), nên máy nào đã từng chạy bản lịch thì ở đây '
       + 'là số rác, không phải 0xFF. Bấm «Đặt lại chân nút về mặc định» là xong.');
   }
