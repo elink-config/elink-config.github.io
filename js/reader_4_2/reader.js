@@ -52,6 +52,7 @@ function handleNotify(value, idx) {
     // rd_full_every 220, trang đang đọc (u16 LE) 222
     addLog('Nhận cấu hình thiết bị (' + data.length + ' byte)');
     cfgPins = Array.from(data.slice(0, 11));
+    envOnConfig(data);  // nhiệt độ/giao diện/pin
     if (data.length >= 224) {
       setBtnSelect('btnNext', data[216]);
       setBtnSelect('btnPrev', data[217]);
@@ -86,6 +87,7 @@ function handleNotify(value, idx) {
   if (!textDecoderInst) textDecoderInst = new TextDecoder();
   const msg = textDecoderInst.decode(data);
   addLog(msg, '⇓');
+  if (envOnNotify(msg)) return;  // mục «Trạng thái thiết bị» (app_common.js)
   if (msg.startsWith('mtu=')) {
     const m = parseInt(msg.substring(4));
     if (m > 0) document.getElementById('mtusize').value = m;

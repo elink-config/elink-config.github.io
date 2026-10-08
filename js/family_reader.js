@@ -10,6 +10,14 @@
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
+/* MÁY ĐỌC SÁCH: màn luôn hiện PHẦN TRĂM pin và config không có ô batt_style
+ * (ba byte 216..218 ở đây là CHÂN NÚT — đọc @217 là ra số chân, không phải
+ * kiểu pin). Chốt sẵn để envRender() không đọc nhầm. */
+envBattStyleFixed = 1;
+/* Máy đọc sách chỉ có hai chế độ (MODE_PICTURE / MODE_READER) và không có
+ * bảng thẻ gallery — đặt tên thẳng, không để ô hiện «mode 1». */
+envModeNameMap = { 0: 'Ảnh gửi từ webtool', 1: 'Đọc sách' };
+
 function addLog(txt, action = '') {
   const log = document.getElementById('log');
   const now = new Date();

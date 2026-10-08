@@ -60,6 +60,73 @@ function waitMtuNotify(timeoutMs) {
 }
 
 // live system-time display in the [Thời gian] section
+/* ===== Mục «Trạng thái thiết bị»: nhiệt độ / giao diện / pin ===============
+ *
+ * Máy báo `env=<nhiệt độ °C>,<điện áp mV>` MỘT LẦN trong chùm notify lúc kết
+ * nối. Firmware cũ không gửi chuỗi này nên ô giữ «—» — KHÔNG gác giao diện theo
+ * số phiên bản (luật của kho: xem CLAUDE.md), cứ hiện hàng rồi để máy tự báo.
+ *
+ * Giao diện và kiểu hiển thị pin đọc từ GÓI CẤU HÌNH: mode @11, batt_style @217.
+ * Mức pin hiện ĐÚNG kiểu đã chọn cho màn hình: phần trăm nếu chọn phần trăm,
+ * còn lại — KỂ CẢ «chỉ icon» — thì hiện ĐIỆN ÁP.
+ */
+let envTempC = null, envMilliVolt = null, envModeWire = null, envBattStyle = null;
+/* Máy ĐỌC SÁCH không có batt_style (ba byte 216..218 của nó là chân nút!) và màn
+ * của nó luôn hiện phần trăm — family_reader.js đặt sấn 1 để không đọc @217. */
+let envBattStyleFixed = null;
+
+// cùng đường xả pin kiềm 2 viên như firmware (batt_cal trong GUI.c): 2,4V = 0%,
+// 3,1V = 100%, nội suy từng đoạn — sỏa một bên là phải sửa bên kia
+function envBattPercent(mv) {
+  const v = [2400, 2500, 2600, 2700, 2800, 2900, 3000, 3100];
+  const p = [0, 10, 22, 38, 56, 72, 87, 100];
+  if (mv >= v[7]) return 100;
+  if (mv <= v[0]) return 0;
+  let i = 1;
+  while (mv > v[i]) i++;
+  return Math.round(p[i - 1] + (p[i] - p[i - 1]) * (mv - v[i - 1]) / (v[i] - v[i - 1]));
+}
+
+/* Máy nào không có window.EPD_MODES (bảng thẻ gallery) thì đặt bảng tên riêng
+ * vào đây — ví dụ máy đọc sách chỉ có hai chế độ. Để null thì tra EPD_MODES. */
+let envModeNameMap = null;
+
+function envModeName(n) {
+  if (n === null || n === undefined) return '—';
+  if (envModeNameMap && envModeNameMap[n]) return envModeNameMap[n];
+  if (n === 0) return 'Ảnh (mode 0)';
+  const e = (window.EPD_MODES || []).find(x => x.mode === n);
+  return e ? `${e.name} (mode ${n})` : `mode ${n}`;
+}
+
+function envRender() {
+  const set = (id, t) => { const e = document.getElementById(id); if (e) e.textContent = t; };
+  set('envTemp', envTempC === null ? '—' : envTempC + ' °C');
+  set('envMode', envModeName(envModeWire));
+  if (envMilliVolt === null) { set('envBatt', '—'); return; }
+  const st = (envBattStyleFixed !== null) ? envBattStyleFixed : envBattStyle;
+  set('envBatt', st === 1
+    ? envBattPercent(envMilliVolt) + '%'
+    : (envMilliVolt / 1000).toFixed(2).replace('.', ',') + 'V');
+}
+
+// tra true nếu đã tiêu thụ gói này
+function envOnNotify(msg) {
+  if (!msg.startsWith('env=')) return false;
+  const p = msg.substring(4).split(',');
+  const t = parseInt(p[0], 10), mv = parseInt(p[1], 10);
+  if (!isNaN(t)) envTempC = t;
+  if (!isNaN(mv)) envMilliVolt = mv;
+  envRender();
+  return true;
+}
+
+function envOnConfig(data) {
+  if (data.length > 11) envModeWire = data[11];
+  if (envBattStyleFixed === null && data.length > 217 && data[217] <= 2) envBattStyle = data[217];
+  envRender();
+}
+
 function tickSystemTime() {
   const el = document.getElementById('systemTime');
   if (el) el.textContent = new Date().toLocaleString('vi-VN');

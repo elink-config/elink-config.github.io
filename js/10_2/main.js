@@ -719,7 +719,8 @@ function handleNotify(value, idx) {
     updateDitcherOptions();
     // config byte 11 = current display mode: highlight it in the gallery
     if (data.length > 11) {
-      deviceModeWire = data[11];   // giữ số THÔ để quy đổi lại khi biết fw
+      deviceModeWire = data[11];
+      envOnConfig(data);  // nhiệt độ/giao diện/pin   // giữ số THÔ để quy đổi lại khi biết fw
       deviceMode = modeFromWire(deviceModeWire);
       if (typeof highlightMode === 'function') highlightMode(deviceMode);
     }
@@ -771,6 +772,7 @@ function handleNotify(value, idx) {
     if (textDecoder == null) textDecoder = new TextDecoder();
     const msg = textDecoder.decode(data);
     addLog(msg, '⇓');
+    if (envOnNotify(msg)) return;  // mục «Trạng thái thiết bị» (app_common.js)
     if (msg.startsWith('mtu=') && msg.length > 4) {
       const mtuSize = parseInt(msg.substring(4));
       document.getElementById('mtusize').value = mtuSize;

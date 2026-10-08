@@ -439,6 +439,7 @@ function handleNotify(value, idx) {
     // config byte 11 = current display mode: highlight it in the gallery
     if (data.length > 11) {
       deviceMode = data[11];
+      envOnConfig(data);  // nhiệt độ/giao diện/pin
       if (typeof highlightMode === 'function') highlightMode(deviceMode);
     }
     // clock cleanup cadence (1 = full refresh hourly; 0xFF -> enabled):
@@ -463,6 +464,7 @@ function handleNotify(value, idx) {
     if (textDecoder == null) textDecoder = new TextDecoder();
     const msg = textDecoder.decode(data);
     addLog(msg, '⇓');
+    if (envOnNotify(msg)) return;  // mục «Trạng thái thiết bị» (app_common.js)
     if (msg.startsWith('mtu=') && msg.length > 4) {
       const mtuSize = parseInt(msg.substring(4));
       document.getElementById('mtusize').value = mtuSize;
