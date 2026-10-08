@@ -311,8 +311,8 @@ function loadTextBook(text, title) {
 // ngang 400x300 (384px chữ) và DỌC 300x400 (284px chữ — rd_rot=1)
 // r1.3: font trang sách đổi sang Bokerlam Medium, BỐN cỡ — số đo lấy từ
 // tools/font_subset/mkfont_reader_bkl.py (cùng công thức với bảng k_fonts của fw)
-const PREVIEW_METRICS = [[61, 18, 12, 15, 13], [52, 16, 14, 17, 15], [46, 13, 16, 20, 17], [40, 12, 18, 22, 19]];
-const PREVIEW_METRICS_P = [[45, 24, 12, 15, 13], [38, 21, 14, 17, 15], [34, 18, 16, 20, 17], [30, 16, 18, 22, 19]];
+const PREVIEW_METRICS = [[61, 19, 12, 14, 12], [52, 16, 14, 17, 15], [46, 13, 16, 20, 17], [40, 12, 18, 22, 19]];
+const PREVIEW_METRICS_P = [[45, 26, 12, 14, 12], [38, 21, 14, 17, 15], [34, 18, 16, 20, 17], [30, 16, 18, 22, 19]];
 function previewMetric() {
   const t = previewRot() ? PREVIEW_METRICS_P : PREVIEW_METRICS;
   return t[Math.min(t.length - 1, Math.max(0, parseInt(document.getElementById('fontSize').value) || 0))];
