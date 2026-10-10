@@ -361,13 +361,10 @@
       const col = (first + i - 1) % 7, row = (first + i - 1) / 7 | 0;
       const cx = gx + col * cw + cw / 2, cy = gy + row * rh;
       const today = i === lu.day;
-      if (today) { x.fillStyle = BK; x.fillRect(cx - cw / 2, cy - 1, cw - 1, 15); }
+      // khong co so duong nho: luoi nhin y het che do 8
+      if (today) { x.fillStyle = BK; x.fillRect(cx - cw / 2, cy - 1, cw - 1, rh - 1); }
       font(x, 8, 1);
       center(x, i, cx, cy + 7, today ? WH : BK);
-      const sol = new Date(d1.getTime() + (i - 1) * DAY);
-      const ss = sol.getDate() === 1 ? '1/' + (sol.getMonth() + 1) : String(sol.getDate());
-      x.font = '8px "Eboy REGAlpha","EboyREGAlpha",monospace';
-      center(x, ss, cx, cy + 13, today ? WH : BK);
     }
   }
 
