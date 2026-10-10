@@ -345,6 +345,62 @@
     }
   }
 
+  /* luoi mot THANG AM: 29-30 o, cot van theo THU, so DUONG nho ben duoi.
+     Khong co ham doi am->duong trong JS nen lam y het firmware: mung 1 = hom
+     nay lui lai (ngay am - 1) ngay, do dai thang xem ngay thu 30 con la 30
+     khong. */
+  function gridLunar(x, now, gx, gy, cw, rh) {
+    let lu;
+    try { lu = lunarToday(now); } catch (e) { return; }
+    const DAY = 86400000;
+    const d1 = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (lu.day - 1));
+    const first = (d1.getDay() + 6) % 7;
+    let len = 29;
+    try { len = (lunarToday(new Date(d1.getTime() + 29 * DAY)).day === 30) ? 30 : 29; } catch (e) { }
+    for (let i = 1; i <= len; i++) {
+      const col = (first + i - 1) % 7, row = (first + i - 1) / 7 | 0;
+      const cx = gx + col * cw + cw / 2, cy = gy + row * rh;
+      const today = i === lu.day;
+      if (today) { x.fillStyle = BK; x.fillRect(cx - cw / 2, cy - 1, cw - 1, 15); }
+      font(x, 8, 1);
+      center(x, i, cx, cy + 7, today ? WH : BK);
+      const sol = new Date(d1.getTime() + (i - 1) * DAY);
+      const ss = sol.getDate() === 1 ? '1/' + (sol.getMonth() + 1) : String(sol.getDate());
+      x.font = '8px "Eboy REGAlpha","EboyREGAlpha",monospace';
+      center(x, ss, cx, cy + 13, today ? WH : BK);
+    }
+  }
+
+  // --- mode 9: Lich AM + ngay to (y het mode 8, luoi la thang AM) ---
+  function m14am(x, now, W, H) {
+    x.strokeStyle = BK; x.lineWidth = 1; x.strokeRect(0.5, 0.5, W - 1, H - 1);
+    const dvx = W - 92;
+    line(x, dvx, 0, dvx, H, BK, 1);
+    const cw = ((dvx - 4) / 7) | 0, rh = (((H - 38) / 6) | 0) + 1;
+    header(x, 2, 2, dvx - 3, cw);
+    gridLunar(x, now, 2, 19, cw, rh);
+    font(x, 11, 1);
+    center(x, 'Dương ' + now.getDate() + '/' + pad2(now.getMonth() + 1), dvx / 2, H - 6, BK);
+    const rx = dvx + 46;
+    font(x, 8, 0);
+    center(x, pad2(now.getMonth() + 1) + '-' + now.getFullYear(), rx, 12, BK);
+    line(x, dvx, 17, W - 1, 17, BK, 1);
+    font(x, 24, 1);
+    x.fillStyle = BK; x.fillText(now.getDate(), dvx + 8, 41);
+    const wd = WD_FULL[now.getDay()], sp = wd.indexOf(' ');
+    font(x, 10, 0);
+    center(x, sp > 0 ? wd.slice(0, sp) : wd, dvx + 62, 30, BK);
+    if (sp > 0) center(x, wd.slice(sp + 1), dvx + 62, 43, BK);
+    line(x, dvx, 48, W - 1, 48, BK, 1);
+    font(x, 20, 1);
+    center(x, pad2(now.getHours()) + ':' + pad2(now.getMinutes()), rx, H - 32, BK);
+    line(x, dvx, H - 19, W - 1, H - 19, BK, 1);
+    font(x, 8, 0); x.fillStyle = BK;
+    x.fillText(panelTempVal() + '°C', dvx + 4, H - 6);
+    right(x, voltLabel(), W - 21, H - 6, BK);
+    battery(x, W - 18, H - 12, BK);
+  }
+
   // --- mode 10: Lịch (kèm âm) + đồng hồ kim + giờ số ---
   function m10(x, now, W, H) {
     x.strokeStyle = BK; x.lineWidth = 1; x.strokeRect(0.5, 0.5, W - 1, H - 1);
@@ -835,32 +891,33 @@
     { mode: 6, name: 'Lịch âm dương + kim', tick: 'Làm mới mỗi phút', draw: m10 },
     { mode: 7, name: 'Lịch + giờ số', tick: 'Làm mới mỗi phút', draw: m11 },
     { mode: 8, name: 'Lịch + ngày to', tick: 'Làm mới mỗi phút', draw: m14 },
-    { mode: 9, name: 'Lịch tháng', tick: 'Cập nhật lúc 0h', draw: m3 },
-    { mode: 10, name: 'Nhiệt độ + đồng hồ', tick: 'Làm mới mỗi phút', draw: m4 },
-    { mode: 11, name: 'Lịch tuần', tick: 'Làm mới mỗi phút', draw: m9 },
-    { mode: 12, name: 'Lịch bloc', tick: 'Làm mới mỗi phút', draw: m8 },
+    { mode: 9, name: 'Lịch âm + ngày to', tick: 'Làm mới mỗi phút', draw: m14am },
+    { mode: 10, name: 'Lịch tháng', tick: 'Cập nhật lúc 0h', draw: m3 },
+    { mode: 11, name: 'Nhiệt độ + đồng hồ', tick: 'Làm mới mỗi phút', draw: m4 },
+    { mode: 12, name: 'Lịch tuần', tick: 'Làm mới mỗi phút', draw: m9 },
+    { mode: 13, name: 'Lịch bloc', tick: 'Làm mới mỗi phút', draw: m8 },
     // thu tu nhom DOC theo nguoi dung chon (13,20,15,14,16,19,17,18 theo vi tri cu)
-    { mode: 13, name: 'Dọc: đồng hồ', tick: 'Dựng dọc — làm mới mỗi phút', draw: m17, vert: true },
-    { mode: 14, name: 'Dọc: giờ nổi 3D', tick: 'Dựng dọc — làm mới mỗi phút', draw: m24, vert: true },
-    { mode: 15, name: 'Dọc: lịch bloc', tick: 'Dựng dọc — làm mới mỗi phút', draw: m19, vert: true },
-    { mode: 16, name: 'Dọc: lịch tháng', tick: 'Dựng dọc — cập nhật lúc 0h', draw: m18, vert: true },
-    { mode: 17, name: 'Dọc: đồng hồ kim', tick: 'Dựng dọc — làm mới mỗi phút', draw: m20, vert: true },
-    { mode: 18, name: 'Dọc: nhiệt độ', tick: 'Dựng dọc — làm mới mỗi phút', draw: m23, vert: true },
-    { mode: 19, name: 'Dọc: lịch tuần', tick: 'Dựng dọc — làm mới mỗi phút', draw: m21, vert: true },
-    { mode: 20, name: 'Dọc: đếm ngược', tick: 'Dựng dọc — làm mới mỗi phút — đặt ở ô bên dưới', draw: m22, vert: true },
-    { mode: 21, name: 'Dọc: giờ lớn', tick: 'Dựng dọc — chỉ giờ:phút', draw: m25, vert: true },
-    { mode: 22, name: 'Dọc: nền đen', tick: 'Dựng dọc — chỉ giờ:phút', draw: m28, vert: true },
-    { mode: 23, name: 'Dọc: đồng hồ lật', tick: 'Dựng dọc — chỉ giờ:phút', draw: m27, vert: true },
-    { mode: 24, name: 'Dọc: giờ tương phản', tick: 'Dựng dọc — chỉ giờ:phút', draw: m26, vert: true },
+    { mode: 14, name: 'Dọc: đồng hồ', tick: 'Dựng dọc — làm mới mỗi phút', draw: m17, vert: true },
+    { mode: 15, name: 'Dọc: giờ nổi 3D', tick: 'Dựng dọc — làm mới mỗi phút', draw: m24, vert: true },
+    { mode: 16, name: 'Dọc: lịch bloc', tick: 'Dựng dọc — làm mới mỗi phút', draw: m19, vert: true },
+    { mode: 17, name: 'Dọc: lịch tháng', tick: 'Dựng dọc — cập nhật lúc 0h', draw: m18, vert: true },
+    { mode: 18, name: 'Dọc: đồng hồ kim', tick: 'Dựng dọc — làm mới mỗi phút', draw: m20, vert: true },
+    { mode: 19, name: 'Dọc: nhiệt độ', tick: 'Dựng dọc — làm mới mỗi phút', draw: m23, vert: true },
+    { mode: 20, name: 'Dọc: lịch tuần', tick: 'Dựng dọc — làm mới mỗi phút', draw: m21, vert: true },
+    { mode: 21, name: 'Dọc: đếm ngược', tick: 'Dựng dọc — làm mới mỗi phút — đặt ở ô bên dưới', draw: m22, vert: true },
+    { mode: 22, name: 'Dọc: giờ lớn', tick: 'Dựng dọc — chỉ giờ:phút', draw: m25, vert: true },
+    { mode: 23, name: 'Dọc: nền đen', tick: 'Dựng dọc — chỉ giờ:phút', draw: m28, vert: true },
+    { mode: 24, name: 'Dọc: đồng hồ lật', tick: 'Dựng dọc — chỉ giờ:phút', draw: m27, vert: true },
+    { mode: 25, name: 'Dọc: giờ tương phản', tick: 'Dựng dọc — chỉ giờ:phút', draw: m26, vert: true },
     // QUY TAC: 4 the CUOI theo dung thu tu: Đếm ngược (5), Bảng tên (6),
     // Tự thiết kế — giao diện mới thêm vào TRƯỚC nhóm này.
-    { mode: 25, name: 'Đếm ngược sự kiện', tick: 'Làm mới mỗi phút — đặt ở ô bên dưới', draw: m5 },
-    { mode: 26, name: 'Bảng tên / ghi chú', tick: 'Tĩnh — soạn ở ô bên dưới', draw: m6 },
-    { mode: 27, name: 'Tự thiết kế', tick: 'Làm mới mỗi phút — soạn ở «Thiết kế màn hình»', draw: mCustom(0) },
+    { mode: 26, name: 'Đếm ngược sự kiện', tick: 'Làm mới mỗi phút — đặt ở ô bên dưới', draw: m5 },
+    { mode: 27, name: 'Bảng tên / ghi chú', tick: 'Tĩnh — soạn ở ô bên dưới', draw: m6 },
+    { mode: 28, name: 'Tự thiết kế', tick: 'Làm mới mỗi phút — soạn ở «Thiết kế màn hình»', draw: mCustom(0) },
     // v2.0: đánh số LIỀN MẠCH theo quy ước họ máy — ẢNH về 0, nên chỗ 28
     // trả ra cho «Tự thiết kế 2», và «Đồng hồ tối giản» (29) được đưa lại
     // vào gallery thay vì chỉ chọn được bằng lệnh.
-    { mode: 28, name: 'Tự thiết kế 2', tick: 'Làm mới mỗi phút — soạn ở «Thiết kế màn hình»', draw: mCustom(1) },
+    { mode: 29, name: 'Tự thiết kế 2', tick: 'Làm mới mỗi phút — soạn ở «Thiết kế màn hình»', draw: mCustom(1) },
   ];
 
   // highlight the mode the device reports or was just set to

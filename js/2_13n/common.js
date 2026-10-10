@@ -19,7 +19,9 @@
 const IMG_MODE = 0;
 
 // Chế độ TỰ THIẾT KẾ (webtool gửi bố cục bằng 0x9b, thiết bị tự chuyển sang)
-const CUSTOM_MODE = 27;
+// ⚠ 10/10/2026: chèn chế độ 9 «Lịch âm + ngày to» nên mọi số từ 9 trở đi
+// dồn lên một — «Tự thiết kế» từ 27 thành 28. Đây không phải hằng số vẽ.
+const CUSTOM_MODE = 28;
 
 /* ---- màu + nhãn ------------------------------------------------------- */
 
