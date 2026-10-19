@@ -35,9 +35,14 @@ function textPartCap() {
   const [cpl, lpp] = previewMetric();  // trần mục lục 4000 trang (chừa lề 3900)
   return Math.min(storeDataCap(), 3900 * cpl * lpp);
 }
-// SỐ CỠ CHỮ trang đọc mà firmware có — PHẢI khớp READER_FONT_MAX bên fw
-// (r1.3: 4 cỡ Bokerlam 12/14/16/18 thay 3 cỡ Tahoma).
-const READER_FONT_MAX = 4;
+// SỐ CỠ CHỮ trang đọc mà firmware có — PHẢI khớp CẢ BA chỗ: READER_FONT_MAX
+// bên fw (src/epd/READER.h), số hàng PREVIEW_METRICS dưới đây, và số bảng
+// trong FONT_ADV (js/reader_4_2/font_metrics.js).
+// ⚠ Đã từng để con số này là 4 trong khi FONT_ADV chỉ có 3 bảng -> chọn cỡ
+// chữ thứ 4 là FONT_ADV[3] rỗng, hàm đếm trang NÉM LỖI ngay lúc nạp file sách.
+// Vì vậy fontIdx() kẹp theo cả FONT_ADV.length, để lệch thì sai số trang chứ
+// không vỡ trang.
+const READER_FONT_MAX = 3;
 const PLANE_SIZE = 15000; // 400x300 / 8
 
 
@@ -309,10 +314,12 @@ function loadTextBook(text, title) {
 // [ký tự/dòng, dòng/trang, px, bước dòng, baseline đầu]
 // [ký tự/dòng, dòng/trang, px, bước dòng, baseline đầu] khớp lưới fw:
 // ngang 400x300 (384px chữ) và DỌC 300x400 (284px chữ — rd_rot=1)
-// r1.3: font trang sách đổi sang Bokerlam Medium, BỐN cỡ — số đo lấy từ
-// tools/font_subset/mkfont_reader_bkl.py (cùng công thức với bảng k_fonts của fw)
-const PREVIEW_METRICS = [[56, 19, 12, 14, 12], [48, 16, 14, 17, 15], [42, 13, 16, 20, 17], [38, 12, 18, 22, 19]];
-const PREVIEW_METRICS_P = [[41, 26, 12, 14, 12], [35, 21, 14, 17, 15], [31, 18, 16, 20, 17], [28, 16, 18, 22, 19]];
+// BA cỡ font Tahoma (vn12/vn14/vn16) — bằng bảng k_fonts/k_fonts_p của fw.
+// Đã thử font Bokerlam 4 cỡ ở r1.3 rồi QUAY LẠI: trên tấm e-ink thật chữ đó
+// khó đọc hơn. Số «ký tự/dòng» ở đây chỉ để chia phần; số TRANG tính bằng
+// FONT_ADV (bề rộng thật từng ký tự).
+const PREVIEW_METRICS = [[53, 19, 12, 14, 13], [48, 16, 14, 17, 15], [41, 14, 16, 19, 17]];
+const PREVIEW_METRICS_P = [[39, 26, 12, 14, 13], [35, 21, 14, 17, 15], [30, 19, 16, 19, 17]];
 function previewMetric() {
   const t = previewRot() ? PREVIEW_METRICS_P : PREVIEW_METRICS;
   return t[Math.min(t.length - 1, Math.max(0, parseInt(document.getElementById('fontSize').value) || 0))];
@@ -364,7 +371,9 @@ function updateBookUI() {
  * (Trước đây ước lượng "ký tự/dòng" cố định — sai nhiều vì font tỉ lệ:
  * chữ 'i' 3px còn 'M' 9px.) */
 function fontIdx() {
-  return Math.min(READER_FONT_MAX - 1, Math.max(0, parseInt(document.getElementById('fontSize').value) || 0));
+  // kẹp theo CẢ FONT_ADV.length: lệch bảng thì lấy bảng cuối, không vỡ trang
+  const n = Math.min(READER_FONT_MAX, FONT_ADV.length);
+  return Math.min(n - 1, Math.max(0, parseInt(document.getElementById('fontSize').value) || 0));
 }
 function textAreaWidth() { return previewRot() ? 284 : 384; }
 
