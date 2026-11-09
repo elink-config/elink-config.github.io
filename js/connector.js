@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  const VER = '20261027a'; // cache-buster, keep in sync with index.html
+  const VER = '20261109a'; // cache-buster, keep in sync with index.html
 
   const EPD42_SERVICE = '62750001-d828-918d-fb46-b6c11c675aec';
   const HM213_SERVICE = '0000ff00-0000-1000-8000-00805f9b34fb';
@@ -164,6 +164,22 @@
         // khổ màn nó lấy từ js/7_5/profile.gen.js (640x384).
         'js/common/designer.js', 'js/diy_store.js', 'js/7_5/timetable.js', 'js/7_5/main.js'],
     },
+    // Màn 7.5" 800×480 trên bo nRF52811 (bo máy đọc sách DIY-7_5R) — firmware là
+    // CHÍNH mã chung của bản DA14585 7.5" (EPD-nRF52811/epd_7_5inch), nên dùng
+    // CHUNG bộ js/7_5. Chữ N tách dòng máy; khác biệt chỉ là khổ màn (hồ sơ
+    // đè js/7_5n/profile_n.js, nạp ngay sau profile.gen.js) và fragment riêng
+    // KHÔNG có OTA (bo này nạp firmware bằng dây).
+    '7_5n': {
+      label: '7.5" 800×480 (nRF52811)',
+      sub: 'Màn 7.5" ba màu 800×480 (DIY-7_5N, nRF52811): kết nối, cấu hình và truyền hình ảnh',
+      fragment: 'apps/7_5n.html',
+      family: '7_5',
+      prefixes: ['DIY-7_5N-'],
+      scripts: ['js/app_common.js', 'js/family_epd.js', 'js/dithering.js', 'js/paint.js', 'js/crop.js',
+        'js/7_5/profile.gen.js', 'js/7_5n/profile_n.js', 'js/7_5/modes.gen.js',
+        'js/7_5/mode_preview.js',
+        'js/common/designer.js', 'js/diy_store.js', 'js/7_5/timetable.js', 'js/7_5/main.js'],
+    },
     '7_5b': {
       label: '7.5" CHỮ LỚN',
       sub: 'Màn 7.5" 640×384 bản CHỮ LỚN (DIY-7_5B, DA14585): kết nối, cấu hình và truyền hình ảnh',
@@ -245,6 +261,7 @@
     if (name.startsWith('DIY-4_2R-')) return 'reader_4_2';
     if (name.startsWith('DIY-4_2-')) return '4_2';
     if (name.startsWith('DIY-7_3-')) return '7_3';
+    if (name.startsWith('DIY-7_5N-')) return '7_5n';
     if (name.startsWith('DIY-7_5B-')) return '7_5b';
     if (name.startsWith('DIY-7_5R-')) return 'reader_7_5';
     if (name.startsWith('DIY-7_5-')) return '7_5';

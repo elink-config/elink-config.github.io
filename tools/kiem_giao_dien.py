@@ -40,7 +40,7 @@ ROOT = os.path.dirname(HERE)
 # Phien ban firmware THAT cua tung may — de biet moc atLeast nao khong bao gio dung.
 FW = {
     '10_2': '2.0', '2_13n': '2.0', '2_9n': '2.0', '4_2': '3.0',
-    '4_2c': '4.0', '7_3': '2.3', '7_5': '1.0', '7_5b': '1.0', '4_37': '1.0',
+    '4_2c': '4.0', '7_3': '2.3', '7_5': '1.0', '7_5n': '1.3', '7_5b': '1.0', '4_37': '1.0',
 }
 
 
@@ -53,7 +53,7 @@ def doc(p):
 
 
 # May dung CHUNG app cua may khac (webtool route theo ten BLE roi nap cung bo js).
-ALIAS = {'4_2c': '4_2'}
+ALIAS = {'4_2c': '4_2', '7_5n': '7_5'}
 
 # AN CO CHU Y — da soat tay 01/09/2026. Phai ghi LY DO: dong nao khong giai
 # thich duoc thi dung cho vao day, no che mat dung thu cong cu sinh ra de bat.
@@ -71,6 +71,10 @@ BO_QUA = {
     # khong vao noi khe 32KB, moi lenh 0x27 tra 'img=err'). Hang «Tu doi anh»
     # an la DUNG. Du an nay cung chua chuyen sang nen chung — khong dung vao.
     ('7_5b', 'imgAutoRow'): 'firmware may nay khong co khe anh, an la dung',
+    # 7.5" nRF52811 (DIY-7_5N): dung CHUNG js/7_5 (ALIAS) — cung cac cho an co chu y nhu may 7_5
+    ('7_5n', 'dsDesignRow'): 'nhu 7_5: mot «Tu thiet ke»',
+    ('7_5n', 'hourlyFullRow'): 'nhu 7_5: dung refreshModeRow',
+    ('7_5n', 'darkBoostRow'): 'tam co partial: nen chung tat han luot «chu dam» (EPD_HAS_PARTIAL_WINDOW)',
 }
 
 

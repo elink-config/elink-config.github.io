@@ -151,7 +151,7 @@ function waitAsset(timeoutMs) {
 async function sendAsset() {
   if (assetBusy) return;
   { const nm = (bleDevice && bleDevice.name) || '';
-    if (nm.indexOf('DIY-7_5-') !== 0) return; }
+    if (!/^DIY-7_5N?-/.test(nm)) return; }
   assetBusy = true;
   // phủ kín màn: luồng này vài trăm gói, bấm nút khác giữa chừng là lệnh chen
   // vào và máy nhận nhầm (xem syncOverlayShow ở app_common.js)
@@ -243,6 +243,10 @@ const EPD_SERVICE = '62750001-d828-918d-fb46-b6c11c675aec';
  * (service 0xff00) nên không liệt kê ở đây. */
 const BLE_REQUEST_FILTERS = [
   { namePrefix: 'DIY-7_5-' },
+  /* BẢN nRF52811 (DIY-7_5N): CÙNG giao thức, cùng bộ mã này — chỉ khác mạch và
+   * khổ màn 800x480 (hồ sơ đè ở js/7_5n/profile_n.js). Hub chỉ nạp app
+   * 7_5n cho đúng máy đó nên hai dòng máy không lẫn nhau. */
+  { namePrefix: 'DIY-7_5N-' },
 ];
 
 
@@ -911,7 +915,7 @@ function handleNotify(value, idx) {
       const devNm = (bleDevice && bleDevice.name) || '';
       // Màn 7.5" 640x384 quảng bá 'DIY-7_5-'. Gạch nối ở cuối là quan trọng:
       // nó giữ cho phép so KHÔNG chạm DIY-7_5B (chữ lớn) / DIY-7_5R (đọc sách).
-      const is7_5 = /^DIY-7_5-/.test(devNm);
+      const is7_5 = /^DIY-7_5N?-/.test(devNm);  // N = bản nRF52811, cùng tính năng
       /* Giao diện đời mới (chữ đậm/đỏ, số 12-3-6-9 đỏ, TUẦN BẮT ĐẦU THỨ HAI):
        * máy 7.5" có sẵn ngay từ v1.0 vì GUI.c dựng trên nền 4.2" v2.7 và ép
        * cứng `data->week_start = 1` như mọi máy khác.
@@ -952,7 +956,7 @@ async function connect() {
   // tối đa 1 lần/ngày cho mỗi máy. Màn 7.5" (DIY-7_5- và tên cũ
   // DIY-7_5-) không so với bảng firmware 4.2" — khỏi nhắc
   // cập nhật nhầm (bảng «Danh sách firmware» hiện chỉ có file 4.2").
-  const is75 = bleDevice && bleDevice.name && /^DIY-7_5-/.test(bleDevice.name);
+  const is75 = bleDevice && bleDevice.name && /^DIY-7_5N?-/.test(bleDevice.name);
    cfgSeen = false;  // phien moi: doi lai goi cau hinh
   if (!is75) FwCheck.reset('1.3.1', bleDevice && bleDevice.name);
 
