@@ -903,6 +903,8 @@ function handleNotify(value, idx) {
        * ở máy vừa cập nhật qua OTA) thì tự gửi ngay, không đợi người dùng. */
       if (assetResolve) { const f = assetResolve; assetResolve = null; f(msg); }
       else if (msg === 'asset=none') sendAsset();
+    } else if (msg === 'otabl=1') {
+      window.__otaBl = true;  // máy N (nRF52811) có bootloader — OTA được
     } else if (msg.startsWith('img=') && imgRdyResolve) {
       // trả lời lệnh mở khe ảnh: 'img=rdy' (xóa flash xong) / 'img=err'
       const f = imgRdyResolve; imgRdyResolve = null; f(msg === 'img=rdy');
@@ -958,6 +960,7 @@ async function connect() {
   // cập nhật nhầm (bảng «Danh sách firmware» hiện chỉ có file 4.2").
   const is75 = bleDevice && bleDevice.name && /^DIY-7_5N?-/.test(bleDevice.name);
    cfgSeen = false;  // phien moi: doi lai goi cau hinh
+  window.__otaBl = false;  // máy N tự báo «otabl=1» nếu có bootloader (xem otaUpdate)
   if (!is75) FwCheck.reset('1.3.1', bleDevice && bleDevice.name);
 
   try {
@@ -1148,7 +1151,22 @@ async function otaUpdate(preBuf) {
   const firmSize = firmBuf.length;
 
   // tìm magic phiên bản (epd_version[] trong user_app.c: 79 13 a5 f9 86 ec 5a 06 + version 4B)
-  const magic = [0x79, 0x13, 0xa5, 0xf9, 0x86, 0xec, 0x5a, 0x06];
+  /* Máy DIY-7_5N (bo nRF52811) mang magic RIÊNG (epd_version_n trong main.c:
+   * 37 5F 35 4E C8 A0 CA B1 = "7_5N" + đảo bit) — file của máy kia không có
+   * magic của máy này nên bị từ chối ngay ở đây; firmware nRF còn soát lại
+   * lần nữa lúc chốt (0xA4). Hai dòng máy KHÔNG bao giờ nạp nhầm file nhau. */
+  const isN = /^DIY-7_5N-/.test((bleDevice && bleDevice.name) || '');
+  /* MÁY TỰ BÁO có bootloader (gói «otabl=1» lúc kết nối) chứ không đoán theo số
+   * phiên bản: gác «< 1.4» sẽ khoá luôn đường OTA của máy đang chạy một bản
+   * thử đánh số thấp hơn (vd bản thử v1.0) dù nó có bootloader. */
+  if (isN && !window.__otaBl) {
+    /* v1.3 trở về trước chưa có bootloader: máy trả «ota=err» ngay ở 0xA0 mà vòng gửi
+     * bên dưới không nghe — sẽ báo «xong» giả. Chặn từ đầu. */
+    addLog('Máy này chưa có bootloader (firmware dưới 1.4): phải nạp dây bản 1.4 MỘT LẦN, từ đó về sau mới cập nhật qua Bluetooth được.');
+    return;
+  }
+  const magic = isN ? [0x37, 0x5f, 0x35, 0x4e, 0xc8, 0xa0, 0xca, 0xb1]
+                    : [0x79, 0x13, 0xa5, 0xf9, 0x86, 0xec, 0x5a, 0x06];
   let pos = -1;
   for (let i = 0; i <= firmBuf.length - magic.length - 4; i++) {
     let j = 0;
@@ -1156,7 +1174,8 @@ async function otaUpdate(preBuf) {
     if (j === magic.length) { pos = i; break; }
   }
   if (pos === -1) {
-    addLog('File không hợp lệ: không tìm thấy magic phiên bản firmware!');
+    addLog(isN ? 'File không dành cho máy 7.5" nRF52811 (DIY-7_5N) — chọn file fw_7_5n_v*.bin.'
+               : 'File không hợp lệ: không tìm thấy magic phiên bản firmware!');
     return;
   }
   const firmVer = firmBuf[pos + 8] | (firmBuf[pos + 9] << 8) | (firmBuf[pos + 10] << 16) | (firmBuf[pos + 11] << 24);

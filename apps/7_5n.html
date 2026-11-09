@@ -1,7 +1,7 @@
 <!-- Fragment giao diện thiết bị — được connector.js nạp vào #appMount.
      Máy 7.5" 800×480 trên bo nRF52811 (DIY-7_5N). Dựng từ apps/7_5.html: CÙNG
      bộ js/7_5 (cùng giao thức, cùng tính năng với bản DA14585), chỉ khác mạch,
-     khổ màn (js/7_5n/profile_n.js) và KHÔNG có OTA (nạp firmware bằng dây).
+     khổ màn (js/7_5n/profile_n.js); OTA qua bootloader riêng (từ v1.0) (file fw_7_5n_*.bin).
      Sửa apps/7_5.html thì nhớ xem có cần chép sang đây không. -->
 		<fieldset class="debug only-7_5">
 			<legend>Driver (chế độ dev)</legend>
@@ -451,13 +451,17 @@
 			</div>
 		</fieldset>
 		<fieldset id="otaFieldset">
-			<legend>Bảo trì thiết bị</legend>
-			<!-- Máy nRF52811 KHÔNG cập nhật firmware qua Bluetooth (nạp bằng dây J-Link).
-			     Giữ ba phần tử ẩn để main.js (dùng chung với bản DA14585) khỏi lỗi «null». -->
-			<div hidden>
-				<input type="file" id="otaFile" accept=".bin">
-				<button id="otabutton" type="button" disabled></button>
-				<span id="otaProgress"></span>
+			<legend>Cập nhật firmware (OTA)</legend>
+			<!-- Máy nRF52811 có BOOTLOADER riêng: firmware nhận ảnh qua BLE
+			     (cùng lệnh 0xA0..0xA4 với bản DA14585) vào flash ngoài, bootloader chép
+			     sang flash nội lúc khởi động lại. main.js dùng magic riêng của máy N
+			     nên file của bản DA14585 bị từ chối ngay. -->
+			<div class="flex-container">
+				<div class="flex-group">
+					<input type="file" id="otaFile" accept=".bin">
+					<button id="otabutton" type="button" class="secondary" onclick="otaUpdate()">Cập nhật firmware</button>
+					<span id="otaProgress" class="system-time"></span>
+				</div>
 			</div>
 			<!-- Cập nhật OTA chỉ ghi bank firmware, KHÔNG mang bộ chữ theo. Máy
 			     tự báo «asset=none» lúc kết nối và webtool gửi lại ngay, nhưng
@@ -477,7 +481,7 @@
 					<span class="mode-gallery-hint" style="margin:0">Đưa máy về như lúc mới: xoá cấu hình, giao diện «Tự thiết kế», ảnh nền, icon, thời khoá biểu và <b>ảnh trong khe</b>. Dùng khi máy hiển thị sai hoặc không dùng được.</span>
 				</div>
 			</div>
-			<p class="mode-gallery-hint"><b>Máy này không cập nhật firmware qua Bluetooth</b> — bo nRF52811 nạp bằng mạch nạp J-Link. Cần lên firmware mới, vui lòng nhắn tin qua kênh bán hàng.</p>
+			<p class="mode-gallery-hint">Nạp file <b>fw_7_5n_v*.bin</b> từ mục «Danh sách firmware» bên dưới. Máy phải có <b>bootloader</b> (cài một lần bằng dây cùng firmware) — máy tự báo lúc kết nối, chưa có thì webtool không cho gửi. Mất điện giữa chừng KHÔNG hỏng máy — máy chạy tiếp firmware cũ, hoặc tự chép lại bản mới ở lần bật sau. Trong lúc chép (vài giây sau khi gửi xong) đèn xanh lam sáng.</p>
 		</fieldset>
 		<fieldset>
 			<legend>Danh sách firmware</legend>
@@ -494,16 +498,17 @@
 						</tr>
 					</thead>
 					<tbody>
+						<!-- Dòng máy N đánh số RIÊNG từ 1.0 (không theo số bản DA14585). -->
 						<tr>
 							<td>1</td>
-							<td>1.3</td>
-							<td><b>CHỈ dành cho màn 7.5" 800×480 trên bo nRF52811 (thiết bị DIY-7_5N)</b>. <br>Cùng mọi giao diện và tính năng của bản 7.5" v1.3 (23 giao diện, 3 khe ảnh, «Tự thiết kế» có ảnh nền, thời khoá biểu, âm lịch Việt Nam), bố cục canh lại cho khổ 800×480, <b>đồng hồ nhảy từng phút bằng cập nhật cục bộ</b>. Nạp bằng dây.</td>
+							<td>1.0</td>
+							<td><b>CHỈ dành cho màn 7.5" 800×480 trên bo nRF52811 (thiết bị DIY-7_5N)</b>. <br>Bản phát hành đầu: mọi giao diện và tính năng của bản 7.5" (23 giao diện, 3 khe ảnh, «Tự thiết kế» có ảnh nền, thời khoá biểu, âm lịch Việt Nam), bố cục cho khổ 800×480, <b>đồng hồ nhảy từng phút bằng cập nhật cục bộ</b>, <b>cập nhật firmware qua Bluetooth</b>.</td>
 							<td>09/11/2026</td>
-							<td>—</td>
-							<td>—</td>
+							<td><a href="OTA firmware/7_5n/fw_7_5n_v1.0.bin" download>Tải về</a></td>
+							<td><button type="button" class="primary" onclick="fwInstallRow(this)">Cài ngay</button></td>
 						</tr>
 					</tbody>
 				</table>
 			</div>
-			<p class="mode-gallery-hint">Máy nRF52811 nạp firmware bằng dây. Nếu gặp bất kì vấn đề hoặc yêu cầu nào về firmware mới, vui lòng nhắn tin cho tôi qua kênh bán hàng.</p>
+			<p class="mode-gallery-hint">Tải file .bin tương ứng về rồi nạp bằng khung «Cập nhật firmware (OTA)» phía trên (máy đã có bootloader). <br> Nếu gặp bất kì vấn đề hoặc yêu cầu nào về cập nhật firmware mới, vui lòng nhắn tin cho tôi qua kênh bán hàng và tôi sẽ cập nhật bản update ở đây.</p>
 		</fieldset>
