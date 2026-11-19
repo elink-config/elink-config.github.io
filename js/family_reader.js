@@ -855,7 +855,29 @@ async function sendChunks(bytes, areaOff, label, pctBase = 0, pctSpan = 100) {
   // pctBase/pctSpan: dải của giai đoạn này trên thanh tiến độ tổng.
   const mtu = parseInt(document.getElementById('mtusize').value) || 20;
   const chunk = Math.max(32, mtu - 6);
-  const interleaved = parseInt(document.getElementById('interleavedcount').value) || 16;
+  /* TRẦN LOẠT GỬI TÍNH THEO BYTE, KHÔNG THEO SỐ GÓI.
+   *
+   * Khách báo 19/11/2026: gửi sách bằng ĐIỆN THOẠI thì được một lúc là lỗi,
+   * nhưng ĐƯA ĐIỆN THOẠI RA XA hoặc dùng PC thì không sao. Nghe như chuyện
+   * sóng, thực ra là chuyện LƯU LƯỢNG:
+   *
+   *   MTU  23 (PC/Windows hay gặp) -> gói  32B -> 32 gói =  1.024 byte
+   *   MTU 247 (điện thoại Android) -> gói 241B -> 32 gói =  7.712 byte
+   *
+   * «Khoảng xác nhận» đếm GÓI, mà MTU thì lấy theo máy báo — nên cùng một con
+   * số 32, điện thoại nhồi gấp 7,5 LẦN số byte so với PC trước khi dừng lại
+   * chờ máy. Mà máy ghi TỪNG GÓI xuống SPI flash ngay trong trình xử lý BLE
+   * (reader_rx_chunk), thỉnh thoảng còn xoá sector 4KB mất ~45ms. Đưa điện
+   * thoại ra xa thì tốc độ thật tụt xuống nên máy lại theo kịp — đúng cái
+   * khách quan sát được.
+   *
+   * Nay loạt gửi bị kẹp ở 2KB: MTU 247 còn 8 gói, MTU 23 vẫn 32 gói như cũ.
+   * Máy chỉ phải nuốt ~8 lần ghi trang flash giữa hai lần chờ, thừa sức.
+   * Không làm chậm đáng kể: thêm một lượt chờ mỗi 2KB, mà cổ chai thật sự là
+   * tốc độ ghi flash chứ không phải số lượt chờ. */
+  const BURST_MAX = 2048;
+  const interleaved = Math.max(1, Math.min(parseInt(document.getElementById('interleavedcount').value) || 16,
+                                           Math.floor(BURST_MAX / chunk)));
   let noReply = 0;
   let lastSector = -1;
   const t0 = Date.now();
